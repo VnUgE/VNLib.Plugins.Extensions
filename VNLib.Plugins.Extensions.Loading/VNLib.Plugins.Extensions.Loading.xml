@@ -1,0 +1,257 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>VNLib.Plugins.Extensions.Loading</name>
+    </assembly>
+    <members>
+        <member name="T:VNLib.Plugins.Extensions.Loading.Configuration.ConfigurationNameAttribute">
+            <summary>
+            Specifies a configuration variable name in the plugin's configuration 
+            containing data specific to the type
+            </summary>
+        </member>
+        <member name="F:VNLib.Plugins.Extensions.Loading.Configuration.ConfigurationNameAttribute.ConfigVarName">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Configuration.ConfigurationNameAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new <see cref="T:VNLib.Plugins.Extensions.Loading.Configuration.ConfigurationNameAttribute"/>
+            </summary>
+            <param name="configVarName">The name of the configuration variable for the class</param>
+        </member>
+        <member name="T:VNLib.Plugins.Extensions.Loading.Configuration.ConfigurationExtensions">
+            <summary>
+            Contains extensions for plugin configuration specifc extensions
+            </summary>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Configuration.ConfigurationExtensions.GetConfigForType``1(VNLib.Plugins.PluginBase)">
+            <summary>
+            Retrieves a top level configuration dictionary of elements for the specified type.
+            The type must contain a <see cref="T:VNLib.Plugins.Extensions.Loading.Configuration.ConfigurationNameAttribute"/>
+            </summary>
+            <typeparam name="T">The type to get the configuration of</typeparam>
+            <param name="plugin"></param>
+            <returns>A <see cref="T:System.Collections.Generic.Dictionary`2"/> of top level configuration elements for the type</returns>
+            <exception cref="T:System.ObjectDisposedException"></exception>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Configuration.ConfigurationExtensions.GetConfig(VNLib.Plugins.PluginBase,System.String)">
+            <summary>
+            Retrieves a top level configuration dictionary of elements with the specified property name,
+            from the plugin config first, or falls back to the host config file
+            </summary>
+            <param name="plugin"></param>
+            <param name="propName">The config property name to retrieve</param>
+            <returns>A <see cref="T:System.Collections.Generic.Dictionary`2"/> of top level configuration elements for the type</returns>
+            <exception cref="T:System.ObjectDisposedException"></exception>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Configuration.ConfigurationExtensions.TryGetConfig(VNLib.Plugins.PluginBase,System.String)">
+            <summary>
+            Retrieves a top level configuration dictionary of elements with the specified property name,
+            from the plugin config first, or falls back to the host config file
+            </summary>
+            <param name="plugin"></param>
+            <param name="propName">The config property name to retrieve</param>
+            <returns>A <see cref="T:System.Collections.Generic.Dictionary`2"/> of top level configuration elements for the type</returns>
+            <exception cref="T:System.ObjectDisposedException"></exception>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Configuration.ConfigurationExtensions.GetConfigForType(VNLib.Plugins.PluginBase,System.Type)">
+            <summary>
+            Retrieves a top level configuration dictionary of elements for the specified type.
+            The type must contain a <see cref="T:VNLib.Plugins.Extensions.Loading.Configuration.ConfigurationNameAttribute"/>
+            </summary>
+            <param name="plugin"></param>
+            <param name="type">The type to get configuration data for</param>
+            <returns>A <see cref="T:System.Collections.Generic.Dictionary`2"/> of top level configuration elements for the type</returns>
+            <exception cref="T:System.ObjectDisposedException"></exception>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Configuration.ConfigurationExtensions.GetConfig(VNLib.Plugins.PluginBase,System.Object)">
+            <summary>
+            Shortcut extension for <see cref="M:VNLib.Plugins.Extensions.Loading.Configuration.ConfigurationExtensions.GetConfigForType``1(VNLib.Plugins.PluginBase)"/> to get 
+            config of current class
+            </summary>
+            <param name="obj">The object that a configuration can be retrieved for</param>
+            <param name="plugin">The plugin containing configuration variables</param>
+            <returns>A <see cref="T:System.Collections.Generic.Dictionary`2"/> of top level configuration elements for the type</returns>
+            <exception cref="T:System.ObjectDisposedException"></exception>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Configuration.ConfigurationExtensions.HasConfigForType``1(VNLib.Plugins.PluginBase)">
+            <summary>
+            Determines if the current plugin configuration contains the require properties to initialize 
+            the type
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="plugin"></param>
+            <returns>True if the plugin config contains the require configuration property</returns>
+        </member>
+        <member name="T:VNLib.Plugins.Extensions.Loading.Events.AsyncIntervalAttribute">
+            <summary>
+            When added to a method schedules it as a callback on a specified interval when 
+            the plugin is loaded, and stops when unloaded
+            </summary>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Events.AsyncIntervalAttribute.#ctor(System.Int32)">
+            <summary>
+            Intializes the <see cref="T:VNLib.Plugins.Extensions.Loading.Events.AsyncIntervalAttribute"/> with the specified timeout in milliseconds
+            </summary>
+            <param name="milliseconds">The interval in milliseconds</param>
+        </member>
+        <member name="T:VNLib.Plugins.Extensions.Loading.Events.IntervalResultionType">
+            <summary>
+            The configurable event interval resulution type
+            </summary>
+        </member>
+        <member name="F:VNLib.Plugins.Extensions.Loading.Events.IntervalResultionType.Milliseconds">
+            <summary>
+            Specifies event interval resolution in milliseconds
+            </summary>
+        </member>
+        <member name="F:VNLib.Plugins.Extensions.Loading.Events.IntervalResultionType.Seconds">
+            <summary>
+            Specifies event interval resolution in seconds
+            </summary>
+        </member>
+        <member name="F:VNLib.Plugins.Extensions.Loading.Events.IntervalResultionType.Minutes">
+            <summary>
+            Specifies event interval resolution in minutes
+            </summary>
+        </member>
+        <member name="F:VNLib.Plugins.Extensions.Loading.Events.IntervalResultionType.Hours">
+            <summary>
+            Specifies event interval resolution in hours
+            </summary>
+        </member>
+        <member name="T:VNLib.Plugins.Extensions.Loading.Events.ConfigurableAsyncIntervalAttribute">
+            <summary>
+            When added to a method schedules it as a callback on a specified interval when 
+            the plugin is loaded, and stops when unloaded
+            </summary>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Events.ConfigurableAsyncIntervalAttribute.#ctor(System.String,VNLib.Plugins.Extensions.Loading.Events.IntervalResultionType)">
+            <summary>
+            Initializes a <see cref="T:VNLib.Plugins.Extensions.Loading.Events.ConfigurableAsyncIntervalAttribute"/> with the specified
+            interval property name
+            </summary>
+            <param name="configPropName">The configuration property name for the event interval</param>
+            <param name="resolution">The time resoltion for the event interval</param>
+        </member>
+        <member name="T:VNLib.Plugins.Extensions.Loading.Events.EventHandle">
+            <summary>
+            Represents a handle to a scheduled event interval that is managed by the plugin but may be cancled by disposing the instance
+            </summary>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Events.EventHandle.Pause">
+            <summary>
+            Pauses the event timer until the <see cref="T:VNLib.Utils.OpenHandle"/> is released or disposed
+            then resumes to the inital interval period
+            </summary>
+            <returns>A <see cref="T:VNLib.Utils.OpenHandle"/> that restores the timer to its initial state when disposed</returns>
+            <exception cref="T:System.ObjectDisposedException"></exception>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Events.EventHandle.Free">
+            <inheritdoc/>
+        </member>
+        <member name="T:VNLib.Plugins.Extensions.Loading.Events.EventManagment">
+            <summary>
+            Provides event schedueling extensions for plugins
+            </summary>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Events.EventManagment.ScheduleInterval``1(VNLib.Plugins.PluginBase,System.Func{``0,System.Threading.Tasks.Task},``0,System.TimeSpan)">
+            <summary>
+            Schedules an asynchronous event interval for the current plugin, that is active until canceled or until the plugin unloads
+            </summary>
+            <typeparam name="TState">Stateful event argument</typeparam>
+            <param name="plugin"></param>
+            <param name="asyncCallback">An asyncrhonous callback method.</param>
+            <param name="state"></param>
+            <param name="interval">The event interval</param>
+            <returns>An <see cref="T:VNLib.Plugins.Extensions.Loading.Events.EventHandle"/> that can manage the interval state</returns>
+            <exception cref="T:System.ObjectDisposedException"></exception>
+            <remarks>If exceptions are raised during callback execution, they are written to the plugin's default log provider</remarks>
+        </member>
+        <member name="T:VNLib.Plugins.Extensions.Loading.LoadingExtensions">
+            <summary>
+            Provides common loading (and unloading when required) extensions for plugins
+            </summary>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.LoadingExtensions.GetPasswords(VNLib.Plugins.PluginBase)">
+            <summary>
+            Gets the plugins ambient <see cref="T:VNLib.Plugins.Essentials.Accounts.PasswordHashing"/> if loaded, or loads it if required. This class will
+            be unloaded when the plugin us unloaded.
+            </summary>
+            <param name="plugin"></param>
+            <returns>The ambient <see cref="T:VNLib.Plugins.Essentials.Accounts.PasswordHashing"/></returns>
+            <exception cref="T:System.OverflowException"></exception>
+            <exception cref="T:System.Collections.Generic.KeyNotFoundException"></exception>
+            <exception cref="T:System.ObjectDisposedException"></exception>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.LoadingExtensions.GetUserManager(VNLib.Plugins.PluginBase)">
+            <summary>
+            Gets or loads the plugin's ambient <see cref="T:VNLib.Plugins.Essentials.Users.UserManager"/>, with the specified user-table name,
+            or the default table name
+            </summary>
+            <param name="plugin"></param>
+            <returns>The ambient <see cref="T:VNLib.Plugins.Essentials.Users.UserManager"/> for the current plugin</returns>
+            <exception cref="T:System.Collections.Generic.KeyNotFoundException"></exception>
+            <exception cref="T:System.ObjectDisposedException"></exception>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.LoadingExtensions.IsDebug(VNLib.Plugins.PluginBase)">
+            <summary>
+            Determintes if the current plugin config has a debug propety set
+            </summary>
+            <param name="plugin"></param>
+            <returns>True if debug mode is enabled, false otherwise</returns>
+            <exception cref="T:System.ObjectDisposedException"></exception>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.LoadingExtensions.ThrowIfUnloaded(VNLib.Plugins.PluginBase)">
+            <summary>
+            Internal exception helper to raise <see cref="T:System.ObjectDisposedException"/> if the plugin has been unlaoded
+            </summary>
+            <param name="plugin"></param>
+            <exception cref="T:System.ObjectDisposedException"></exception>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Routing.RoutingExtensions.Route``1(VNLib.Plugins.PluginBase,System.String)">
+            <summary>
+            Constructs and routes the specific endpoint type for the current plugin
+            </summary>
+            <typeparam name="T">The <see cref="T:VNLib.Plugins.IEndpoint"/> type</typeparam>
+            <param name="plugin"></param>
+            <param name="pluginConfigPathName">The path to the plugin sepcific configuration property</param>
+            <exception cref="T:System.Reflection.TargetInvocationException"></exception>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Routing.RoutingExtensions.Route``1(VNLib.Plugins.PluginBase)">
+            <summary>
+            Constructs and routes the specific endpoint type for the current plugin
+            </summary>
+            <typeparam name="T">The <see cref="T:VNLib.Plugins.IEndpoint"/> type</typeparam>
+            <param name="plugin"></param>
+            <exception cref="T:System.Reflection.TargetInvocationException"></exception>
+        </member>
+        <member name="T:VNLib.Plugins.Extensions.Loading.Sql.SqlDbConnectionLoader">
+            <summary>
+            Provides common basic SQL loading extensions for plugins
+            </summary>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Sql.SqlDbConnectionLoader.GetConnectionFactory(VNLib.Plugins.PluginBase)">
+            <summary>
+            Gets (or loads) the ambient sql connection factory for the current plugin
+            </summary>
+            <param name="plugin"></param>
+            <returns>The ambient <see cref="T:System.Data.Common.DbConnection"/> factory</returns>
+            <exception cref="T:System.Collections.Generic.KeyNotFoundException"></exception>
+            <exception cref="T:System.ObjectDisposedException"></exception>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Loading.Sql.SqlDbConnectionLoader.GetContextOptions(VNLib.Plugins.PluginBase)">
+            <summary>
+            Gets (or loads) the ambient <see cref="T:Microsoft.EntityFrameworkCore.DbContextOptions"/> configured from 
+            the ambient sql factory
+            </summary>
+            <param name="plugin"></param>
+            <returns>The ambient <see cref="T:Microsoft.EntityFrameworkCore.DbContextOptions"/> for the current plugin</returns>
+            <exception cref="T:System.Collections.Generic.KeyNotFoundException"></exception>
+            <exception cref="T:System.ObjectDisposedException"></exception>
+            <remarks>If plugin is in debug mode, writes log data to the default log</remarks>
+        </member>
+    </members>
+</doc>

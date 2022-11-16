@@ -1,0 +1,134 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>VNLib.Plugins.Extensions.Validation</name>
+    </assembly>
+    <members>
+        <member name="T:VNLib.Plugins.Extensions.Validation.ValErrWebMessage">
+            <summary>
+            Extends the <see cref="T:VNLib.Plugins.WebMessage"/> class with provisions for a collection of validations
+            </summary>
+        </member>
+        <member name="P:VNLib.Plugins.Extensions.Validation.ValErrWebMessage.Errors">
+            <summary>
+            A collection of error messages to send to clients
+            </summary>
+        </member>
+        <member name="T:VNLib.Plugins.Extensions.Validation.ValidationExtensions">
+            <summary>
+            Defines extenstion methods for <see cref="T:FluentValidation.IRuleBuilder`2"/>
+            </summary>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Validation.ValidationExtensions.GetErrorsAsCollection(FluentValidation.Results.ValidationResult)">
+            <summary>
+            Gets a collection of Json-serializable validation errors
+            </summary>
+            <param name="result"></param>
+            <returns>A collection of json errors to return to a user</returns>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Validation.ValidationExtensions.PhoneNumber``1(FluentValidation.IRuleBuilder{``0,System.String})">
+            <summary>
+            Tests the the property against <see cref="F:VNLib.Plugins.Extensions.Validation.ValidationExtensions.PhoneRegex"/> 
+            to determine if the string matches the proper phone number form
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="validator"></param>
+            <returns></returns>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Validation.ValidationExtensions.EmptyPhoneNumber``1(FluentValidation.IRuleBuilder{``0,System.String})">
+            <summary>
+            Tests the the property against <see cref="F:VNLib.Plugins.Extensions.Validation.ValidationExtensions.PhoneRegex"/> 
+            to determine if the string matches the proper phone number form, or allows emtpy strings
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="validator"></param>
+            <returns></returns>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Validation.ValidationExtensions.SpecialCharacters``1(FluentValidation.IRuleBuilder{``0,System.String})">
+            <summary>
+            Checks a string against <see cref="!:Statics.SpecialCharacters"/>.
+            If the string is null or empty, it is allowed.
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="builder"></param>
+            <returns></returns>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Validation.ValidationExtensions.IllegalCharacters``1(FluentValidation.IRuleBuilder{``0,System.String})">
+            <summary>
+            Checks a string against <see cref="!:Statics.IllegalChars"/>.
+            If the string is null or empty, it is allowed.
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="builder"></param>
+            <returns></returns>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Validation.ValidationExtensions.Alpha``1(FluentValidation.IRuleBuilder{``0,System.String})">
+            <summary>
+            Makes sure a field contains at least 1 character a-Z
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="builder"></param>
+            <returns></returns>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Validation.ValidationExtensions.AlphaOnly``1(FluentValidation.IRuleBuilder{``0,System.String})">
+            <summary>
+            Determines if all characters are only a-Z (allows whitespace)
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="builder"></param>
+            <returns></returns>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Validation.ValidationExtensions.Numeric``1(FluentValidation.IRuleBuilder{``0,System.String})">
+            <summary>
+            Makes sure a field contains at least 1 numeral
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="builder"></param>
+            <returns></returns>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Validation.ValidationExtensions.NumericOnly``1(FluentValidation.IRuleBuilder{``0,System.String})">
+            <summary>
+            Determines if all characters are only 0-9 (not whitespace is allowed)
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="builder"></param>
+            <returns></returns>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Validation.ValidationExtensions.AlphaNumeric``1(FluentValidation.IRuleBuilder{``0,System.String})">
+            <summary>
+            Makes sure the field contains at least 1 alpha numeric character (whitespace included)
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="builder"></param>
+            <returns></returns>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Validation.ValidationExtensions.AlphaNumericOnly``1(FluentValidation.IRuleBuilder{``0,System.String})">
+            <summary>
+            Determines if all characters are only alpha-numeric (whitespace allowed)
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="builder"></param>
+            <returns></returns>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Validation.ValidationExtensions.Password``1(FluentValidation.IRuleBuilder{``0,System.String})">
+            <summary>
+            Tests the string against the password regular expression to determine if the 
+            value meets the basic password requirements
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="builder"></param>
+            <returns></returns>
+        </member>
+        <member name="M:VNLib.Plugins.Extensions.Validation.ValidationExtensions.Length``1(FluentValidation.IRuleBuilder{``0,System.String},System.Range)">
+            <summary>
+            Defines a length validator on the current rule builder, but only for string properties.
+            Validation will fail if the length of the string is outside of the specified range.
+            The range is inclusive
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="builder"></param>
+            <param name="lengthRange">The length range of the specified string</param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>

@@ -11,7 +11,6 @@ using Microsoft.EntityFrameworkCore;
 
 using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;
-using VNLib.Plugins.Extensions.Loading.Configuration;
 
 namespace VNLib.Plugins.Extensions.Loading.Sql
 {

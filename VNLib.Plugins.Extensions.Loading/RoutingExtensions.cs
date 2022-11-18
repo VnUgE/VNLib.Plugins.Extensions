@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Collections.Generic;
 
 using VNLib.Plugins.Extensions.Loading.Events;
-using VNLib.Plugins.Extensions.Loading.Configuration;
 
 namespace VNLib.Plugins.Extensions.Loading.Routing
 {
@@ -13,7 +12,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
     /// Provides advanced QOL features to plugin loading
     /// </summary>
     public static class RoutingExtensions
-    { 
+    {
         /// <summary>
         /// Constructs and routes the specific endpoint type for the current plugin
         /// </summary>
@@ -41,7 +40,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
                 }
                 else
                 {
-                    ConstructorInfo? constructor = endpointType.GetConstructor(new Type[] { typeof(PluginBase), typeof(Dictionary<string, JsonElement>) });
+                    ConstructorInfo? constructor = endpointType.GetConstructor(new Type[] { typeof(PluginBase), typeof(IReadOnlyDictionary<string, JsonElement>) });
                     //Make sure the constructor exists
                     _ = constructor ?? throw new EntryPointNotFoundException($"No constructor found for {endpointType.Name}");
                     //Get config variables for the endpoint
@@ -76,7 +75,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
             return plugin.Route<T>(configAttr?.ConfigVarName);
         }
 
-        private static void ScheduleIntervals<T>(PluginBase plugin, T endpointInstance, Type epType, IReadOnlyDictionary<string, JsonElement>? endpointLocalConfig) where T: IEndpoint
+        private static void ScheduleIntervals<T>(PluginBase plugin, T endpointInstance, Type epType, IReadOnlyDictionary<string, JsonElement>? endpointLocalConfig) where T : IEndpoint
         {
             List<EventHandle> registered = new();
             try
@@ -124,7 +123,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
             catch
             {
                 //Stop all event handles
-                foreach(EventHandle evh in registered)
+                foreach (EventHandle evh in registered)
                 {
                     evh.Dispose();
                 }

@@ -266,44 +266,32 @@ namespace VNLib.Plugins.Extensions.Data
         ///<inheritdoc/>
         public virtual async Task<ERRNO> GetCollectionAsync(ICollection<T> collection, string specifier, int limit)
         {
+            int previous = collection.Count;
             //Open new db context
             await using TransactionalDbContext ctx = NewContext();
             //Open transaction
             await ctx.OpenTransactionAsync();
             //Get the single template by its id
-            IAsyncEnumerable<T> entires = GetCollectionQueryBuilder(ctx, specifier).Take(limit).AsAsyncEnumerable();
-            int count = 0;
-            //Enumrate the template and add them to collection
-            await foreach (T entry in entires)
-            {
-                collection.Add(entry);
-                count++;
-            }
+            await GetCollectionQueryBuilder(ctx, specifier).Take(limit).Select(static e => e).ForEachAsync(collection.Add);
             //close db and transaction
             await ctx.CommitTransactionAsync();
             //Return the number of elements add to the collection
-            return count;
+            return collection.Count - previous;
         }
         ///<inheritdoc/>
         public virtual async Task<ERRNO> GetCollectionAsync(ICollection<T> collection, int limit, params string[] args)
         {
+            int previous = collection.Count;
             //Open new db context
             await using TransactionalDbContext ctx = NewContext();
             //Open transaction
             await ctx.OpenTransactionAsync();
             //Get the single template by its id
-            IAsyncEnumerable<T> entires = GetCollectionQueryBuilder(ctx, args).Take(limit).AsAsyncEnumerable();
-            int count = 0;
-            //Enumrate the template and add them to collection
-            await foreach (T entry in entires)
-            {
-                collection.Add(entry);
-                count++;
-            }
+            await GetCollectionQueryBuilder(ctx, args).Take(limit).Select(static e => e).ForEachAsync(collection.Add);
             //close db and transaction
             await ctx.CommitTransactionAsync();
             //Return the number of elements add to the collection
-            return count;
+            return collection.Count - previous;
         }
 
         /// <summary>
@@ -440,50 +428,44 @@ namespace VNLib.Plugins.Extensions.Data
         ///<inheritdoc/>
         public virtual async Task<int> GetPageAsync(ICollection<T> collection, int page, int limit)
         {
+            //Store preivous count
+            int previous = collection.Count;
             //Open db connection
             await using TransactionalDbContext ctx = NewContext();
             //Open transaction
             await ctx.OpenTransactionAsync();
             //Get a page offset and a limit for the 
-            IAsyncEnumerable<T> records = ctx.Set<T>()
-                                            .Skip(page * limit)
-                                            .Take(limit)
-                                            .AsAsyncEnumerable();
-            int count = 0;
-            //Enumrate the template and add them to collection
-            await foreach (T record in records)
-            {
-                collection.Add(record);
-                count++;
-            }
+            await ctx.Set<T>()
+                .Skip(page * limit)
+                .Take(limit)
+                .Select(static p => p)
+                .ForEachAsync(collection.Add);
+           
             //close db and transaction
             await ctx.CommitTransactionAsync();
-            //Return the number of elements add to the collection
-            return count;
+            //Return the number of records added
+            return collection.Count - previous;
         }
         ///<inheritdoc/>
         public virtual async Task<int> GetPageAsync(ICollection<T> collection, int page, int limit, params string[] constraints)
         {
+            //Store preivous count
+            int previous = collection.Count;
             //Open new db context
             await using TransactionalDbContext ctx = NewContext();
             //Open transaction
             await ctx.OpenTransactionAsync();
             //Get the single template by its id
-            IAsyncEnumerable<T> entires = GetPageQueryBuilder(ctx, constraints)
-                                            .Skip(page * limit)
-                                            .Take(limit)
-                                            .AsAsyncEnumerable();
-            int count = 0;
-            //Enumrate the template and add them to collection
-            await foreach (T entry in entires)
-            {
-                collection.Add(entry);
-                count++;
-            }
+            await GetPageQueryBuilder(ctx, constraints)
+                .Skip(page * limit)
+                .Take(limit)
+                .Select(static e => e)
+                .ForEachAsync(collection.Add);
+            
             //close db and transaction
             await ctx.CommitTransactionAsync();
-            //Return the number of elements add to the collection
-            return count;
+            //Return the number of records added
+            return collection.Count - previous;
         }
         /// <summary>
         /// Builds a query to get a collection of records based on an variable length array of parameters

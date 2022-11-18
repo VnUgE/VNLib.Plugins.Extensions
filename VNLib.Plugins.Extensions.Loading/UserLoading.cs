@@ -1,11 +1,12 @@
-﻿using System.Text.Json;
+﻿using System;
+using System.Linq;
+using System.Threading;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;
-
 using VNLib.Plugins.Essentials.Users;
-using VNLib.Plugins.Extensions.Loading.Sql;
 
 namespace VNLib.Plugins.Extensions.Loading.Users
 {
@@ -14,8 +15,9 @@ namespace VNLib.Plugins.Extensions.Loading.Users
     /// </summary>
     public static class UserLoading
     {
-        public const string USER_TABLE_KEY = "user_table";
-        public const string USER_CUSTOM_ASSEMBLY = "user_custom_asm";        
+        public const string USER_CUSTOM_ASSEMBLY = "user_custom_asm";
+        public const string DEFAULT_USER_ASM = "VNLib.Plugins.Essentials.Users.dll";
+        public const string ONLOAD_METHOD_NAME = "OnPluginLoading";
 
         private static readonly ConditionalWeakTable<PluginBase, Lazy<IUserManager>> UsersTable = new();
 
@@ -39,43 +41,42 @@ namespace VNLib.Plugins.Extensions.Loading.Users
             //lazy callack
             IUserManager LoadManager()
             {
-                IUserManager man;
-
                 //Try to load a custom user assembly for exporting IUserManager
                 string? customAsm = pbase.PluginConfig.GetPropString(USER_CUSTOM_ASSEMBLY);
                 //See if host config defined the path
                 customAsm ??= pbase.HostConfig.GetPropString(USER_CUSTOM_ASSEMBLY);
+                //Finally default
+                customAsm ??= DEFAULT_USER_ASM;
 
-                if (!string.IsNullOrWhiteSpace(customAsm))
+                //Try to load a custom assembly
+                AssemblyLoader<IUserManager> loader = pbase.LoadAssembly<IUserManager>(customAsm);
+                try
                 {
-                    //Try to load a custom assembly
-                    AssemblyLoader<IUserManager> loader = pbase.LoadAssembly<IUserManager>(customAsm);
-                    try
+                    //Get the runtime type
+                    Type runtimeType = loader.Resource.GetType();
+
+                    //Get the onplugin load method
+                    Action<object>? onLoadMethod = runtimeType.GetMethods()
+                        .Where(static p => p.IsPublic && !p.IsAbstract && ONLOAD_METHOD_NAME.Equals(p.Name))
+                        .Select(p => p.CreateDelegate<Action<object>>(loader.Resource))
+                        .FirstOrDefault();
+
+                    //Call the onplugin load method
+                    onLoadMethod?.Invoke(pbase);
+
+                    if (pbase.IsDebug())
                     {
-                        //Return the loaded instance (may raise exception)
-                        man = loader.Resource;
+                        pbase.Log.Verbose("Loading user manager from assembly {name}", runtimeType.AssemblyQualifiedName);
                     }
-                    catch
-                    {
-                        loader.Dispose();
-                        throw;
-                    }
-                    pbase.Log.Verbose("Loaded custom user managment assembly");
+
+                    //Return the loaded instance (may raise exception)
+                    return loader.Resource;
                 }
-                else
+                catch
                 {
-                    //Default table name to
-                    string? userTableName = "Users";
-                    //Try to get the user-table element from plugin config
-                    if (pbase.PluginConfig.TryGetProperty(USER_TABLE_KEY, out JsonElement userEl))
-                    {
-                        userTableName = userEl.GetString();
-                    }
-                    _ = userTableName ?? throw new KeyNotFoundException($"Missing required key '{USER_TABLE_KEY}' in config");
-                    //Load user-manager
-                    man = new UserManager(pbase.GetConnectionFactory(), userTableName);
+                    loader.Dispose();
+                    throw;
                 }
-                return man;
             }
             return new Lazy<IUserManager>(LoadManager, LazyThreadSafetyMode.PublicationOnly);
         }

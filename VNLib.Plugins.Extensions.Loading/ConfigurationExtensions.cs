@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 using VNLib.Utils.Extensions;
 
-namespace VNLib.Plugins.Extensions.Loading.Configuration
+namespace VNLib.Plugins.Extensions.Loading
 {
     /// <summary>
     /// Specifies a configuration variable name in the plugin's configuration 

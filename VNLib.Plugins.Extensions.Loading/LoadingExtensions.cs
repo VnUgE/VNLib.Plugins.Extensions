@@ -9,8 +9,6 @@ using System.Runtime.CompilerServices;
 using VNLib.Utils;
 using VNLib.Utils.Extensions;
 using VNLib.Plugins.Essentials.Accounts;
-using VNLib.Plugins.Extensions.Loading.Configuration;
-using VNLib.Utils.Logging;
 
 namespace VNLib.Plugins.Extensions.Loading
 {

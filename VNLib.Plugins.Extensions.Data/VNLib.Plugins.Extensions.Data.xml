@@ -1,4 +1,7 @@
 <?xml version="1.0"?>
+<!--
+Copyright (c) 2022 Vaughn Nugent
+-->
 <doc>
     <assembly>
         <name>VNLib.Plugins.Extensions.Data</name>

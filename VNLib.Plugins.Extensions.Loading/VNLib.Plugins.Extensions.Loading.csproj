@@ -4,18 +4,16 @@
     <TargetFramework>net6.0</TargetFramework>
     <Copyright>Copyright © 2022 Vaughn Nugent</Copyright>
     <Authors>Vaughn Nugent</Authors>
-    <Version>1.0.0.1</Version>
-    <Platforms>AnyCPU;x64</Platforms>
+    <Version>1.0.1.1</Version>
+    
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile></DocumentationFile>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <DocumentationFile></DocumentationFile>
+  <PropertyGroup>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <PackageProjectUrl>https://www.vaughnnugent.com/resources</PackageProjectUrl>
+    <AnalysisLevel>latest-all</AnalysisLevel>
   </PropertyGroup>
 
   <ItemGroup>

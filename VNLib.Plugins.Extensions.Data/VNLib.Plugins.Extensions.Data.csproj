@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>VNLib.Plugins.Extensions.Data</RootNamespace>
-    <Platforms>AnyCPU;x64</Platforms>
+    
   </PropertyGroup>
 
   <!-- Resolve nuget dll files and store them in the output dir -->
@@ -13,13 +13,23 @@
     <Authors>Vaughn Nugent</Authors>
     <Description>Data extensions for VNLib Plugins</Description>
     <Copyright>Copyright © 2022 Vaughn Nugent</Copyright>
-    <PackageProjectUrl>www.vaughnnugent.com/resources</PackageProjectUrl>
-    <Version>1.0.0.1</Version>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageProjectUrl>https://www.vaughnnugent.com/resources</PackageProjectUrl>
+    <Version>1.0.1.1</Version>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <DocumentationFile>l</DocumentationFile>
+  
+  <PropertyGroup>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <AnalysisLevel>latest-all</AnalysisLevel>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Deterministic>False</Deterministic>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Deterministic>False</Deterministic>
   </PropertyGroup>
 
   <ItemGroup>

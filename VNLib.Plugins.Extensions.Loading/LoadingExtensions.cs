@@ -26,11 +26,13 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Runtime.CompilerServices;
 
 using VNLib.Utils;
+using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;
 using VNLib.Plugins.Essentials.Accounts;
 
@@ -44,10 +46,9 @@ namespace VNLib.Plugins.Extensions.Loading
         public const string DEBUG_CONFIG_KEY = "debug";
         public const string SECRETS_CONFIG_KEY = "secrets";
         public const string PASSWORD_HASHING_KEY = "passwords";
-    
-
+        
         private static readonly ConditionalWeakTable<PluginBase, Lazy<PasswordHashing>> LazyPasswordTable = new();
-   
+
 
         /// <summary>
         /// Gets the plugins ambient <see cref="PasswordHashing"/> if loaded, or loads it if required. This class will
@@ -174,6 +175,56 @@ namespace VNLib.Plugins.Extensions.Loading
             if (plugin.UnloadToken.IsCancellationRequested)
             {
                 throw new ObjectDisposedException("The plugin has been unloaded");
+            }
+        }
+
+        /// <summary>
+        /// Schedules an asynchronous callback function to run and its results will be observed
+        /// when the operation completes, or when the plugin is unloading
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <param name="asyncTask">The asynchronous operation to observe</param>
+        /// <param name="delayMs">An optional startup delay for the operation</param>
+        /// <returns>A task that completes when the deferred task completes </returns>
+        /// <exception cref="ObjectDisposedException"></exception>
+        public static async Task DeferTask(this PluginBase plugin, Func<Task> asyncTask, int delayMs = 0)
+        {
+            /*
+             * Motivation:
+             * Sometimes during plugin loading, a plugin may want to asynchronously load
+             * data, where the results are not required to be observed during loading, but 
+             * should not be pending after the plugin is unloaded, as the assembly may be 
+             * unloaded and referrences collected by the GC.
+             * 
+             * So we can use the plugin's unload cancellation token to observe the results
+             * of a pending async operation 
+             */
+
+            //Test status
+            plugin.ThrowIfUnloaded();
+
+            //Optional delay
+            await Task.Delay(delayMs);
+
+            //Run on ts
+            Task deferred = Task.Run(asyncTask);
+
+            //Add task to deferred list
+            plugin.DeferredTasks.Add(deferred);
+            try
+            {
+                //Await the task results
+                await deferred;
+            }
+            catch(Exception ex)
+            {
+                //Log errors
+                plugin.Log.Error(ex, "Error occured while observing deferred task");
+            }
+            finally
+            {
+                //Remove task when complete
+                plugin.DeferredTasks.Remove(deferred);
             }
         }
     }

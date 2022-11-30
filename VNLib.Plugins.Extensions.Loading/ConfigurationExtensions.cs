@@ -37,12 +37,12 @@ namespace VNLib.Plugins.Extensions.Loading
     /// containing data specific to the type
     /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
-    public class ConfigurationNameAttribute : Attribute
+    public sealed class ConfigurationNameAttribute : Attribute
     {
         /// <summary>
         /// 
         /// </summary>
-        public readonly string ConfigVarName;
+        public string ConfigVarName { get; }
 
         /// <summary>
         /// Initializes a new <see cref="ConfigurationNameAttribute"/>
@@ -167,7 +167,7 @@ namespace VNLib.Plugins.Extensions.Loading
             Type type = typeof(T);
             ConfigurationNameAttribute? configName = type.GetCustomAttribute<ConfigurationNameAttribute>();
             //See if the plugin contains a configuration varables
-            return configName != null ? plugin.PluginConfig.TryGetProperty(configName.ConfigVarName, out _) : false;
+            return configName != null && plugin.PluginConfig.TryGetProperty(configName.ConfigVarName, out _);
         }
 
         /// <summary>

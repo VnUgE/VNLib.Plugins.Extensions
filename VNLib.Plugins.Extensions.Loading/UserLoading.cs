@@ -81,7 +81,7 @@ namespace VNLib.Plugins.Extensions.Loading.Users
 
                     //Get the onplugin load method
                     Action<object>? onLoadMethod = runtimeType.GetMethods()
-                        .Where(static p => p.IsPublic && !p.IsAbstract && ONLOAD_METHOD_NAME.Equals(p.Name))
+                        .Where(static p => p.IsPublic && !p.IsAbstract && ONLOAD_METHOD_NAME.Equals(p.Name, StringComparison.Ordinal))
                         .Select(p => p.CreateDelegate<Action<object>>(loader.Resource))
                         .FirstOrDefault();
 

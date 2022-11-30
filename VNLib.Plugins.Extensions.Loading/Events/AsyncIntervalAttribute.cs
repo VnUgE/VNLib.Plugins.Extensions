@@ -31,7 +31,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
     /// the plugin is loaded, and stops when unloaded
     /// </summary>
     [AttributeUsage(AttributeTargets.Method)]
-    public class AsyncIntervalAttribute : Attribute
+    public sealed class AsyncIntervalAttribute : Attribute
     {
         internal readonly TimeSpan Interval;
 

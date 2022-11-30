@@ -30,7 +30,7 @@ namespace VNLib.Plugins.Extensions.Validation
     /// <summary>
     /// Extends the <see cref="WebMessage"/> class with provisions for a collection of validations
     /// </summary>
-    public class ValErrWebMessage:WebMessage
+    public class ValErrWebMessage : WebMessage
     {
         /// <summary>
         /// A collection of error messages to send to clients

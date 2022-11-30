@@ -31,7 +31,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
     /// the plugin is loaded, and stops when unloaded
     /// </summary>
     [AttributeUsage(AttributeTargets.Method)]
-    public class ConfigurableAsyncIntervalAttribute : Attribute
+    public sealed class ConfigurableAsyncIntervalAttribute : Attribute
     {
         internal readonly string IntervalPropertyName;
         internal readonly IntervalResultionType Resolution;

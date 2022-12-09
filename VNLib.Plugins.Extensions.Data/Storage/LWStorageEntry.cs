@@ -3,9 +3,9 @@
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
-* File: LWStorageRemoveFailedException.cs 
+* File: LwStorageEntry.cs 
 *
-* LWStorageRemoveFailedException.cs is part of VNLib.Plugins.Extensions.Data which is part of the larger 
+* LwStorageEntry.cs is part of VNLib.Plugins.Extensions.Data which is part of the larger 
 * VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Data is free software: you can redistribute it and/or modify 
@@ -23,22 +23,22 @@
 */
 
 using System;
-using VNLib.Utils.Resources;
+
+using VNLib.Plugins.Extensions.Data.Abstractions;
 
 namespace VNLib.Plugins.Extensions.Data.Storage
 {
-    /// <summary>
-    /// The exception raised when an open <see cref="LWStorageDescriptor"/> removal operation fails. The 
-    /// <see cref="Exception.InnerException"/> property may contain any nested exceptions that caused the removal to fail.
-    /// </summary>
-    public class LWStorageRemoveFailedException : ResourceDeleteFailedException
+
+    internal sealed class LWStorageEntry : DbModelBase, IUserEntity
     {
-        internal LWStorageRemoveFailedException(string error, Exception inner) : base(error, inner) { }
+        public override string Id { get; set; }
+       
+        public override DateTime Created { get; set; }
+        
+        public override DateTime LastModified { get; set; }
+        
+        public string? UserId { get; set; }
 
-        public LWStorageRemoveFailedException()
-        {}
-
-        public LWStorageRemoveFailedException(string message) : base(message)
-        {}
+        public byte[]? Data { get; set; }
     }
 }

@@ -26,40 +26,15 @@ using System;
 
 namespace VNLib.Plugins.Extensions.Data.SQL
 {
-    /// <summary>
-    /// Property attribute that specifies the property represents an SQL column in the database
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Property)]
-    public class SqlColumnName : Attribute
-    {
-        public bool Nullable { get; }
-        public bool Unique { get; }
-        public bool PrimaryKey { get; }
-        public string ColumnName { get; init; }
-        /// <summary>
-        /// Specifies the property is an SQL column name
-        /// </summary>
-        /// <param name="columnName">Name of the SQL column</param>
-        /// <param name="primaryKey"></param>
-        /// <param name="nullable"></param>
-        /// <param name="unique"></param>
-        public SqlColumnName(string columnName, bool primaryKey = false, bool nullable = true, bool unique = false)
-        {
-            this.ColumnName = columnName;
-            this.PrimaryKey = primaryKey;
-            this.Nullable = nullable;
-            this.Unique = unique;
-        }
-    }
 
     /// <summary>
     /// Allows a type to declare itself as a <see cref="System.Data.DataTable"/> with the specified name
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple =false, Inherited = true)]
-    public class SqlTableName : Attribute
+    public sealed class SqlTableNameAttribute : Attribute
     {
         public string TableName { get; }
 
-        public SqlTableName(string tableName) => TableName = tableName;
+        public SqlTableNameAttribute(string tableName) => TableName = tableName;
     }
 }

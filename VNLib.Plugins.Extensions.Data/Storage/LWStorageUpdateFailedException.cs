@@ -23,7 +23,7 @@
 */
 
 using System;
-using VNLib.Utils;
+using VNLib.Utils.Resources;
 
 namespace VNLib.Plugins.Extensions.Data.Storage
 {
@@ -34,5 +34,10 @@ namespace VNLib.Plugins.Extensions.Data.Storage
     public class LWStorageUpdateFailedException : ResourceUpdateFailedException
     {
         internal LWStorageUpdateFailedException(string error, Exception inner) : base(error, inner) { }
+
+        public LWStorageUpdateFailedException()
+        {}
+        public LWStorageUpdateFailedException(string message) : base(message)
+        {}
     }
 }

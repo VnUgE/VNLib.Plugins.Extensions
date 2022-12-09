@@ -26,13 +26,15 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Collections;
+using System.IO.Compression;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 using VNLib.Utils;
 using VNLib.Utils.Async;
 using VNLib.Utils.Extensions;
-using System.Text.Json.Serialization;
+using VNLib.Utils.Memory;
 
 namespace VNLib.Plugins.Extensions.Data.Storage
 {
@@ -43,7 +45,7 @@ namespace VNLib.Plugins.Extensions.Data.Storage
     public sealed class LWStorageDescriptor : AsyncUpdatableResource, IObjectStorage, IEnumerable<KeyValuePair<string, string>>, IIndexable<string, string>
     {
 
-        public static readonly JsonSerializerOptions SerializerOptions = new()
+        private static readonly JsonSerializerOptions SerializerOptions = new()
         {
             DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
             NumberHandling = JsonNumberHandling.Strict,
@@ -54,25 +56,28 @@ namespace VNLib.Plugins.Extensions.Data.Storage
             DefaultBufferSize = Environment.SystemPageSize,
         };
 
-        private Dictionary<string, string> StringStorage;
+        
+        internal LWStorageEntry Entry { get; }
+        
+        private readonly Lazy<Dictionary<string, string>> StringStorage;
 
         /// <summary>
         /// The currnt descriptor's identifier string within its backing table. Usually the primary key.
         /// </summary>
-        public string DescriptorID { get; init; }
+        public string DescriptorID => Entry.Id;
         /// <summary>
         /// The identifier of the user for which this descriptor belongs to
         /// </summary>
-        public string UserID { get; init; }
+        public string UserID => Entry.UserId!;
         /// <summary>
         /// The <see cref="DateTime"/> when the descriptor was created
         /// </summary>
-        public DateTimeOffset Created { get; init; }
+        public DateTimeOffset Created => Entry.Created;
         /// <summary>
         /// The last time this descriptor was updated
         /// </summary>
-        public DateTimeOffset LastModified { get; init; }
-        
+        public DateTimeOffset LastModified => Entry.LastModified;
+
         ///<inheritdoc/>
         protected override AsyncUpdateCallback UpdateCb { get; }
         ///<inheritdoc/>
@@ -80,23 +85,31 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         ///<inheritdoc/>
         protected override JsonSerializerOptions JSO => SerializerOptions;
 
-        internal LWStorageDescriptor(LWStorageManager manager)
+        internal LWStorageDescriptor(LWStorageManager manager, LWStorageEntry entry)
         {
+            Entry = entry;
             UpdateCb = manager.UpdateDescriptorAsync;
             DeleteCb = manager.RemoveDescriptorAsync;
+            StringStorage = new(OnStringStoreLoad);
         }
 
-        internal async ValueTask PrepareAsync(Stream data)
+        internal Dictionary<string, string> OnStringStoreLoad()
         {
-            try
+            if(Entry.Data == null || Entry.Data.Length == 0)
             {
-                //Deserialze async
-                StringStorage = await VnEncoding.JSONDeserializeFromBinaryAsync<Dictionary<string,string>>(data, SerializerOptions);
+                return new(StringComparer.OrdinalIgnoreCase);
             }
-            //Ignore a json exceton, a new store will be generated
-            catch (JsonException)
-            { }
-            StringStorage ??= new();
+            else
+            {
+                //Calc and alloc decode buffer
+                int bufferSize = (int)(Entry.Data.Length * 1.75);
+                using UnsafeMemoryHandle<byte> decodeBuffer = Memory.UnsafeAlloc<byte>(bufferSize);
+
+                //Decode and deserialize the data
+                return BrotliDecoder.TryDecompress(Entry.Data, decodeBuffer, out int written)
+                    ? JsonSerializer.Deserialize<Dictionary<string, string>>(Entry.Data, SerializerOptions) ?? new(StringComparer.OrdinalIgnoreCase)
+                    : throw new InvalidDataException("Failed to decompress data");
+            }
         }
 
         /// <inheritdoc/>
@@ -106,8 +119,9 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         /// <exception cref="ObjectDisposedException"></exception>
         public T? GetObject<T>(string key)
         {
+            Check();
             //De-serialize and return object
-            return StringStorage.TryGetValue(key, out string? val) ? val.AsJsonObject<T>(SerializerOptions) : default;
+            return StringStorage.Value.TryGetValue(key, out string? val) ? val.AsJsonObject<T>(SerializerOptions) : default;
         }
         
         /// <inheritdoc/>
@@ -140,7 +154,7 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         public string GetStringValue(string key)
         {
             Check();
-            return StringStorage.TryGetValue(key, out string? val) ? val : string.Empty;
+            return StringStorage.Value.TryGetValue(key, out string? val) ? val : string.Empty;
         }
 
         /// <summary>
@@ -161,13 +175,13 @@ namespace VNLib.Plugins.Extensions.Data.Storage
             if (string.IsNullOrWhiteSpace(value))
             {
                 //If the value is null and properies exist, remove the entry
-                StringStorage.Remove(key);
+                StringStorage.Value.Remove(key);
                 Modified |= true;
             }
             else
             {
                 //Set the value
-                StringStorage[key] = value;
+                StringStorage.Value[key] = value;
                 //Set modified flag
                 Modified |= true;
             }
@@ -195,10 +209,22 @@ namespace VNLib.Plugins.Extensions.Data.Storage
             Check();
             return Modified ? (new(FlushPendingChangesAsync())) : ValueTask.CompletedTask;
         }
+
         ///<inheritdoc/>
-        public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => StringStorage.GetEnumerator();
+        public override async ValueTask ReleaseAsync()
+        {
+            await base.ReleaseAsync();
+            //Cleanup dict on exit
+            if (StringStorage.IsValueCreated)
+            {
+                StringStorage.Value.Clear();
+            }
+        }
+
+        ///<inheritdoc/>
+        public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => StringStorage.Value.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         ///<inheritdoc/>
-        protected override object GetResource() => StringStorage;
+        protected override object GetResource() => StringStorage.Value;
     }
 }

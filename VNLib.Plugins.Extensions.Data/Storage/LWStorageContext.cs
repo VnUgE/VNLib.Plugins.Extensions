@@ -3,9 +3,9 @@
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
-* File: LWStorageRemoveFailedException.cs 
+* File: LWStorageContext.cs 
 *
-* LWStorageRemoveFailedException.cs is part of VNLib.Plugins.Extensions.Data which is part of the larger 
+* LWStorageContext.cs is part of VNLib.Plugins.Extensions.Data which is part of the larger 
 * VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Data is free software: you can redistribute it and/or modify 
@@ -22,23 +22,27 @@
 * along with VNLib.Plugins.Extensions.Data. If not, see http://www.gnu.org/licenses/.
 */
 
-using System;
-using VNLib.Utils.Resources;
+using Microsoft.EntityFrameworkCore;
 
 namespace VNLib.Plugins.Extensions.Data.Storage
 {
-    /// <summary>
-    /// The exception raised when an open <see cref="LWStorageDescriptor"/> removal operation fails. The 
-    /// <see cref="Exception.InnerException"/> property may contain any nested exceptions that caused the removal to fail.
-    /// </summary>
-    public class LWStorageRemoveFailedException : ResourceDeleteFailedException
+#nullable disable
+    internal sealed class LWStorageContext : TransactionalDbContext
     {
-        internal LWStorageRemoveFailedException(string error, Exception inner) : base(error, inner) { }
+        private readonly string TableName;
+        public DbSet<LWStorageEntry> Descriptors { get; set; }
 
-        public LWStorageRemoveFailedException()
-        {}
+        public LWStorageContext(DbContextOptions options, string tableName)
+            :base(options)
+        {
+            TableName = tableName;
+        }
 
-        public LWStorageRemoveFailedException(string message) : base(message)
-        {}
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            //Set table name
+            modelBuilder.Entity<LWStorageEntry>()
+                .ToTable(TableName);
+        }
     }
 }

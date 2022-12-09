@@ -27,6 +27,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 using VNLib.Plugins.Extensions.Loading.Events;
 
@@ -37,6 +38,8 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
     /// </summary>
     public static class RoutingExtensions
     {
+        private static readonly ConditionalWeakTable<IEndpoint, PluginBase?> _pluginRefs = new();
+
         /// <summary>
         /// Constructs and routes the specific endpoint type for the current plugin
         /// </summary>
@@ -60,6 +63,10 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
                     ScheduleIntervals(plugin, endpoint, endpointType, null);
                     //Route the endpoint
                     plugin.Route(endpoint);
+
+                    //Store ref to plugin for endpoint
+                    _pluginRefs.Add(endpoint, plugin);
+
                     return endpoint;
                 }
                 else
@@ -75,6 +82,10 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
                     ScheduleIntervals(plugin, endpoint, endpointType, conf);
                     //Route the endpoint
                     plugin.Route(endpoint);
+
+                    //Store ref to plugin for endpoint
+                    _pluginRefs.Add(endpoint, plugin);
+
                     return endpoint;
                 }
             }
@@ -97,6 +108,18 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
             ConfigurationNameAttribute? configAttr = endpointType.GetCustomAttribute<ConfigurationNameAttribute>();
             //Route using attribute
             return plugin.Route<T>(configAttr?.ConfigVarName);
+        }
+
+        /// <summary>
+        /// Gets the plugin that loaded the current endpoint
+        /// </summary>
+        /// <param name="ep"></param>
+        /// <returns>The plugin that loaded the current endpoint</returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        public static PluginBase GetPlugin(this IEndpoint ep)
+        {
+            _ = _pluginRefs.TryGetValue(ep, out PluginBase? pBase);
+            return pBase ?? throw new InvalidOperationException("Endpoint was not dynamically routed");
         }
 
         private static void ScheduleIntervals<T>(PluginBase plugin, T endpointInstance, Type epType, IReadOnlyDictionary<string, JsonElement>? endpointLocalConfig) where T : IEndpoint

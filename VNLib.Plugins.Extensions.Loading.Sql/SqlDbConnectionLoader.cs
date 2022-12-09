@@ -66,16 +66,10 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
 
         private static Func<DbConnection> FactoryLoader(PluginBase plugin)
         {
-            IReadOnlyDictionary<string, JsonElement>? sqlConf = plugin.TryGetConfig(SQL_CONFIG_KEY);
-            
-            if(sqlConf == null)
-            {
-                throw new KeyNotFoundException($"{SQL_CONFIG_KEY} configuration missing in configuration");
-            }
+            IReadOnlyDictionary<string, JsonElement> sqlConf = plugin.GetConfig(SQL_CONFIG_KEY);
             
             //Get the db-type
-            string? type = sqlConf.GetPropString("db_type");
-            string? password = plugin.TryGetSecretAsync(DB_PASSWORD_KEY).Result;
+            string? type = sqlConf.GetPropString("db_type");            
 
             if ("sqlite".Equals(type, StringComparison.OrdinalIgnoreCase))
             {
@@ -90,12 +84,14 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
             }
             else if("mysql".Equals(type, StringComparison.OrdinalIgnoreCase))
             {
+                using SecretResult? password = plugin.TryGetSecretAsync(DB_PASSWORD_KEY).Result;
+
                 DbConnectionStringBuilder sqlBuilder = new MySqlConnectionStringBuilder()
                 {
                     Server = sqlConf["hostname"].GetString(),
                     Database = sqlConf["database"].GetString(),
                     UserID = sqlConf["username"].GetString(),
-                    Password = password,
+                    Password = password?.Result.ToString(),
                     Pooling = true,
                     LoadBalance = MySqlLoadBalance.LeastConnections,
                     MinimumPoolSize = sqlConf["min_pool_size"].GetUInt32()
@@ -108,12 +104,14 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
             //Default to mssql
             else
             {
+                using SecretResult? password = plugin.TryGetSecretAsync(DB_PASSWORD_KEY).Result;
+                
                 //Use connection builder
                 DbConnectionStringBuilder sqlBuilder = new SqlConnectionStringBuilder()
                 {
                     DataSource = sqlConf["hostname"].GetString(),
                     UserID = sqlConf["username"].GetString(),
-                    Password = password,
+                    Password = password?.Result.ToString(),
                     InitialCatalog = sqlConf["catalog"].GetString(),
                     IntegratedSecurity = sqlConf["ms_security"].GetBoolean(),
                     Pooling = true,
@@ -144,7 +142,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         private static DbContextOptions GetDbOptionsLoader(PluginBase plugin)
         {
             //Get a db connection object
-            DbConnection connection = plugin.GetConnectionFactory().Invoke();
+            using DbConnection connection = plugin.GetConnectionFactory().Invoke();
             DbContextOptionsBuilder builder = new();
             
             //Determine connection type

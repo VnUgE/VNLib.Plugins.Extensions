@@ -29,6 +29,7 @@ using System.Threading.Tasks;
 using VNLib.Utils;
 using VNLib.Utils.Extensions;
 using VNLib.Utils.Logging;
+using VNLib.Utils.Resources;
 
 namespace VNLib.Plugins.Extensions.Loading.Events
 {

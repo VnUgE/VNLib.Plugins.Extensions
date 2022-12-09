@@ -72,15 +72,15 @@ namespace VNLib.Plugins.Extensions.Loading
             {
                 PasswordHashing Passwords;
                 //Get the global password system secret (pepper)
-                string pepperEl = plugin.TryGetSecretAsync(PASSWORD_HASHING_KEY).Result ?? throw new KeyNotFoundException($"Missing required key '{PASSWORD_HASHING_KEY}' in secrets");
-                
-                byte[] pepper = Convert.FromBase64String(pepperEl);
-                
-                //wipe the pepper string
-                Utils.Memory.Memory.UnsafeZeroMemory<char>(pepperEl);
+                using SecretResult pepperEl = plugin.TryGetSecretAsync(PASSWORD_HASHING_KEY).Result ?? throw new KeyNotFoundException($"Missing required key '{PASSWORD_HASHING_KEY}' in secrets");
+
+                byte[] pepper = pepperEl.GetFromBase64();              
 
                 ERRNO cb(Span<byte> buffer)
                 {
+                    //No longer valid peper if plugin is unloaded as its set to zero, so we need to protect it
+                    plugin.ThrowIfUnloaded();
+                    
                     pepper.CopyTo(buffer);
                     return pepper.Length;
                 }
@@ -210,7 +210,7 @@ namespace VNLib.Plugins.Extensions.Loading
             Task deferred = Task.Run(asyncTask);
 
             //Add task to deferred list
-            plugin.DeferredTasks.Add(deferred);
+            plugin.ObserveTask(deferred);
             try
             {
                 //Await the task results
@@ -224,7 +224,7 @@ namespace VNLib.Plugins.Extensions.Loading
             finally
             {
                 //Remove task when complete
-                plugin.DeferredTasks.Remove(deferred);
+                plugin.RemoveObservedTask(deferred);
             }
         }
     }

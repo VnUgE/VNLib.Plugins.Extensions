@@ -192,7 +192,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 ClientId = s3conf.GetPropString("access_key"),
                 ServerAddress = s3conf.GetPropString("server_address"),
                 UseSsl = s3conf.TryGetValue("use_ssl", out JsonElement el) && el.GetBoolean(),
-                ClientSecret = plugin.TryGetSecretAsync(S3_SECRET_KEY).Result,
+                ClientSecret = plugin.TryGetSecretAsync(S3_SECRET_KEY),
                 Region = s3conf.GetPropString("region"),
             };
         }

@@ -44,13 +44,8 @@ namespace VNLib.Plugins.Extensions.Data.SQL
         /*
          * Object rental for propery dictionaries used for custom result objects
          */
-        private static readonly ObjectRental<Dictionary<string, PropertyInfo>> DictStore;
-        
-        static DbExtensions()
-        {
-            //Setup dict store
-            DictStore = ObjectRental.Create<Dictionary<string, PropertyInfo>>(null, static dict => dict.Clear(), 20);
-        }
+        private static ObjectRental<Dictionary<string, PropertyInfo>> DictStore { get; } = ObjectRental.Create<Dictionary<string, PropertyInfo>>(null, static dict => dict.Clear(), 20);
+      
 
         /// <summary>
         /// Creates a new <see cref="DbParameter"/> configured for <see cref="ParameterDirection.Input"/> with the specified value
@@ -225,7 +220,7 @@ namespace VNLib.Plugins.Extensions.Data.SQL
             foreach (PropertyInfo prop in objectType.GetProperties())
             {
                 //try to get the column name attribute of the propery
-                SqlColumnName colAtt = prop.GetCustomAttribute<SqlColumnName>(true);
+                SqlColumnNameAttribute? colAtt = prop.GetCustomAttribute<SqlColumnNameAttribute>(true);
                 //Attribute is valid and coumn name is not empty
                 if (!string.IsNullOrWhiteSpace(colAtt?.ColumnName))
                 {
@@ -245,7 +240,7 @@ namespace VNLib.Plugins.Extensions.Data.SQL
                 foreach (DbColumn col in columns)
                 {
                     //Get the propery if its specified by its column-name attribute
-                    if (avialbleProps.TryGetValue(col.ColumnName, out PropertyInfo prop))
+                    if (avialbleProps.TryGetValue(col.ColumnName, out PropertyInfo? prop))
                     {
                         //make sure the column has a value
                         if (col.ColumnOrdinal.HasValue)
@@ -288,7 +283,7 @@ namespace VNLib.Plugins.Extensions.Data.SQL
             foreach (PropertyInfo prop in objectType.GetProperties())
             {
                 //try to get the column name attribute of the propery
-                SqlColumnName colAtt = prop.GetCustomAttribute<SqlColumnName>(true);
+                SqlColumnNameAttribute? colAtt = prop.GetCustomAttribute<SqlColumnNameAttribute>(true);
                 //Attribute is valid and coumn name is not empty
                 if (!string.IsNullOrWhiteSpace(colAtt?.ColumnName))
                 {
@@ -308,7 +303,7 @@ namespace VNLib.Plugins.Extensions.Data.SQL
                 foreach (DbColumn col in columns)
                 {
                     //Get the propery if its specified by its column-name attribute
-                    if (avialbleProps.TryGetValue(col.ColumnName, out PropertyInfo prop))
+                    if (avialbleProps.TryGetValue(col.ColumnName, out PropertyInfo? prop))
                     {
                         //make sure the column has a value
                         if (col.ColumnOrdinal.HasValue)
@@ -335,7 +330,7 @@ namespace VNLib.Plugins.Extensions.Data.SQL
         /// <typeparam name="T"></typeparam>
         /// <param name="reader"></param>
         /// <returns>The created object, or default if no rows are available</returns>
-        public static T GetFirstObject<T>(this DbDataReader reader) where T : new()
+        public static T? GetFirstObject<T>(this DbDataReader reader) where T : new()
         {
             //make sure its worth collecting object meta
             if (!reader.HasRows)
@@ -355,7 +350,7 @@ namespace VNLib.Plugins.Extensions.Data.SQL
                 foreach (PropertyInfo prop in objectType.GetProperties())
                 {
                     //try to get the column name attribute of the propery
-                    SqlColumnName colAtt = prop.GetCustomAttribute<SqlColumnName>(true);
+                    SqlColumnNameAttribute? colAtt = prop.GetCustomAttribute<SqlColumnNameAttribute>(true);
                     //Attribute is valid and coumn name is not empty
                     if (colAtt != null && !string.IsNullOrWhiteSpace(colAtt.ColumnName))
                     {
@@ -369,7 +364,7 @@ namespace VNLib.Plugins.Extensions.Data.SQL
                 foreach (DbColumn col in columns)
                 {
                     //Get the propery if its specified by its column-name attribute
-                    if (availbleProps.TryGetValue(col.ColumnName, out PropertyInfo prop) && col.ColumnOrdinal.HasValue)
+                    if (availbleProps.TryGetValue(col.ColumnName, out PropertyInfo? prop) && col.ColumnOrdinal.HasValue)
                     {
                         //Get the object
                         object val = reader.GetValue(col.ColumnOrdinal.Value);
@@ -390,7 +385,7 @@ namespace VNLib.Plugins.Extensions.Data.SQL
         /// <typeparam name="T"></typeparam>
         /// <param name="reader"></param>
         /// <returns>The created object, or default if no rows are available</returns>
-        public static async Task<T> GetFirstObjectAsync<T>(this DbDataReader reader) where T : new()
+        public static async Task<T?> GetFirstObjectAsync<T>(this DbDataReader reader) where T : new()
         {
             //Read
             if (await reader.ReadAsync())
@@ -405,7 +400,7 @@ namespace VNLib.Plugins.Extensions.Data.SQL
                 foreach (PropertyInfo prop in objectType.GetProperties())
                 {
                     //try to get the column name attribute of the propery
-                    SqlColumnName colAtt = prop.GetCustomAttribute<SqlColumnName>(true);
+                    SqlColumnNameAttribute? colAtt = prop.GetCustomAttribute<SqlColumnNameAttribute>(true);
                     //Attribute is valid and coumn name is not empty
                     if (colAtt != null && !string.IsNullOrWhiteSpace(colAtt.ColumnName))
                     {
@@ -419,7 +414,7 @@ namespace VNLib.Plugins.Extensions.Data.SQL
                 foreach (DbColumn col in columns)
                 {
                     //Get the propery if its specified by its column-name attribute
-                    if (availbleProps.TryGetValue(col.ColumnName, out PropertyInfo prop) && col.ColumnOrdinal.HasValue)
+                    if (availbleProps.TryGetValue(col.ColumnName, out PropertyInfo? prop) && col.ColumnOrdinal.HasValue)
                     {
                         //Get the object
                         object val = reader.GetValue(col.ColumnOrdinal.Value);
@@ -436,11 +431,11 @@ namespace VNLib.Plugins.Extensions.Data.SQL
         }
         /// <summary>
         /// Executes a nonquery operation with the specified command using the object properties set with the 
-        /// <see cref="SqlVariable"/> attributes
+        /// <see cref="SqlVariableAttribute"/> attributes
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="cmd"></param>
-        /// <param name="obj">The object containing the <see cref="SqlVariable"/> properties to write to command variables</param>
+        /// <param name="obj">The object containing the <see cref="SqlVariableAttribute"/> properties to write to command variables</param>
         /// <returns>The number of rows affected</returns>
         /// <exception cref="TypeLoadException"></exception>
         /// <exception cref="ArgumentException"></exception>
@@ -460,7 +455,7 @@ namespace VNLib.Plugins.Extensions.Data.SQL
             foreach (PropertyInfo prop in objtype.GetProperties())
             {
                 //try to get the variable attribute of the propery
-                SqlVariable varprops = prop.GetCustomAttribute<SqlVariable>(true);
+                SqlVariableAttribute varprops = prop.GetCustomAttribute<SqlVariableAttribute>(true);
                 //This property is an sql variable, so lets add it
                 if (varprops == null)
                 {
@@ -470,7 +465,7 @@ namespace VNLib.Plugins.Extensions.Data.SQL
                 if (cmd.CommandType != CommandType.Text || cmd.CommandText.Contains(varprops.VariableName))
                 {
                     //Add the parameter to the command list
-                    cmd.AddParameter(varprops.VariableName, prop.GetValue(obj), varprops.DataType, varprops.Size, varprops.Nullable).Direction = varprops.Direction;
+                    cmd.AddParameter(varprops.VariableName, prop.GetValue(obj), varprops.DataType, varprops.Size, varprops.IsNullable).Direction = varprops.Direction;
                 }
             }
             //Prepare the sql statement
@@ -504,7 +499,7 @@ namespace VNLib.Plugins.Extensions.Data.SQL
             foreach (PropertyInfo prop in objtype.GetProperties())
             {
                 //try to get the variable attribute of the propery
-                SqlVariable varprops = prop.GetCustomAttribute<SqlVariable>(true);
+                SqlVariableAttribute? varprops = prop.GetCustomAttribute<SqlVariableAttribute>(true);
                 //This property is an sql variable, so lets add it
                 if (varprops == null)
                 {
@@ -514,7 +509,7 @@ namespace VNLib.Plugins.Extensions.Data.SQL
                 if (cmd.CommandType != CommandType.Text || cmd.CommandText.Contains(varprops.VariableName))
                 {
                     //Add the parameter to the command list
-                    cmd.AddParameter(varprops.VariableName, prop.GetValue(obj), varprops.DataType, varprops.Size, varprops.Nullable).Direction = varprops.Direction;
+                    cmd.AddParameter(varprops.VariableName, prop.GetValue(obj), varprops.DataType, varprops.Size, varprops.IsNullable).Direction = varprops.Direction;
                 }
             }
             //Prepare the sql statement

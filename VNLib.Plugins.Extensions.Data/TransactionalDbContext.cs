@@ -25,12 +25,13 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace VNLib.Plugins.Extensions.Data
 {
-    public abstract class TransactionalDbContext : DbContext, IAsyncDisposable, IDisposable
+    public abstract class TransactionalDbContext : DbContext, IAsyncDisposable
     {
         /// <summary>
         /// <inheritdoc/>
@@ -47,13 +48,28 @@ namespace VNLib.Plugins.Extensions.Data
         /// The transaction that was opened on the current context
         /// </summary>
         public IDbContextTransaction? Transaction { get; set; }
+
+
+#pragma warning disable CA1816 // Dispose methods should call SuppressFinalize, ignore because base.Dispose() is called
         ///<inheritdoc/>
-        public override void Dispose()
+        public sealed override void Dispose()
         {
             //dispose the transaction
-            this.Transaction?.Dispose();
+            Transaction?.Dispose();
             base.Dispose();
         }
+        
+        ///<inheritdoc/>
+        public override async ValueTask DisposeAsync()
+        {
+            //If transaction has been created, dispose the transaction
+            if (Transaction != null)
+            {
+                await Transaction.DisposeAsync();
+            }
+            await base.DisposeAsync();
+        }
+#pragma warning restore CA1816 // Dispose methods should call SuppressFinalize
 
         /// <summary>
         /// Opens a single transaction on the current context. If a transaction is already open, 
@@ -78,16 +94,6 @@ namespace VNLib.Plugins.Extensions.Data
         {
             return Transaction != null ? Transaction.RollbackAsync(token) : Task.CompletedTask;
         }
-        ///<inheritdoc/>
-        public override async ValueTask DisposeAsync()
-        {
-            //If transaction has been created, dispose the transaction
-            if(this.Transaction != null)
-            {
-                await this.Transaction.DisposeAsync();
-            }
-            await base.DisposeAsync();
-            GC.SuppressFinalize(this);
-        }
+     
     }
 }

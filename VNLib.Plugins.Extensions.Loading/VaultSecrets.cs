@@ -39,11 +39,15 @@ using VaultSharp.V1.AuthMethods.Token;
 using VaultSharp.V1.AuthMethods.AppRole;
 using VaultSharp.V1.SecretsEngines.PKI;
 
+using VNLib.Utils;
+using VNLib.Utils.Memory;
 using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;
+using VNLib.Hashing.IdentityUtility;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
+
     /// <summary>
     /// Adds loading extensions for secure/centralized configuration secrets
     /// </summary>
@@ -76,19 +80,19 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The element from the configuration file with the given name, or null if the configuration or property does not exist</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
-        public static Task<string?> TryGetSecretAsync(this PluginBase plugin, string secretName)
+        public static Task<SecretResult?> TryGetSecretAsync(this PluginBase plugin, string secretName)
         {
             //Get the secret from the config file raw
             string? rawSecret = TryGetSecretInternal(plugin, secretName);
             if (rawSecret == null)
             {
-                return Task.FromResult<string?>(null);
+                return Task.FromResult<SecretResult?>(null);
             }
 
             //Secret is a vault path, or return the raw value
             if (!rawSecret.StartsWith(VAULT_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
             {
-                return Task.FromResult<string?>(rawSecret);
+                return Task.FromResult<SecretResult?>(new(rawSecret.AsSpan()));
             }
             return GetSecretFromVaultAsync(plugin, rawSecret);
         }
@@ -102,7 +106,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="UriFormatException"></exception>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
-        public static Task<string?> GetSecretFromVaultAsync(this PluginBase plugin, ReadOnlySpan<char> vaultPath)
+        public static Task<SecretResult?> GetSecretFromVaultAsync(this PluginBase plugin, ReadOnlySpan<char> vaultPath)
         {
             //print the path for debug
             if (plugin.IsDebug())
@@ -128,7 +132,7 @@ namespace VNLib.Plugins.Extensions.Loading
             string mount = path[..lastSep].ToString();
             string secret = path[(lastSep + 1)..].ToString();
 
-            async Task<string?> execute()
+            async Task<SecretResult?> execute()
             {
                 //Try load client
                 IVaultClient? client = _vaults.GetValue(plugin, TryGetVaultLoader).Value;
@@ -137,7 +141,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 //run read async
                 Secret<SecretData> result = await client.V1.Secrets.KeyValue.V2.ReadSecretAsync(path:secret, mountPoint:mount);
                 //Read the secret
-                return result.Data.Data[secretTableKey].ToString();
+                return SecretResult.ToSecret(result.Data.Data[secretTableKey].ToString());
             }
             
             return Task.Run(execute);
@@ -320,6 +324,112 @@ namespace VNLib.Plugins.Extensions.Loading
             }
             //init lazy
             return new (LoadVault, LazyThreadSafetyMode.PublicationOnly);
+        }
+
+        /// <summary>
+        /// Gets the Secret value as a byte buffer
+        /// </summary>
+        /// <param name="secret"></param>
+        /// <returns>The base64 decoded secret as a byte[]</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="InternalBufferTooSmallException"></exception>
+        public static byte[] GetFromBase64(this SecretResult secret)
+        {
+            _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            
+            //Temp buffer
+            using UnsafeMemoryHandle<byte> buffer = Memory.UnsafeAlloc<byte>(secret.Result.Length);
+            
+            //Get base64
+            if(Convert.TryFromBase64Chars(secret.Result, buffer, out int count))
+            {
+                //Copy to array
+                byte[] value = buffer.Span[..count].ToArray();
+                //Clear block before returning
+                Memory.InitializeBlock<byte>(buffer);
+
+                return value;
+            }
+
+            throw new InternalBufferTooSmallException("internal buffer too small");
+        }
+
+        /// <summary>
+        /// Recovers a certificate from a PEM encoded secret
+        /// </summary>
+        /// <param name="secret"></param>
+        /// <returns>The <see cref="X509Certificate2"/> parsed from the PEM encoded data</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static X509Certificate2 GetCertificate(this SecretResult secret)
+        {
+            _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            return X509Certificate2.CreateFromPem(secret.Result);
+        }
+
+        /// <summary>
+        /// Gets the secret value as a secret result
+        /// </summary>
+        /// <param name="secret"></param>
+        /// <returns>The document parsed from the secret value</returns>
+        public static JsonDocument GetJsonDocument(this SecretResult secret)
+        {
+            _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            //Alloc buffer, utf8 so 1 byte per char
+            using IMemoryHandle<byte> buffer = Memory.SafeAlloc<byte>(secret.Result.Length);
+            //Get utf8 bytes
+            int count = Encoding.UTF8.GetBytes(secret.Result, buffer.Span);
+            //Reader and parse
+            Utf8JsonReader reader = new(buffer.Span[..count]);
+            return JsonDocument.ParseValue(ref reader);
+        }
+        
+        /// <summary>
+        /// Gets a SPKI encoded public key from a secret
+        /// </summary>
+        /// <param name="secret"></param>
+        /// <returns>The <see cref="PublicKey"/> parsed from the SPKI public key</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static PublicKey GetPublicKey(this SecretResult secret)
+        {          
+            _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            //Alloc buffer, base64 is larger than binary value so char len is large enough
+            using IMemoryHandle<byte> buffer = Memory.SafeAlloc<byte>(secret.Result.Length);
+            //Get base64 bytes
+            ERRNO count = VnEncoding.TryFromBase64Chars(secret.Result, buffer.Span);
+            //Parse the SPKI from base64
+            return PublicKey.CreateFromSubjectPublicKeyInfo(buffer.Span[..(int)count], out _);
+        }
+
+        /// <summary>
+        /// Gets the value of the <see cref="SecretResult"/> as a <see cref="PrivateKey"/>
+        /// container
+        /// </summary>
+        /// <param name="secret"></param>
+        /// <returns>The <see cref="PrivateKey"/> from the secret value</returns>
+        /// <exception cref="FormatException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static PrivateKey GetPrivateKey(this SecretResult secret)
+        {
+            _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            return new PrivateKey(secret);
+        }
+
+        /// <summary>
+        /// Gets a <see cref="ReadOnlyJsonWebKey"/> from a secret value
+        /// </summary>
+        /// <param name="secret"></param>
+        /// <returns>The <see cref="ReadOnlyJsonWebKey"/> from the result</returns>
+        /// <exception cref="JsonException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static ReadOnlyJsonWebKey GetJsonWebKey(this SecretResult secret)
+        {
+            _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            //Alloc buffer, utf8 so 1 byte per char
+            using IMemoryHandle<byte> buffer = Memory.SafeAlloc<byte>(secret.Result.Length);
+            //Get utf8 bytes
+            int count = Encoding.UTF8.GetBytes(secret.Result, buffer.Span);
+            return new ReadOnlyJsonWebKey(buffer.Span[..count]);
         }
     }
 }

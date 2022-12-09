@@ -31,13 +31,13 @@ namespace VNLib.Plugins.Extensions.Data.SQL
     /// Property attribute that specifies the property is to be used for a given command variable
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class SqlVariable : Attribute
+    public sealed class SqlVariableAttribute : Attribute
     {
-        public string VariableName { get; init; }
-        public DbType DataType { get; init; }
-        public ParameterDirection Direction { get; init; }
-        public int Size { get; init; }
-        public bool Nullable { get; init; }
+        public string VariableName { get; }
+        public DbType DataType { get; }
+        public ParameterDirection Direction { get; }
+        public int Size { get; }
+        public bool IsNullable { get; }
         /// <summary>
         /// Specifies the property to be used as an SQL variable
         /// </summary>
@@ -46,13 +46,13 @@ namespace VNLib.Plugins.Extensions.Data.SQL
         /// <param name="direction">Data direction during execution</param>
         /// <param name="size">Column size</param>
         /// <param name="isNullable">Is this property allowed to be null</param>
-        public SqlVariable(string variableName, DbType dataType, ParameterDirection direction, int size, bool isNullable)
+        public SqlVariableAttribute(string variableName, DbType dataType, ParameterDirection direction, int size, bool isNullable)
         {
             this.VariableName = variableName;
             this.DataType = dataType;
             this.Direction = direction;
             this.Size = size;
-            this.Nullable = isNullable;
+            this.IsNullable = isNullable;
         }
     }
 }

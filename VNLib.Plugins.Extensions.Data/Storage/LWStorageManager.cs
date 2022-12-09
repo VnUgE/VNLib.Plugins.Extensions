@@ -25,13 +25,16 @@
 using System;
 using System.IO;
 using System.Data;
+using System.Linq;
 using System.Threading;
-using System.Data.Common;
+using System.IO.Compression;
 using System.Threading.Tasks;
 
-using VNLib.Utils;
+using Microsoft.EntityFrameworkCore;
 
-using VNLib.Plugins.Extensions.Data.SQL;
+using VNLib.Utils;
+using VNLib.Utils.IO;
+using VNLib.Utils.Memory;
 
 namespace VNLib.Plugins.Extensions.Data.Storage
 {
@@ -39,73 +42,29 @@ namespace VNLib.Plugins.Extensions.Data.Storage
     /// <summary>
     /// Provides single table database object storage services
     /// </summary>
-    public sealed class LWStorageManager : EnumerableTable<LWStorageDescriptor>
-    {
-        const int DTO_SIZE = 7;
-        const int MAX_DATA_SIZE = 8000;
-
-        //Mssql statments
-        private const string GET_DESCRIPTOR_STATMENT_ID_MSQQL = "SELECT TOP 1\r\n[Id],\r\n[UserID],\r\n[Data],\r\n[Created],\r\n[LastModified]\r\nFROM @table\r\nWHERE Id=@Id;";
-        private const string GET_DESCRIPTOR_STATMENT_UID_MSQL = "SELECT TOP 1\r\n[Id],\r\n[UserID],\r\n[Data],\r\n[Created],\r\n[LastModified]\r\nFROM @table\r\nWHERE UserID=@UserID;";
-
-        private const string GET_DESCRIPTOR_STATMENT_ID = "SELECT\r\n[Id],\r\n[UserID],\r\n[Data],\r\n[Created],\r\n[LastModified]\r\nFROM @table\r\nWHERE Id=@Id\r\nLIMIT 1;";
-        private const string GET_DESCRIPTOR_STATMENT_UID = "SELECT\r\n[Id],\r\n[UserID],\r\n[Data],\r\n[Created],\r\n[LastModified]\r\nFROM @table\r\nWHERE UserID=@UserID\r\nLIMIT 1;";
-
-        private const string CREATE_DESCRIPTOR_STATMENT = "INSERT INTO @table\r\n(UserID,Id,Created,LastModified)\r\nVALUES (@UserID,@Id,@Created,@LastModified);";
-
-        private const string UPDATE_DESCRIPTOR_STATMENT = "UPDATE @table\r\nSET [Data]=@Data\r\n,[LastModified]=@LastModified\r\nWHERE Id=@Id;";
-        private const string REMOVE_DESCRIPTOR_STATMENT = "DELETE FROM @table\r\nWHERE Id=@Id";
-        private const string CLEANUP_STATEMENT = "DELETE FROM @table\r\nWHERE [created]<@timeout;";
-        private const string ENUMERATION_STATMENT = "SELECT [Id],\r\n[UserID],\r\n[Data],\r\n[LastModified],\r\n[Created]\r\nFROM @table;";
-
-        private readonly string GetFromUD;
-        private readonly string Cleanup;
-        private readonly int keySize;
-
+    public sealed class LWStorageManager
+    { 
         /// <summary>
         /// The generator function that is invoked when a new <see cref="LWStorageDescriptor"/> is to 
         /// be created without an explicit id
         /// </summary>
         public Func<string> NewDescriptorIdGenerator { get; init; } = static () => Guid.NewGuid().ToString("N");
 
+        private readonly DbContextOptions DbOptions;
+        private readonly string TableName;
+
+        private LWStorageContext GetContext() => new(DbOptions, TableName);
+
         /// <summary>
         /// Creates a new <see cref="LWStorageManager"/> with 
         /// </summary>
-        /// <param name="factory">A <see cref="DbConnection"/> factory function that will generate and open connections to a database</param>
+        /// <param name="options">The db context options to create database connections with</param>
         /// <param name="tableName">The name of the table to operate on</param>
-        /// <param name="pkCharSize">The maximum number of characters of the DescriptorID and </param>
-        /// <exception cref="ArgumentException"></exception>
         /// <exception cref="ArgumentNullException"></exception>
-        public LWStorageManager(Func<DbConnection> factory, string tableName, int pkCharSize) : base(factory, tableName)
+        public LWStorageManager(DbContextOptions options, string tableName)
         {
-            //Compile statments with specified tableid
-            Insert = CREATE_DESCRIPTOR_STATMENT.Replace("@table", tableName);
-
-            //Test connector type to compile MSSQL statments vs Sqlite/Mysql
-            using (DbConnection testConnection = GetConnection())
-            {
-                //Determine if MSSql connections are being used
-                bool isMsSql = testConnection.GetType().FullName!.Contains("SqlConnection", StringComparison.OrdinalIgnoreCase);
-
-                if (isMsSql)
-                {
-                    GetFromUD = GET_DESCRIPTOR_STATMENT_UID_MSQL.Replace("@table", tableName);
-                    Select = GET_DESCRIPTOR_STATMENT_ID_MSQQL.Replace("@table", tableName);
-                }
-                else
-                {
-                    Select = GET_DESCRIPTOR_STATMENT_ID.Replace("@table", tableName);
-                    GetFromUD = GET_DESCRIPTOR_STATMENT_UID.Replace("@table", tableName);
-                }
-            }
-
-            Update = UPDATE_DESCRIPTOR_STATMENT.Replace("@table", tableName);
-            Delete = REMOVE_DESCRIPTOR_STATMENT.Replace("@table", tableName);
-            Cleanup = CLEANUP_STATEMENT.Replace("@table", tableName);
-            //Set key size
-            keySize = pkCharSize;
-            //Set default generator
-            Enumerate = ENUMERATION_STATMENT.Replace("@table", tableName);
+            DbOptions = options ?? throw new ArgumentNullException(nameof(options));
+            TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
         }
 
         /// <summary>
@@ -123,44 +82,52 @@ namespace VNLib.Plugins.Extensions.Data.Storage
             {
                 throw new ArgumentNullException(nameof(userId));
             }
+            
             //If no override id was specified, generate a new one
             descriptorIdOverride ??= NewDescriptorIdGenerator();
-            //Set created time
-            DateTimeOffset now = DateTimeOffset.UtcNow;
-            //Open a new sql client
-            await using DbConnection Database = GetConnection();
-            await Database.OpenAsync(cancellation);
-            //Setup transaction with repeatable read iso level
-            await using DbTransaction transaction = await Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellation);
-            //Create command for text command 
-            await using DbCommand cmd = Database.CreateTextCommand(Insert, transaction);
-            //add parameters
-            _ = cmd.AddParameter("@Id", descriptorIdOverride, DbType.String, keySize);
-            _ = cmd.AddParameter("@UserID", userId, DbType.String, keySize);
-            _ = cmd.AddParameter("@Created", now, DbType.DateTimeOffset, DTO_SIZE);
-            _ = cmd.AddParameter("@LastModified", now, DbType.DateTimeOffset, DTO_SIZE);
-            //Prepare operation
-            await cmd.PrepareAsync(cancellation);
-            //Exec and if successful will return > 0, so we can properly return a descriptor
-            int result = await cmd.ExecuteNonQueryAsync(cancellation);
-            //Commit transaction
-            await transaction.CommitAsync(cancellation);
-            if (result <= 0)
+
+            DateTime createdOrModifedTime = DateTime.UtcNow;
+
+            await using LWStorageContext ctx = GetContext();
+            await ctx.OpenTransactionAsync(cancellation);
+
+            //Make sure the descriptor doesnt exist only by its descriptor id
+            if (await ctx.Descriptors.AnyAsync(d => d.Id == descriptorIdOverride, cancellation))
             {
-                throw new LWDescriptorCreationException("Failed to create the new descriptor because the database retuned an invalid update row count");
+                throw new LWDescriptorCreationException($"A descriptor with id {descriptorIdOverride} already exists");
             }
-            //Rent new descriptor
-            LWStorageDescriptor desciptor = new(this)
+
+            //Cache time
+            DateTime now = DateTime.UtcNow;
+
+            //Create the new descriptor
+            LWStorageEntry entry = new()
             {
-                DescriptorID = descriptorIdOverride,
-                UserID = userId,
                 Created = now,
-                LastModified = now
+                LastModified = now,
+                Id = descriptorIdOverride,
+                UserId = userId,
             };
-            //Set data to null
-            await desciptor.PrepareAsync(null);
-            return desciptor;
+
+            //Add and save changes
+            ctx.Descriptors.Add(entry);
+
+            ERRNO result = await ctx.SaveChangesAsync(cancellation);
+
+            if (!result)
+            {
+                //Rollback and raise exception
+                await ctx.RollbackTransctionAsync(cancellation);
+                throw new LWDescriptorCreationException("Failed to create descriptor, because changes could not be saved");
+            }
+            else
+            {
+                //Commit transaction and return the new descriptor
+                await ctx.CommitTransactionAsync(cancellation);
+                return new LWStorageDescriptor(this, entry);
+            }
         }
+
         /// <summary>
         /// Attempts to retrieve <see cref="LWStorageDescriptor"/> for a given user-id. The caller is responsible for 
         /// consitancy state of the descriptor
@@ -171,45 +138,41 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         /// <exception cref="ArgumentNullException"></exception>
         public async Task<LWStorageDescriptor?> GetDescriptorFromUIDAsync(string userid, CancellationToken cancellation = default)
         {
+            //Allow null/empty entrys to just return null
             if (string.IsNullOrWhiteSpace(userid))
             {
                 throw new ArgumentNullException(nameof(userid));
             }
-            //Open a new sql client
-            await using DbConnection Database = GetConnection();
-            await Database.OpenAsync(cancellation);
-            //Setup transaction with repeatable read iso level
-            await using DbTransaction transaction = await Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellation);
-            //Create a new command based on the command text
-            await using DbCommand cmd = Database.CreateTextCommand(GetFromUD, transaction);
-            //Add userid parameter
-            _ = cmd.AddParameter("@UserID", userid, DbType.String, keySize);
-            //Prepare operation
-            await cmd.PrepareAsync(cancellation);
-            //Get the reader
-            DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellation);
-            try
+
+            //Init db
+            await using LWStorageContext db = GetContext();
+            //Begin transaction
+            await db.OpenTransactionAsync(cancellation);
+            //Get entry
+            LWStorageEntry? entry = await (from s in db.Descriptors
+                                           where s.UserId == userid
+                                           select s)
+                                           .SingleOrDefaultAsync(cancellation);
+
+            //Close transactions and return
+            if (entry == null)
             {
-                //Make sure the record was found
-                if (!await reader.ReadAsync(cancellation))
-                {
-                    return null;
-                }
-                return await GetItemAsync(reader, CancellationToken.None);
+                await db.RollbackTransctionAsync(cancellation);
+                return null;
             }
-            finally
+            else
             {
-                //Close the reader
-                await reader.CloseAsync();
-                //Commit the transaction
-                await transaction.CommitAsync(cancellation);
+                await db.CommitTransactionAsync(cancellation);
+                return new (this, entry);
             }
         }
+        
         /// <summary>
         /// Attempts to retrieve the <see cref="LWStorageDescriptor"/> for the given descriptor id. The caller is responsible for 
         /// consitancy state of the descriptor
         /// </summary>
         /// <param name="descriptorId">Unique identifier for the descriptor</param>
+        /// <param name="cancellation">A token to cancel the opreeaiton</param>
         /// <returns>The descriptor belonging to the user, or null if not found or error occurs</returns>
         /// <exception cref="ArgumentNullException"></exception>
         public async Task<LWStorageDescriptor?> GetDescriptorFromIDAsync(string descriptorId, CancellationToken cancellation = default)
@@ -219,35 +182,30 @@ namespace VNLib.Plugins.Extensions.Data.Storage
             {
                 throw new ArgumentNullException(nameof(descriptorId));
             }
-            //Open a new sql client
-            await using DbConnection Database = GetConnection();
-            await Database.OpenAsync(cancellation);
-            //Setup transaction with repeatable read iso level
-            await using DbTransaction transaction = await Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellation);
-            //We dont have the routine stored 
-            await using DbCommand cmd = Database.CreateTextCommand(Select, transaction);
-            //Set userid (unicode length)
-            _ = cmd.AddParameter("@Id", descriptorId, DbType.String, keySize);
-            //Prepare operation
-            await cmd.PrepareAsync(cancellation);
-            //Get the reader
-            DbDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellation);
-            try
+           
+            //Init db
+            await using LWStorageContext db = GetContext();
+            //Begin transaction
+            await db.OpenTransactionAsync(cancellation);
+            //Get entry
+            LWStorageEntry? entry = await (from s in db.Descriptors
+                                           where s.Id == descriptorId
+                                           select s)
+                                           .SingleOrDefaultAsync(cancellation);
+
+            //Close transactions and return
+            if (entry == null)
             {
-                if (!await reader.ReadAsync(cancellation))
-                {
-                    return null;
-                }
-                return await GetItemAsync(reader, CancellationToken.None);
+                await db.RollbackTransctionAsync(cancellation);
+                return null;
             }
-            finally
+            else
             {
-                //Close the reader
-                await reader.CloseAsync();
-                //Commit the transaction
-                await transaction.CommitAsync(cancellation);
+                await db.CommitTransactionAsync(cancellation);
+                return new (this, entry);
             }
         }
+       
         /// <summary>
         /// Cleanup entries before the specified <see cref="TimeSpan"/>. Entires are store in UTC time
         /// </summary>
@@ -255,6 +213,7 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         /// <param name="cancellation">A token to cancel the operation</param>
         /// <returns>The number of entires cleaned</returns>S
         public Task<ERRNO> CleanupTableAsync(TimeSpan compareTime, CancellationToken cancellation = default) => CleanupTableAsync(DateTime.UtcNow.Subtract(compareTime), cancellation);
+        
         /// <summary>
         /// Cleanup entries before the specified <see cref="DateTime"/>. Entires are store in UTC time
         /// </summary>
@@ -263,21 +222,27 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         /// <returns>The number of entires cleaned</returns>
         public async Task<ERRNO> CleanupTableAsync(DateTime compareTime, CancellationToken cancellation = default)
         {
-            //Open a new sql client
-            await using DbConnection Database = GetConnection();
-            await Database.OpenAsync(cancellation);
-            //Begin a new transaction
-            await using DbTransaction transaction = await Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellation);
-            //Setup the cleanup command for the current database
-            await using DbCommand cmd = Database.CreateTextCommand(Cleanup, transaction);
-            //Setup timeout parameter as a datetime
-            cmd.AddParameter("@timeout", compareTime, DbType.DateTime);
-            await cmd.PrepareAsync(cancellation);
-            //Exec and if successful will return > 0, so we can properly return a descriptor
-            int result = await cmd.ExecuteNonQueryAsync(cancellation);
+            //Init db
+            await using LWStorageContext db = GetContext();
+            //Begin transaction
+            await db.OpenTransactionAsync(cancellation);
+
+            //Get all expired entires
+            LWStorageEntry[] expired = await (from s in db.Descriptors
+                                              where s.Created < compareTime
+                                              select s)
+                                              .ToArrayAsync(cancellation);
+
+            //Delete
+            db.Descriptors.RemoveRange(expired);
+
+            //Save changes
+            ERRNO count = await db.SaveChangesAsync(cancellation);
+
             //Commit transaction
-            await transaction.CommitAsync(cancellation);
-            return result;
+            await db.CommitTransactionAsync(cancellation);
+
+            return count;
         }
 
         /// <summary>
@@ -288,38 +253,55 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         /// <exception cref="LWStorageUpdateFailedException"></exception>
         internal async Task UpdateDescriptorAsync(object descriptorObj, Stream data)
         {
-            LWStorageDescriptor descriptor = (descriptorObj as LWStorageDescriptor)!;
-            int result = 0;
+            LWStorageEntry entry = (descriptorObj as LWStorageDescriptor)!.Entry;
+            ERRNO result = 0;
             try
             {
-                //Open a new sql client
-                await using DbConnection Database = GetConnection();
-                await Database.OpenAsync();
-                //Setup transaction with repeatable read iso level
-                await using DbTransaction transaction = await Database.BeginTransactionAsync(IsolationLevel.Serializable);
-                //Create command for stored procedure
-                await using DbCommand cmd = Database.CreateTextCommand(Update, transaction);
-                //Add parameters
-                _ = cmd.AddParameter("@Id", descriptor.DescriptorID, DbType.String, keySize);
-                _ = cmd.AddParameter("@Data", data, DbType.Binary, MAX_DATA_SIZE);
-                _ = cmd.AddParameter("@LastModified", DateTime.UtcNow, DbType.DateTime2, DTO_SIZE);
-                //Prepare operation
-                await cmd.PrepareAsync();
-                //exec and store result
-                result = await cmd.ExecuteNonQueryAsync();
-                //Commit 
-                await transaction.CommitAsync();
+                await using LWStorageContext ctx = GetContext();
+                await ctx.OpenTransactionAsync(CancellationToken.None);
+
+                //Begin tracking
+                ctx.Descriptors.Attach(entry);
+
+                //Convert stream to vnstream
+                VnMemoryStream vms = (VnMemoryStream)data;
+                using (IMemoryHandle<byte> encBuffer = Memory.SafeAlloc<byte>((int)vms.Length))
+                {
+                    //try to compress
+                    if(!BrotliEncoder.TryCompress(vms.AsSpan(), encBuffer.Span, out int compressed))
+                    {
+                        throw new InvalidDataException("Failed to compress the descriptor data");
+                    }
+                    //Set the data 
+                    entry.Data = encBuffer.Span.ToArray();
+                }
+                //Update modified time
+                entry.LastModified = DateTime.UtcNow;
+
+                //Save changes
+                result = await ctx.SaveChangesAsync(CancellationToken.None);
+
+                //Commit or rollback
+                if (result)
+                {
+                    await ctx.CommitTransactionAsync(CancellationToken.None);
+                }
+                else
+                {
+                    await ctx.RollbackTransctionAsync(CancellationToken.None);
+                }
             }
             catch (Exception ex)
             {
                 throw new LWStorageUpdateFailedException("", ex);
             }
             //If the result is 0 then the update failed
-            if (result <= 0)
+            if (!result)
             {
-                throw new LWStorageUpdateFailedException($"Descriptor {descriptor.DescriptorID} failed to update", null);
+                throw new LWStorageUpdateFailedException($"Descriptor {entry.Id} failed to update");
             }
         }
+        
         /// <summary>
         /// Function to remove the specified descriptor 
         /// </summary>
@@ -327,53 +309,39 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         /// <exception cref="LWStorageRemoveFailedException"></exception>
         internal async Task RemoveDescriptorAsync(object descriptorObj)
         {
-            LWStorageDescriptor descriptor = (descriptorObj as LWStorageDescriptor)!;
+            LWStorageEntry descriptor = (descriptorObj as LWStorageDescriptor)!.Entry;
+            ERRNO result;
             try
             {
-                //Open a new sql client
-                await using DbConnection Database = GetConnection();
-                await Database.OpenAsync();
-                //Setup transaction with repeatable read iso level
-                await using DbTransaction transaction = await Database.BeginTransactionAsync(IsolationLevel.Serializable);
-                //Create sql command
-                await using DbCommand cmd = Database.CreateTextCommand(Delete, transaction);
-                //set descriptor id
-                _ = cmd.AddParameter("@Id", descriptor.DescriptorID, DbType.String, keySize);
-                //Prepare operation
-                await cmd.PrepareAsync();
-                //Execute (the descriptor my already be removed, as long as the transaction doesnt fail we should be okay)
-                _ = await cmd.ExecuteNonQueryAsync();
-                //Commit 
-                await transaction.CommitAsync();
+                //Init db
+                await using LWStorageContext db = GetContext();
+                //Begin transaction
+                await db.OpenTransactionAsync();
+
+                //Delete the user from the database
+                db.Descriptors.Remove(descriptor);
+
+                //Save changes and commit if successful
+                result = await db.SaveChangesAsync();
+
+                if (result)
+                {
+                    await db.CommitTransactionAsync();
+                }
+                else
+                {
+                    await db.RollbackTransctionAsync();
+                }
             }
             catch (Exception ex)
             {
                 throw new LWStorageRemoveFailedException("", ex);
             }
-        }
-
-        ///<inheritdoc/>
-        protected async override Task<LWStorageDescriptor> GetItemAsync(DbDataReader reader, CancellationToken cancellationToken)
-        {
-            //Open binary stream for the data column
-            await using Stream data = reader.GetStream("Data");
-            //Create new descriptor
-            LWStorageDescriptor desciptor = new(this)
+            if (!result)
             {
-                //Set desctiptor data
-                DescriptorID = reader.GetString("Id"),
-                UserID = reader.GetString("UserID"),
-                Created = reader.GetDateTime("Created"),
-                LastModified = reader.GetDateTime("LastModified")
-            };
-            //Load the descriptor's data
-            await desciptor.PrepareAsync(data);
-            return desciptor;
+                throw new LWStorageRemoveFailedException("Failed to delete the user account because of a database failure, the user may already be deleted");
+            }
         }
-        ///<inheritdoc/>
-        protected override ValueTask CleanupItemAsync(LWStorageDescriptor item, CancellationToken cancellationToken)
-        {
-            return item.ReleaseAsync();
-        }
+        
     }
 }

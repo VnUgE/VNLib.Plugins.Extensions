@@ -28,9 +28,8 @@ using System.Threading;
 using System.Reflection;
 
 using McMaster.NETCore.Plugins;
-
-using VNLib.Utils;
 using System.Runtime.Loader;
+using VNLib.Utils.Resources;
 
 namespace VNLib.Plugins.Extensions.Loading
 {

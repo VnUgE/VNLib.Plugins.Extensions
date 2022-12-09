@@ -43,12 +43,13 @@ namespace VNLib.Plugins.Extensions.Data.SQL
         /// </summary>
         protected string TableName { get; }
 
-        public TableManager(Func<DbConnection> factory, string tableName)
+        protected TableManager(Func<DbConnection> factory, string tableName)
         {
             this.Factory = factory ?? throw new ArgumentNullException(nameof(factory));
             this.TableName = !string.IsNullOrWhiteSpace(tableName) ? tableName : throw new ArgumentNullException(nameof(tableName));
         }
-        public TableManager(Func<DbConnection> factory)
+
+        protected TableManager(Func<DbConnection> factory)
         {
             this.Factory = factory ?? throw new ArgumentNullException(nameof(factory));
             this.TableName = "";

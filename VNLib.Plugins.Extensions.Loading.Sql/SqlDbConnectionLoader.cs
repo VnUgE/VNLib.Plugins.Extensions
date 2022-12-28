@@ -25,7 +25,6 @@
 using System;
 using System.Text.Json;
 using System.Data.Common;
-using System.Runtime.CompilerServices;
 
 using MySqlConnector;
 
@@ -45,9 +44,6 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
     {
         public const string SQL_CONFIG_KEY = "sql";
         public const string DB_PASSWORD_KEY = "db_password";
-
-        private static readonly ConditionalWeakTable<PluginBase, Func<DbConnection>> LazyDbFuncTable = new();
-        private static readonly ConditionalWeakTable<PluginBase, DbContextOptions> LazyCtxTable = new();
      
 
         /// <summary>
@@ -61,7 +57,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         {
             plugin.ThrowIfUnloaded();
             //Get or load
-            return LazyDbFuncTable.GetValue(plugin, FactoryLoader);
+            return LoadingExtensions.GetOrCreateSingleton(plugin, FactoryLoader);
         }
 
         private static Func<DbConnection> FactoryLoader(PluginBase plugin)
@@ -136,7 +132,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         public static DbContextOptions GetContextOptions(this PluginBase plugin)
         {
             plugin.ThrowIfUnloaded();
-            return LazyCtxTable.GetValue(plugin, GetDbOptionsLoader);
+            return LoadingExtensions.GetOrCreateSingleton(plugin, GetDbOptionsLoader);
         }
 
         private static DbContextOptions GetDbOptionsLoader(PluginBase plugin)

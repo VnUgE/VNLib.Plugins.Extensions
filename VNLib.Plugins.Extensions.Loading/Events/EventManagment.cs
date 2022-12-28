@@ -50,17 +50,65 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         /// <param name="plugin"></param>
         /// <param name="asyncCallback">An asyncrhonous callback method.</param>
         /// <param name="interval">The event interval</param>
+        /// <param name="immediate">A value that indicates if the callback should be run as soon as possible</param>
         /// <returns>An <see cref="EventHandle"/> that can manage the interval state</returns>
         /// <exception cref="ObjectDisposedException"></exception>
         /// <remarks>If exceptions are raised during callback execution, they are written to the plugin's default log provider</remarks>
-        public static EventHandle ScheduleInterval(this PluginBase plugin, AsyncSchedulableCallback asyncCallback, TimeSpan interval)
+        public static void ScheduleInterval(this PluginBase plugin, AsyncSchedulableCallback asyncCallback, TimeSpan interval, bool immediate = false)
         {
             plugin.ThrowIfUnloaded();
             
             plugin.Log.Verbose("Interval for {t} scheduled", interval);
-            //Load new event handler
-            return new(asyncCallback, interval, plugin);
+            
+            //Run interval on plugins bg scheduler
+            _ = plugin.DeferTask(() => RunIntervalOnPluginScheduler(plugin, asyncCallback, interval, immediate));
         }
+
+        private static async Task RunIntervalOnPluginScheduler(PluginBase plugin, AsyncSchedulableCallback callback, TimeSpan interval, bool immediate)
+        {
+
+            static async Task RunCallbackAsync(PluginBase plugin, AsyncSchedulableCallback callback)
+            {
+                try
+                {
+                    //invoke interval callback
+                    await callback(plugin.Log, plugin.UnloadToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    //unloaded
+                    plugin.Log.Verbose("Interval callback canceled due to plugin unload or other event cancellation");
+                }
+                catch (Exception ex)
+                {
+                    plugin.Log.Error(ex, "Unhandled exception raised during timer callback");
+                }
+            }
+
+            //Run callback immediatly if requested
+            if (immediate)
+            {
+                await RunCallbackAsync(plugin, callback);
+            }
+
+            //Timer loop
+            while (true)
+            {
+                try
+                {
+                    //await delay and wait for plugin cancellation
+                    await Task.Delay(interval, plugin.UnloadToken);
+                }
+                catch (TaskCanceledException)
+                {
+                    //Unload token canceled, exit loop
+                    break;
+                }
+
+                await RunCallbackAsync(plugin, callback);
+            }
+        }
+
         /// <summary>
         /// Registers an <see cref="IIntervalScheduleable"/> type's event handler for 
         /// raising timed interval events
@@ -71,7 +119,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         /// <returns>An <see cref="EventHandle"/> that can manage the interval state</returns>
         /// <exception cref="ObjectDisposedException"></exception>
         /// <remarks>If exceptions are raised during callback execution, they are written to the plugin's default log provider</remarks>
-        public static EventHandle ScheduleInterval(this PluginBase plugin, IIntervalScheduleable scheduleable, TimeSpan interval) => 
+        public static void ScheduleInterval(this PluginBase plugin, IIntervalScheduleable scheduleable, TimeSpan interval) => 
             ScheduleInterval(plugin, scheduleable.OnIntervalAsync, interval);
     }
 }

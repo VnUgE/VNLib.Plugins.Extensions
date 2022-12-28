@@ -9,6 +9,8 @@
     <PackageProjectUrl>https://www.vaughnnugent.com/resources</PackageProjectUrl>
     <Version>1.0.1.1</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>\\vaughnnugent.com\Internal\Folder Redirection\vman\Documents\Programming\Software\StrongNameingKey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <PropertyGroup>

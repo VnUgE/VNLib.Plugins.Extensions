@@ -26,9 +26,11 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Reflection;
+using System.Runtime.Loader;
+using System.Collections.Generic;
 
 using McMaster.NETCore.Plugins;
-using System.Runtime.Loader;
+
 using VNLib.Utils.Resources;
 
 namespace VNLib.Plugins.Extensions.Loading
@@ -47,7 +49,6 @@ namespace VNLib.Plugins.Extensions.Loading
     public class AssemblyLoader<T> : OpenResourceHandle<T>
     {
         private readonly PluginLoader _loader;
-        private readonly Type _typeInfo;
         private readonly CancellationTokenRegistration _reg;
         private readonly Lazy<T> _instance;
 
@@ -58,13 +59,13 @@ namespace VNLib.Plugins.Extensions.Loading
 
         private AssemblyLoader(PluginLoader loader, in CancellationToken unloadToken)
         {
-            _typeInfo = typeof(T);
             _loader = loader;
             //Init lazy loader
             _instance = new(LoadAndGetExportedType, LazyThreadSafetyMode.PublicationOnly);
             //Register dispose
             _reg = unloadToken.Register(Dispose);
         }
+        
         /// <summary>
         /// Loads the default assembly and gets the expected export type,
         /// creates a new instance, and calls its parameterless constructor
@@ -75,15 +76,34 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             //Load the assembly
             Assembly asm = _loader.LoadDefaultAssembly();
-          
+
+            Type resourceType = typeof(T);
+
             //See if the type is exported
             Type exp = (from type in asm.GetExportedTypes()
-                        where _typeInfo.IsAssignableFrom(type)
+                        where resourceType.IsAssignableFrom(type)
                         select type)
                         .FirstOrDefault()
-                        ?? throw new EntryPointNotFoundException($"Imported assembly does not export type {_typeInfo.FullName}");
+                        ?? throw new EntryPointNotFoundException($"Imported assembly does not export desired type {resourceType.FullName}");
             //Create instance
             return (T)Activator.CreateInstance(exp)!;
+        }
+
+        /// <summary>
+        /// Creates a method delegate for the given method name from
+        /// the instance wrapped by the current loader
+        /// </summary>
+        /// <typeparam name="TDelegate"></typeparam>
+        /// <param name="methodName">The name of the method to recover</param>
+        /// <returns>The delegate method wrapper if found, null otherwise</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="AmbiguousMatchException"></exception>
+        public TDelegate? TryGetMethod<TDelegate>(string methodName) where TDelegate : Delegate
+        {
+            //get the type info of the actual resource
+            return Resource!.GetType()
+                .GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance)
+                ?.CreateDelegate<TDelegate>(Resource);
         }
 
         ///<inheritdoc/>
@@ -105,18 +125,36 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <param name="unloadToken">The plugin unload token</param>
         internal static AssemblyLoader<T> Load(string assemblyName, CancellationToken unloadToken)
         {
-            PluginConfig conf = new(assemblyName)
+            Assembly executingAsm = Assembly.GetExecutingAssembly();
+            AssemblyLoadContext currentCtx = AssemblyLoadContext.GetLoadContext(executingAsm) ?? throw new InvalidOperationException("Could not get default assembly load context");
+
+            List<Type> shared = new ()
             {
-                IsUnloadable = true,
-                EnableHotReload = false,
-                PreferSharedTypes = true,
-                DefaultContext = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly()) ?? AssemblyLoadContext.Default
+                typeof(T),
+                typeof(PluginBase),
             };
+
+            //Add all types that have already been loaded
+            shared.AddRange(currentCtx.Assemblies.SelectMany(s => s.GetExportedTypes()));
             
-            PluginLoader loader = new(conf);
-            
-            //Add the assembly the type originaged from
-            conf.SharedAssemblies.Add(typeof(T).Assembly.GetName());
+            PluginLoader loader = PluginLoader.CreateFromAssemblyFile(assemblyName, 
+                currentCtx.IsCollectible, 
+                shared.ToArray(), 
+                conf =>
+            {
+                
+                /*
+                 * Load context is required to be set to the executing assembly's load context
+                 * because it is controlled by the host, so this loader should be considered a
+                 * a "child" collection of assemblies
+                 */
+                conf.DefaultContext = currentCtx;
+             
+                conf.PreferSharedTypes = true;
+                
+                //Share utils asm
+                conf.SharedAssemblies.Add(typeof(Utils.Memory.Memory).Assembly.GetName());
+            });
 
             return new(loader, in unloadToken);
         }

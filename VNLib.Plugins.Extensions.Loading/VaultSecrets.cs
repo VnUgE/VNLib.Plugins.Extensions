@@ -26,10 +26,8 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 
 using VaultSharp;
@@ -63,8 +61,6 @@ namespace VNLib.Plugins.Extensions.Loading
 
         public const string VAULT_URL_SCHEME = "vault://";
        
-
-        private static readonly ConditionalWeakTable<PluginBase, Lazy<IVaultClient?>> _vaults = new();
 
         /// <summary>
         /// <para>
@@ -135,7 +131,7 @@ namespace VNLib.Plugins.Extensions.Loading
             async Task<SecretResult?> execute()
             {
                 //Try load client
-                IVaultClient? client = _vaults.GetValue(plugin, TryGetVaultLoader).Value;
+                IVaultClient? client = plugin.GetVault();
                 
                 _ = client ?? throw new KeyNotFoundException("Vault client not found");
                 //run read async
@@ -209,7 +205,7 @@ namespace VNLib.Plugins.Extensions.Loading
             async Task<X509Certificate?> execute()
             {
                 //Try load client
-                IVaultClient? client = _vaults.GetValue(plugin, TryGetVaultLoader).Value;
+                IVaultClient? client = plugin.GetVault();
 
                 _ = client ?? throw new KeyNotFoundException("Vault client not found");
 
@@ -239,7 +235,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The ambient <see cref="IVaultClient"/> if loaded, null otherwise</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
-        public static IVaultClient? GetVault(this PluginBase plugin) => _vaults.GetValue(plugin, TryGetVaultLoader).Value;
+        public static IVaultClient? GetVault(this PluginBase plugin) => LoadingExtensions.GetOrCreateSingleton(plugin, TryGetVaultLoader);
         
         private static string? TryGetSecretInternal(PluginBase plugin, string secretName)
         {
@@ -283,47 +279,41 @@ namespace VNLib.Plugins.Extensions.Loading
             return conf != null && conf.TryGetValue(secretName, out JsonElement el) ? el.GetString() : null;
         }
 
-        private static Lazy<IVaultClient?> TryGetVaultLoader(PluginBase pbase)
+        private static IVaultClient? TryGetVaultLoader(PluginBase pbase)
         {
-            //Local func to load the vault client
-            IVaultClient? LoadVault()
+            //Get vault config
+            IReadOnlyDictionary<string, JsonElement>? conf = pbase.TryGetConfig(VAULT_OBJECT_NAME);
+
+            if (conf == null)
             {
-                //Get vault config
-                IReadOnlyDictionary<string, JsonElement>? conf = pbase.TryGetConfig(VAULT_OBJECT_NAME);
-
-                if(conf == null)
-                {
-                    return null;
-                }
-
-                //try get servre address creds from config
-                string? serverAddress = conf[VAULT_URL_KEY].GetString() ?? throw new KeyNotFoundException($"Failed to load the key {VAULT_URL_KEY} from object {VAULT_OBJECT_NAME}");
-
-                IAuthMethodInfo authMethod;
-
-                //Get authentication method from config
-                if (conf.TryGetValue(VAULT_TOKEN_KEY, out JsonElement tokenEl))
-                {
-                    //Init token
-                    authMethod = new TokenAuthMethodInfo(tokenEl.GetString());
-                }
-                else if(conf.TryGetValue(VAULT_ROLE_KEY, out JsonElement roleEl) && conf.TryGetValue(VAULT_SECRET_KEY, out JsonElement secretEl))
-                {
-                    authMethod = new AppRoleAuthMethodInfo(roleEl.GetString(), secretEl.GetString());
-                }
-                else
-                {
-                    throw new KeyNotFoundException($"Failed to load the vault authentication method from {VAULT_OBJECT_NAME}");
-                }
-
-                //Settings
-                VaultClientSettings settings = new(serverAddress, authMethod);
-                
-                //create vault client
-                return new VaultClient(settings);
+                return null;
             }
-            //init lazy
-            return new (LoadVault, LazyThreadSafetyMode.PublicationOnly);
+
+            //try get servre address creds from config
+            string? serverAddress = conf[VAULT_URL_KEY].GetString() ?? throw new KeyNotFoundException($"Failed to load the key {VAULT_URL_KEY} from object {VAULT_OBJECT_NAME}");
+
+            IAuthMethodInfo authMethod;
+
+            //Get authentication method from config
+            if (conf.TryGetValue(VAULT_TOKEN_KEY, out JsonElement tokenEl))
+            {
+                //Init token
+                authMethod = new TokenAuthMethodInfo(tokenEl.GetString());
+            }
+            else if (conf.TryGetValue(VAULT_ROLE_KEY, out JsonElement roleEl) && conf.TryGetValue(VAULT_SECRET_KEY, out JsonElement secretEl))
+            {
+                authMethod = new AppRoleAuthMethodInfo(roleEl.GetString(), secretEl.GetString());
+            }
+            else
+            {
+                throw new KeyNotFoundException($"Failed to load the vault authentication method from {VAULT_OBJECT_NAME}");
+            }
+
+            //Settings
+            VaultClientSettings settings = new(serverAddress, authMethod);
+
+            //create vault client
+            return new VaultClient(settings);
         }
 
         /// <summary>
@@ -352,6 +342,20 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             throw new InternalBufferTooSmallException("internal buffer too small");
+        }
+
+        /// <summary>
+        /// Converts the secret recovery task to 
+        /// </summary>
+        /// <param name="secret"></param>
+        /// <returns>A task whos result the base64 decoded secret as a byte[]</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="InternalBufferTooSmallException"></exception>
+        public static async Task<byte[]?> ToBase64Bytes(this Task<SecretResult?> secret)
+        {
+            _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            using SecretResult? sec = await secret.ConfigureAwait(false);
+            return sec?.GetFromBase64();
         }
 
         /// <summary>
@@ -430,6 +434,20 @@ namespace VNLib.Plugins.Extensions.Loading
             //Get utf8 bytes
             int count = Encoding.UTF8.GetBytes(secret.Result, buffer.Span);
             return new ReadOnlyJsonWebKey(buffer.Span[..count]);
+        }
+
+        /// <summary>
+        /// Gets a task that resolves a <see cref="ReadOnlyJsonWebKey"/>
+        /// from a <see cref="SecretResult"/> task
+        /// </summary>
+        /// <param name="secret"></param>
+        /// <returns>The <see cref="ReadOnlyJsonWebKey"/> from the secret, or null if the secret was not found</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static async Task<ReadOnlyJsonWebKey?> ToJsonWebKey(this Task<SecretResult?> secret)
+        {
+            _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            using SecretResult? sec = await secret.ConfigureAwait(false);
+            return sec?.GetJsonWebKey();
         }
     }
 }

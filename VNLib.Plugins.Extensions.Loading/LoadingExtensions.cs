@@ -46,10 +46,48 @@ namespace VNLib.Plugins.Extensions.Loading
         public const string DEBUG_CONFIG_KEY = "debug";
         public const string SECRETS_CONFIG_KEY = "secrets";
         public const string PASSWORD_HASHING_KEY = "passwords";
+
+        /*
+         * Plugin local cache used for storing singletons for a plugin instance
+         */
+        private static readonly ConditionalWeakTable<PluginBase, PluginLocalCache> _localCache = new();
+       
+        /// <summary>
+        /// Gets a previously cached service singleton for the desired plugin
+        /// </summary>
+        /// <param name="serviceType">The service instance type</param>
+        /// <param name="plugin">The plugin to obtain or build the singleton for</param>
+        /// <param name="serviceFactory">The method to produce the singleton</param>
+        /// <returns>The cached or newly created singleton</returns>
+        public static object GetOrCreateSingleton(PluginBase plugin, Type serviceType, Func<PluginBase, object> serviceFactory)
+        {
+            Lazy<object>? service;
+            //Get local cache
+            PluginLocalCache pc = _localCache.GetValue(plugin, PluginLocalCache.Create);
+            //Hold lock while get/set the singleton
+            lock (pc.SyncRoot)
+            {
+                //Check if service already exists
+                service = pc.GetService(serviceType);
+                //publish the service if it isnt loaded yet
+                service ??= pc.AddService(serviceType, serviceFactory);
+            }
+            //Deferred load of the service
+            return service.Value;
+        }
+
+        /// <summary>
+        /// Gets a previously cached service singleton for the desired plugin
+        /// or creates a new singleton instance for the plugin
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="plugin">The plugin to obtain or build the singleton for</param>
+        /// <param name="serviceFactory">The method to produce the singleton</param>
+        /// <returns>The cached or newly created singleton</returns>
+        public static T GetOrCreateSingleton<T>(PluginBase plugin, Func<PluginBase, T> serviceFactory) 
+            => (T)GetOrCreateSingleton(plugin, typeof(T), p => serviceFactory(p)!);
+
         
-        private static readonly ConditionalWeakTable<PluginBase, Lazy<PasswordHashing>> LazyPasswordTable = new();
-
-
         /// <summary>
         /// Gets the plugins ambient <see cref="PasswordHashing"/> if loaded, or loads it if required. This class will
         /// be unloaded when the plugin us unloaded.
@@ -63,59 +101,52 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             plugin.ThrowIfUnloaded();
             //Get/load the passwords one time only
-            return LazyPasswordTable.GetValue(plugin, LoadPasswords).Value;
+            return GetOrCreateSingleton(plugin, LoadPasswords);
         }
-        private static Lazy<PasswordHashing> LoadPasswords(PluginBase plugin)
+        
+        private static PasswordHashing LoadPasswords(PluginBase plugin)
         {
-            //Lazy load func
-            PasswordHashing Load()
+            PasswordHashing Passwords;
+            //Get the global password system secret (pepper)
+            byte[] pepper = plugin.TryGetSecretAsync(PASSWORD_HASHING_KEY)
+                .ToBase64Bytes().Result ?? throw new KeyNotFoundException($"Missing required key '{PASSWORD_HASHING_KEY}' in secrets");
+
+            ERRNO cb(Span<byte> buffer)
             {
-                PasswordHashing Passwords;
-                //Get the global password system secret (pepper)
-                using SecretResult pepperEl = plugin.TryGetSecretAsync(PASSWORD_HASHING_KEY).Result ?? throw new KeyNotFoundException($"Missing required key '{PASSWORD_HASHING_KEY}' in secrets");
+                //No longer valid peper if plugin is unloaded as its set to zero, so we need to protect it
+                plugin.ThrowIfUnloaded();
 
-                byte[] pepper = pepperEl.GetFromBase64();              
-
-                ERRNO cb(Span<byte> buffer)
-                {
-                    //No longer valid peper if plugin is unloaded as its set to zero, so we need to protect it
-                    plugin.ThrowIfUnloaded();
-                    
-                    pepper.CopyTo(buffer);
-                    return pepper.Length;
-                }
-
-                //See hashing params are defined
-                IReadOnlyDictionary<string, JsonElement>? hashingArgs = plugin.TryGetConfig(PASSWORD_HASHING_KEY);
-                if (hashingArgs is not null)
-                {
-                    //Get hashing arguments
-                    uint saltLen = hashingArgs["salt_len"].GetUInt32();
-                    uint hashLen = hashingArgs["hash_len"].GetUInt32();
-                    uint timeCost = hashingArgs["time_cost"].GetUInt32();
-                    uint memoryCost = hashingArgs["memory_cost"].GetUInt32();
-                    uint parallelism = hashingArgs["parallelism"].GetUInt32();
-                    //Load passwords
-                    Passwords = new(cb, pepper.Length, (int)saltLen, timeCost, memoryCost, parallelism, hashLen);
-                }
-                else
-                {
-                    //Init default password hashing
-                    Passwords = new(cb, pepper.Length);
-                }
-               
-                //Register event to cleanup the password class
-                _ = plugin.UnloadToken.RegisterUnobserved(() =>
-                {
-                    //Zero the pepper
-                    CryptographicOperations.ZeroMemory(pepper);
-                    LazyPasswordTable.Remove(plugin);
-                });
-                //return
-                return Passwords;
+                pepper.CopyTo(buffer);
+                return pepper.Length;
             }
-            //Return new lazy for 
-            return new Lazy<PasswordHashing>(Load);
+
+            //See hashing params are defined
+            IReadOnlyDictionary<string, JsonElement>? hashingArgs = plugin.TryGetConfig(PASSWORD_HASHING_KEY);
+            if (hashingArgs != null)
+            {
+                //Get hashing arguments
+                uint saltLen = hashingArgs["salt_len"].GetUInt32();
+                uint hashLen = hashingArgs["hash_len"].GetUInt32();
+                uint timeCost = hashingArgs["time_cost"].GetUInt32();
+                uint memoryCost = hashingArgs["memory_cost"].GetUInt32();
+                uint parallelism = hashingArgs["parallelism"].GetUInt32();
+                //Load passwords
+                Passwords = new(cb, pepper.Length, (int)saltLen, timeCost, memoryCost, parallelism, hashLen);
+            }
+            else
+            {
+                //Init default password hashing
+                Passwords = new(cb, pepper.Length);
+            }
+
+            //Register event to cleanup the password class
+            _ = plugin.RegisterForUnload(() =>
+            {
+                //Zero the pepper
+                CryptographicOperations.ZeroMemory(pepper);
+            });
+            //return
+            return Passwords;
         }
 
 
@@ -135,13 +166,15 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             plugin.ThrowIfUnloaded();
             _ = assemblyName ?? throw new ArgumentNullException(nameof(assemblyName));
-            //get plugin directory from config
-            string? pluginsBaseDir = plugin.GetConfig("plugins")["path"].GetString();
             
+            //get plugin directory from config
+            IReadOnlyDictionary<string, JsonElement> config = plugin.GetConfig("plugins");
+            string? pluginsBaseDir = config["path"].GetString();
+
             /*
              * This should never happen since this method can only be called from a
              * plugin context, which means this path was used to load the current plugin
-             */            
+             */
             _ = pluginsBaseDir ?? throw new ArgumentNullException("path", "No plugin path is defined for the current host configuration, this is likely a bug");
             
             //Get the first file that matches the search file
@@ -151,6 +184,7 @@ namespace VNLib.Plugins.Extensions.Loading
             //Load the assembly
             return AssemblyLoader<T>.Load(asmFile, plugin.UnloadToken);
         }
+        
 
         /// <summary>
         /// Determintes if the current plugin config has a debug propety set
@@ -164,6 +198,7 @@ namespace VNLib.Plugins.Extensions.Loading
             //Check for debug element
             return plugin.PluginConfig.TryGetProperty(DEBUG_CONFIG_KEY, out JsonElement dbgEl) && dbgEl.GetBoolean();
         }
+        
         /// <summary>
         /// Internal exception helper to raise <see cref="ObjectDisposedException"/> if the plugin has been unlaoded
         /// </summary>
@@ -214,7 +249,7 @@ namespace VNLib.Plugins.Extensions.Loading
             try
             {
                 //Await the task results
-                await deferred;
+                await deferred.ConfigureAwait(false);
             }
             catch(Exception ex)
             {
@@ -225,6 +260,74 @@ namespace VNLib.Plugins.Extensions.Loading
             {
                 //Remove task when complete
                 plugin.RemoveObservedTask(deferred);
+            }
+        }
+
+        /// <summary>
+        /// Registers an event to occur when the plugin is unloaded on a background thread
+        /// and will cause the Plugin.Unload() method to block until the event completes
+        /// </summary>
+        /// <param name="pbase"></param>
+        /// <param name="callback">The method to call when the plugin is unloaded</param>
+        /// <returns>A task that represents the registered work</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        public static Task RegisterForUnload(this PluginBase pbase, Action callback)
+        {
+            //Test status
+            pbase.ThrowIfUnloaded();
+            _ = callback ?? throw new ArgumentNullException(nameof(callback));
+
+            //Wait method
+            static async Task WaitForUnload(PluginBase pb, Action callback)
+            {
+                //Wait for unload as a task on the threadpool to avoid deadlocks
+                await pb.UnloadToken.WaitHandle.WaitAsync()
+                    .ConfigureAwait(false);
+                
+                callback();
+            }
+
+            //Registaer the task to cause the plugin to wait
+            return pbase.DeferTask(() => WaitForUnload(pbase, callback));
+        }
+
+
+        private sealed class PluginLocalCache
+        {
+            private readonly PluginBase _plugin;
+
+            private readonly Dictionary<Type, Lazy<object>> _store;
+
+            public object SyncRoot { get; } = new();
+
+            private PluginLocalCache(PluginBase plugin)
+            {
+                _plugin = plugin;
+                _store = new();
+                //Register cleanup on unload
+                _ = _plugin.RegisterForUnload(() => _store.Clear());
+            }
+
+            public static PluginLocalCache Create(PluginBase plugin) => new(plugin);
+
+
+            public Lazy<object>? GetService(Type serviceType)
+            {
+                Lazy<object>? t = _store.Where(t => t.Key.IsAssignableTo(serviceType))
+                    .Select(static tk => tk.Value)
+                    .FirstOrDefault();
+                return t;
+            }
+
+            public Lazy<object> AddService(Type serviceType, Func<PluginBase, object> factory)
+            {
+                //Get lazy loader to invoke factory outside of cache lock
+                Lazy<object> lazyFactory = new(() => factory(_plugin), true);
+                //Store lazy factory
+                _store.Add(serviceType, lazyFactory);
+                //Pass the lazy factory back
+                return lazyFactory;
             }
         }
     }

@@ -82,12 +82,12 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <returns></returns>
         public static IRuleBuilderOptions<T, string> EmptyPhoneNumber<T>(this IRuleBuilder<T, string> builder)
         {
-            return builder.Must(static phone => !(phone?.Length).HasValue || PhoneRegex.IsMatch(phone))
+            return builder.Must(static phone => phone == null || phone.Length == 0 || PhoneRegex.IsMatch(phone))
                           .WithMessage("{PropertyValue} is not a valid phone number.");
         }
 
         /// <summary>
-        /// Checks a string against <see cref="Statics.SpecialCharacters"/>.
+        /// Checks a string against <see cref="SpecialCharactersRegx"/>.
         /// If the string is null or empty, it is allowed.
         /// </summary>
         /// <typeparam name="T"></typeparam>

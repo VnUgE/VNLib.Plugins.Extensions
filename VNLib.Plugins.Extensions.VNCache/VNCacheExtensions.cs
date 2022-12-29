@@ -37,7 +37,6 @@ namespace VNLib.Plugins.Extensions.VNCache
     /// </summary>
     public static class VNCacheExtensions
     {
-
         /// <summary>
         /// Loads the shared cache provider for the current plugin
         /// </summary>
@@ -54,8 +53,6 @@ namespace VNLib.Plugins.Extensions.VNCache
 
         private static IGlobalCacheProvider LoadCacheClient(PluginBase pbase)
         {
-            //pbase.Log.Verbose("Loading global cache provider for {pc}, with {hc}", pbase.GetHashCode(), LoadingExtensions.HashCode);
-
             //Get config for client
             IReadOnlyDictionary<string, JsonElement> config = pbase.GetConfigForType<VnCacheClient>();
 

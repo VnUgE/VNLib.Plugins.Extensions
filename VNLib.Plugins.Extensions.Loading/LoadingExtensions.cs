@@ -178,7 +178,7 @@ namespace VNLib.Plugins.Extensions.Loading
             _ = pluginsBaseDir ?? throw new ArgumentNullException("path", "No plugin path is defined for the current host configuration, this is likely a bug");
             
             //Get the first file that matches the search file
-            string? asmFile =  Directory.EnumerateFiles(pluginsBaseDir, assemblyName, dirSearchOption).FirstOrDefault();
+            string? asmFile = Directory.EnumerateFiles(pluginsBaseDir, assemblyName, dirSearchOption).FirstOrDefault();
             _ = asmFile ?? throw new FileNotFoundException($"Failed to load custom assembly {assemblyName} from plugin directory");
             
             //Load the assembly

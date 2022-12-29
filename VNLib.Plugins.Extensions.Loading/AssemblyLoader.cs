@@ -134,11 +134,11 @@ namespace VNLib.Plugins.Extensions.Loading
                 typeof(PluginBase),
             };
 
-            //Add all types that have already been loaded
-            shared.AddRange(currentCtx.Assemblies.SelectMany(s => s.GetExportedTypes()));
+            //Share all VNLib internal libraries
+            shared.AddRange(currentCtx.Assemblies.Where(static s => s.FullName.Contains("VNLib", StringComparison.OrdinalIgnoreCase)).SelectMany(static s => s.GetExportedTypes()));
             
             PluginLoader loader = PluginLoader.CreateFromAssemblyFile(assemblyName, 
-                currentCtx.IsCollectible, 
+                currentCtx.IsCollectible,
                 shared.ToArray(), 
                 conf =>
             {
@@ -149,7 +149,7 @@ namespace VNLib.Plugins.Extensions.Loading
                  * a "child" collection of assemblies
                  */
                 conf.DefaultContext = currentCtx;
-             
+
                 conf.PreferSharedTypes = true;
                 
                 //Share utils asm

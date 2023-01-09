@@ -95,7 +95,7 @@ namespace VNLib.Plugins.Extensions.VNCache
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Cache client error occured in session provider");
+                Log.Error(ex, "Unhandled exception occured in background cache client listening task");
             }
             finally
             {

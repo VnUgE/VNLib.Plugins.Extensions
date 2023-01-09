@@ -41,6 +41,7 @@ namespace VNLib.Plugins.Extensions.VNCache
         /// Loads the shared cache provider for the current plugin
         /// </summary>
         /// <param name="pbase"></param>
+        /// <param name="localized">A localized log provider to write cache logging information to</param>
         /// <returns>The shared <see cref="IGlobalCacheProvider"/> </returns>
         /// <remarks>
         /// The returned instance, background work, logging, and its lifetime 
@@ -48,10 +49,12 @@ namespace VNLib.Plugins.Extensions.VNCache
         /// network connections may be spawend and managed in the background by 
         /// this library.
         /// </remarks>
-        public static IGlobalCacheProvider GetGlobalCache(this PluginBase pbase) 
-            => LoadingExtensions.GetOrCreateSingleton(pbase, LoadCacheClient);
+        public static VnCacheClient GetGlobalCache(this PluginBase pbase, ILogProvider? localized = null) 
+            => LoadingExtensions.GetOrCreateSingleton<VnCacheClient>(pbase, localized == null ? LoadCacheClient : (pbase) => LoadCacheClient(pbase, localized));
 
-        private static IGlobalCacheProvider LoadCacheClient(PluginBase pbase)
+        private static VnCacheClient LoadCacheClient(PluginBase pbase) => LoadCacheClient(pbase, pbase.Log);
+
+        private static VnCacheClient LoadCacheClient(PluginBase pbase, ILogProvider localized)
         {
             //Get config for client
             IReadOnlyDictionary<string, JsonElement> config = pbase.GetConfigForType<VnCacheClient>();
@@ -61,14 +64,14 @@ namespace VNLib.Plugins.Extensions.VNCache
             VnCacheClient client = new(debugLog);
 
             //Begin cache connections by scheduling a task on the plugin's scheduler
-            _ = pbase.DeferTask(() => RunClientAsync(pbase, config, client), 250);
+            _ = pbase.DeferTask(() => RunClientAsync(pbase, config, localized, client), 250);
 
             return client;
         }
-        
-        private static async Task RunClientAsync(PluginBase pbase, IReadOnlyDictionary<string, JsonElement> config, VnCacheClient client)
+
+        private static async Task RunClientAsync(PluginBase pbase, IReadOnlyDictionary<string, JsonElement> config, ILogProvider localized, VnCacheClient client)
         {
-            ILogProvider Log = pbase.Log;
+            ILogProvider Log = localized;
 
             try
             {

@@ -42,6 +42,7 @@ using VNLib.Utils.Memory;
 using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;
 using VNLib.Hashing.IdentityUtility;
+using System.Threading;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
@@ -448,6 +449,25 @@ namespace VNLib.Plugins.Extensions.Loading
             _ = secret ?? throw new ArgumentNullException(nameof(secret));
             using SecretResult? sec = await secret.ConfigureAwait(false);
             return sec?.GetJsonWebKey();
+        }
+
+        /// <summary>
+        /// Gets a task that resolves a <see cref="ReadOnlyJsonWebKey"/>
+        /// from a <see cref="SecretResult"/> task
+        /// </summary>
+        /// <param name="secret"></param>
+        /// <param name="required">
+        /// A value that inidcates that a value is required from the result, 
+        /// or a <see cref="KeyNotFoundException"/> is raised
+        /// </param>
+        /// <returns>The <see cref="ReadOnlyJsonWebKey"/> from the secret, or null if the secret was not found</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static async Task<ReadOnlyJsonWebKey> ToJsonWebKey(this Task<SecretResult?> secret, bool required)
+        {
+            _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            using SecretResult? sec = await secret.ConfigureAwait(false);
+            //If required is true and result is null, raise an exception
+            return required && sec == null ? throw new KeyNotFoundException("A required secret was missing") : (sec?.GetJsonWebKey()!);
         }
     }
 }

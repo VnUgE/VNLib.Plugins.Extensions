@@ -44,7 +44,7 @@ namespace VNLib.Plugins.Extensions.VNCache
     /// A wrapper to simplify a shared global cache client
     /// </summary>
     [ConfigurationName("vncache")]
-    internal sealed class VnCacheClient : VnDisposeable, IGlobalCacheProvider
+    public sealed class VnCacheClient : VnDisposeable, IGlobalCacheProvider
     {
         FBMClient? _client;
 
@@ -59,7 +59,7 @@ namespace VNLib.Plugins.Extensions.VNCache
         /// </summary>
         /// <param name="debugLog">An optional debugging log</param>
         /// <param name="heap">An optional <see cref="IUnmangedHeap"/> for <see cref="FBMClient"/> buffers</param>
-        public VnCacheClient(ILogProvider? debugLog, IUnmangedHeap? heap = null)
+        internal VnCacheClient(ILogProvider? debugLog, IUnmangedHeap? heap = null)
         {
             DebugLog = debugLog;
             //Default to 10 seconds
@@ -83,7 +83,7 @@ namespace VNLib.Plugins.Extensions.VNCache
         /// <param name="pbase"></param>
         /// <param name="config">A dictionary of configuration varables</param>
         /// <exception cref="KeyNotFoundException"></exception>
-        public async Task LoadConfigAsync(PluginBase pbase, IReadOnlyDictionary<string, JsonElement> config)
+        internal async Task LoadConfigAsync(PluginBase pbase, IReadOnlyDictionary<string, JsonElement> config)
         {
             int maxMessageSize = config["max_message_size"].GetInt32();
             string? brokerAddress = config["broker_address"].GetString() ?? throw new KeyNotFoundException("Missing required configuration variable broker_address");
@@ -126,7 +126,7 @@ namespace VNLib.Plugins.Extensions.VNCache
         /// <returns>A task that completes when the operation has been cancelled or an unrecoverable error occured</returns>
         /// <exception cref="InvalidOperationException"></exception>
         /// <exception cref="OperationCanceledException"></exception>
-        public async Task RunAsync(ILogProvider Log, CancellationToken cancellationToken)
+        internal async Task RunAsync(ILogProvider Log, CancellationToken cancellationToken)
         {
             _ = _client ?? throw new InvalidOperationException("Client configuration not loaded, cannot connect to cache servers");
 
@@ -201,17 +201,10 @@ namespace VNLib.Plugins.Extensions.VNCache
 
         ///<inheritdoc/>
         public bool IsConnected { get; private set; }
+        
 
         ///<inheritdoc/>
-        public Task<T?> GetAsync<T>(string key, CancellationToken cancellation)
-        {
-            return !IsConnected
-                ? throw new InvalidOperationException("The underlying client is not connected to a cache node")
-                : _client!.GetObjectAsync<T>(key, cancellation);
-        }
-
-        ///<inheritdoc/>
-        Task IGlobalCacheProvider.AddOrUpdateAsync<T>(string key, string? newKey, T value, CancellationToken cancellation)
+        public Task AddOrUpdateAsync<T>(string key, string? newKey, T value, CancellationToken cancellation)
         {
             return !IsConnected
                ? throw new InvalidOperationException("The underlying client is not connected to a cache node")
@@ -219,11 +212,20 @@ namespace VNLib.Plugins.Extensions.VNCache
         }
 
         ///<inheritdoc/>
-        Task IGlobalCacheProvider.DeleteAsync(string key, CancellationToken cancellation)
+        public Task DeleteAsync(string key, CancellationToken cancellation)
         {
             return !IsConnected
               ? throw new InvalidOperationException("The underlying client is not connected to a cache node")
               : _client!.DeleteObjectAsync(key, cancellation);
+        }
+       
+     
+        ///<inheritdoc/>
+        public Task<T?> GetAsync<T>(string key, CancellationToken cancellation)
+        {
+            return !IsConnected
+               ? throw new InvalidOperationException("The underlying client is not connected to a cache node")
+               : _client!.GetObjectAsync<T>(key, cancellation);
         }
     }
 }

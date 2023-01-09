@@ -51,7 +51,6 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         /// <param name="asyncCallback">An asyncrhonous callback method.</param>
         /// <param name="interval">The event interval</param>
         /// <param name="immediate">A value that indicates if the callback should be run as soon as possible</param>
-        /// <returns>An <see cref="EventHandle"/> that can manage the interval state</returns>
         /// <exception cref="ObjectDisposedException"></exception>
         /// <remarks>If exceptions are raised during callback execution, they are written to the plugin's default log provider</remarks>
         public static void ScheduleInterval(this PluginBase plugin, AsyncSchedulableCallback asyncCallback, TimeSpan interval, bool immediate = false)
@@ -116,10 +115,10 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         /// <param name="plugin"></param>
         /// <param name="scheduleable">The instance to schedule for timeouts</param>
         /// <param name="interval">The timeout interval</param>
-        /// <returns>An <see cref="EventHandle"/> that can manage the interval state</returns>
+        /// <param name="immediate">A value that indicates if the callback should be run as soon as possible</param>
         /// <exception cref="ObjectDisposedException"></exception>
         /// <remarks>If exceptions are raised during callback execution, they are written to the plugin's default log provider</remarks>
-        public static void ScheduleInterval(this PluginBase plugin, IIntervalScheduleable scheduleable, TimeSpan interval) => 
-            ScheduleInterval(plugin, scheduleable.OnIntervalAsync, interval);
+        public static void ScheduleInterval(this PluginBase plugin, IIntervalScheduleable scheduleable, TimeSpan interval, bool immediate = false) => 
+            ScheduleInterval(plugin, scheduleable.OnIntervalAsync, interval, immediate);
     }
 }

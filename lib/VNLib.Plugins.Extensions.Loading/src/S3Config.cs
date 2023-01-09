@@ -22,22 +22,14 @@
 * along with VNLib.Plugins.Extensions.Loading. If not, see http://www.gnu.org/licenses/.
 */
 
-using System.Threading.Tasks;
-
 namespace VNLib.Plugins.Extensions.Loading
 {
     public sealed class S3Config
     {
         public string? ServerAddress { get; init; }
         public string? ClientId { get; init; }
-        public Task<SecretResult?> ClientSecret { get; init; }
         public string? BaseBucket { get; init; }
         public bool? UseSsl { get; init; }
         public string? Region { get; init; }
-
-        public S3Config()
-        {
-            ClientSecret = Task.FromResult<SecretResult?>(null);
-        }
     }
 }

@@ -46,7 +46,7 @@ namespace VNLib.Plugins.Extensions.Loading
     /// </para>
     /// </summary>
     /// <typeparam name="T">The exported type to manage</typeparam>
-    public class AssemblyLoader<T> : OpenResourceHandle<T>
+    public sealed class AssemblyLoader<T> : OpenResourceHandle<T>
     {
         private readonly PluginLoader _loader;
         private readonly CancellationTokenRegistration _reg;

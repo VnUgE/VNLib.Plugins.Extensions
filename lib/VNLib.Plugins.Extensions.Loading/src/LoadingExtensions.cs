@@ -43,6 +43,11 @@ namespace VNLib.Plugins.Extensions.Loading
     /// </summary>
     public static class LoadingExtensions
     {
+        /// <summary>
+        /// A key in the 'plugins' configuration object that specifies 
+        /// an asset search directory
+        /// </summary>
+        public const string PLUGIN_ASSET_KEY = "assets";
         public const string DEBUG_CONFIG_KEY = "debug";
         public const string SECRETS_CONFIG_KEY = "secrets";
         public const string PASSWORD_HASHING_KEY = "passwords";
@@ -162,6 +167,10 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="FileNotFoundException"></exception>
         /// <exception cref="EntryPointNotFoundException"></exception>
+        /// <remarks>
+        /// The assembly is searched within the 'assets' directory specified in the plugin config
+        /// or the global plugins ('path' key) directory if an assets directory is not defined.
+        /// </remarks>
         public static AssemblyLoader<T> LoadAssembly<T>(this PluginBase plugin, string assemblyName, SearchOption dirSearchOption = SearchOption.AllDirectories)
         {
             plugin.ThrowIfUnloaded();
@@ -169,16 +178,23 @@ namespace VNLib.Plugins.Extensions.Loading
             
             //get plugin directory from config
             IReadOnlyDictionary<string, JsonElement> config = plugin.GetConfig("plugins");
-            string? pluginsBaseDir = config["path"].GetString();
+
+            /*
+             * Allow an assets directory to limit the scope of the search for the desired
+             * assembly, otherwise search all plugins directories
+             */
+            
+            string? assetDir = config["assets"].GetString();
+            assetDir ??= config["path"].GetString();
 
             /*
              * This should never happen since this method can only be called from a
              * plugin context, which means this path was used to load the current plugin
              */
-            _ = pluginsBaseDir ?? throw new ArgumentNullException("path", "No plugin path is defined for the current host configuration, this is likely a bug");
+            _ = assetDir ?? throw new ArgumentNullException("assets", "No plugin path is defined for the current host configuration, this is likely a bug");
             
             //Get the first file that matches the search file
-            string? asmFile = Directory.EnumerateFiles(pluginsBaseDir, assemblyName, dirSearchOption).FirstOrDefault();
+            string? asmFile = Directory.EnumerateFiles(assetDir, assemblyName, dirSearchOption).FirstOrDefault();
             _ = asmFile ?? throw new FileNotFoundException($"Failed to load custom assembly {assemblyName} from plugin directory");
             
             //Load the assembly

@@ -368,3 +368,5 @@ FodyWeavers.xsd
 *[Tt]askfile.*
 
 *.sln
+
+*.ps1

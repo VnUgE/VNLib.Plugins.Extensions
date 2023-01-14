@@ -153,7 +153,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 conf.PreferSharedTypes = true;
                 
                 //Share utils asm
-                conf.SharedAssemblies.Add(typeof(Utils.Memory.Memory).Assembly.GetName());
+                conf.SharedAssemblies.Add(typeof(Utils.Memory.MemoryUtil).Assembly.GetName());
             });
 
             return new(loader, in unloadToken);

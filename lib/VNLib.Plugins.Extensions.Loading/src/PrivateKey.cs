@@ -49,14 +49,19 @@ namespace VNLib.Plugins.Extensions.Loading
         public ECDsa GetECDsa()
         {
             //Alloc buffer
-            using IMemoryHandle<byte> buffer = Memory.SafeAlloc<byte>(_utf8RawData.Length);
+            using IMemoryHandle<byte> buffer = MemoryUtil.SafeAlloc<byte>(_utf8RawData.Length);
+
             //Get base64 bytes from utf8
             ERRNO count = VnEncoding.Base64UrlDecode(_utf8RawData, buffer.Span);
+            
             //Parse the private key
             ECDsa alg = ECDsa.Create();
+            
             alg.ImportPkcs8PrivateKey(buffer.Span[..(int)count], out _);
+            
             //Wipe the buffer
-            Memory.InitializeBlock(buffer.Span);
+            MemoryUtil.InitializeBlock(buffer.Span);
+            
             return alg;
         }
 
@@ -69,14 +74,19 @@ namespace VNLib.Plugins.Extensions.Loading
         public RSA GetRSA()
         {
             //Alloc buffer
-            using IMemoryHandle<byte> buffer = Memory.SafeAlloc<byte>(_utf8RawData.Length);
+            using IMemoryHandle<byte> buffer = MemoryUtil.SafeAlloc<byte>(_utf8RawData.Length);
+            
             //Get base64 bytes from utf8
             ERRNO count = VnEncoding.Base64UrlDecode(_utf8RawData, buffer.Span);
+
             //Parse the private key
             RSA alg = RSA.Create();
+            
             alg.ImportPkcs8PrivateKey(buffer.Span[..(int)count], out _);
+            
             //Wipe the buffer
-            Memory.InitializeBlock(buffer.Span);
+            MemoryUtil.InitializeBlock(buffer.Span);
+            
             return alg;
         }
 
@@ -84,19 +94,22 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             //Alloc and get utf8
             byte[] buffer = new byte[secret.Result.Length];
+            
             int count = Encoding.UTF8.GetBytes(secret.Result, buffer);
+
             //Verify length
             if(count != buffer.Length)
             {
                 throw new FormatException("UTF8 deocde failed");
             }
+            
             //Store
             _utf8RawData = buffer;
         }
 
         protected override void Free()
         {
-            Memory.InitializeBlock(_utf8RawData.AsSpan());
+            MemoryUtil.InitializeBlock(_utf8RawData.AsSpan());
         }
     }
 }

@@ -35,6 +35,7 @@ using VNLib.Utils;
 using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;
 using VNLib.Plugins.Essentials.Accounts;
+using VNLib.Utils.Memory;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
@@ -112,18 +113,12 @@ namespace VNLib.Plugins.Extensions.Loading
         private static PasswordHashing LoadPasswords(PluginBase plugin)
         {
             PasswordHashing Passwords;
-            //Get the global password system secret (pepper)
-            byte[] pepper = plugin.TryGetSecretAsync(PASSWORD_HASHING_KEY)
-                .ToBase64Bytes().Result ?? throw new KeyNotFoundException($"Missing required key '{PASSWORD_HASHING_KEY}' in secrets");
 
-            ERRNO cb(Span<byte> buffer)
-            {
-                //No longer valid peper if plugin is unloaded as its set to zero, so we need to protect it
-                plugin.ThrowIfUnloaded();
+            //Create new session provider
+            SecretProvider secrets = new();
 
-                pepper.CopyTo(buffer);
-                return pepper.Length;
-            }
+            //Load the secret in the background
+            secrets.LoadSecret(plugin);
 
             //See hashing params are defined
             IReadOnlyDictionary<string, JsonElement>? hashingArgs = plugin.TryGetConfig(PASSWORD_HASHING_KEY);
@@ -136,20 +131,13 @@ namespace VNLib.Plugins.Extensions.Loading
                 uint memoryCost = hashingArgs["memory_cost"].GetUInt32();
                 uint parallelism = hashingArgs["parallelism"].GetUInt32();
                 //Load passwords
-                Passwords = new(cb, pepper.Length, (int)saltLen, timeCost, memoryCost, parallelism, hashLen);
+                Passwords = new(secrets, (int)saltLen, timeCost, memoryCost, parallelism, hashLen);
             }
             else
             {
                 //Init default password hashing
-                Passwords = new(cb, pepper.Length);
+                Passwords = new(secrets);
             }
-
-            //Register event to cleanup the password class
-            _ = plugin.RegisterForUnload(() =>
-            {
-                //Zero the pepper
-                CryptographicOperations.ZeroMemory(pepper);
-            });
             //return
             return Passwords;
         }
@@ -184,7 +172,7 @@ namespace VNLib.Plugins.Extensions.Loading
              * assembly, otherwise search all plugins directories
              */
             
-            string? assetDir = config["assets"].GetString();
+            string? assetDir = config.GetPropString("assets");
             assetDir ??= config["path"].GetString();
 
             /*
@@ -345,6 +333,57 @@ namespace VNLib.Plugins.Extensions.Loading
                 //Pass the lazy factory back
                 return lazyFactory;
             }
+        }
+
+        private sealed class SecretProvider : ISecretProvider
+        {
+            private byte[]? _pepper;
+            private Exception? _error;
+
+            ///<inheritdoc/>
+            public int BufferSize => _error != null ? throw _error : _pepper?.Length ?? 0;
+
+            public ERRNO GetSecret(Span<byte> buffer)
+            {
+                if(_error != null)
+                {
+                    throw _error;
+                }
+                //Coppy pepper to buffer
+                _pepper.CopyTo(buffer);
+                //Return pepper length
+                return _pepper!.Length;
+            }
+
+            public void LoadSecret(PluginBase pbase)
+            {
+                _ = pbase.DeferTask(() => LoadSecretInternal(pbase));
+            }
+
+            private async Task LoadSecretInternal(PluginBase pbase)
+            {
+                try
+                {
+                    //Get the pepper from secret storage
+                    _pepper = await pbase.TryGetSecretAsync(PASSWORD_HASHING_KEY).ToBase64Bytes();
+
+                    //Regsiter cleanup
+                    _ = pbase.RegisterForUnload(Clear);
+                }
+                catch(Exception ex)
+                {
+                    //Store exception for re-propagation
+                    _error = ex;
+                }
+            }
+
+            public void Clear()
+            {
+                //Clear the pepper if set
+                MemoryUtil.InitializeBlock(_pepper.AsSpan());
+            }
+
+           
         }
     }
 }

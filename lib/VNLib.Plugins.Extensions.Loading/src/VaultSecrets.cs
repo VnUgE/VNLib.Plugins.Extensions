@@ -328,20 +328,21 @@ namespace VNLib.Plugins.Extensions.Loading
             _ = secret ?? throw new ArgumentNullException(nameof(secret));
             
             //Temp buffer
-            using UnsafeMemoryHandle<byte> buffer = Memory.UnsafeAlloc<byte>(secret.Result.Length);
+            using UnsafeMemoryHandle<byte> buffer = MemoryUtil.UnsafeAlloc<byte>(secret.Result.Length);
             
             //Get base64
-            if(Convert.TryFromBase64Chars(secret.Result, buffer, out int count))
+            if(!Convert.TryFromBase64Chars(secret.Result, buffer, out int count))
             {
-                //Copy to array
-                byte[] value = buffer.Span[..count].ToArray();
-                //Clear block before returning
-                Memory.InitializeBlock<byte>(buffer);
-
-                return value;
+                throw new InternalBufferTooSmallException("internal buffer too small");
             }
 
-            throw new InternalBufferTooSmallException("internal buffer too small");
+            //Copy to array
+            byte[] value = buffer.Span[..count].ToArray();
+
+            //Clear block before returning
+            MemoryUtil.InitializeBlock<byte>(buffer);
+
+            return value;
         }
 
         /// <summary>
@@ -354,7 +355,9 @@ namespace VNLib.Plugins.Extensions.Loading
         public static async Task<byte[]?> ToBase64Bytes(this Task<SecretResult?> secret)
         {
             _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            
             using SecretResult? sec = await secret.ConfigureAwait(false);
+            
             return sec?.GetFromBase64();
         }
 
@@ -378,12 +381,16 @@ namespace VNLib.Plugins.Extensions.Loading
         public static JsonDocument GetJsonDocument(this SecretResult secret)
         {
             _ = secret ?? throw new ArgumentNullException(nameof(secret));
+
             //Alloc buffer, utf8 so 1 byte per char
-            using IMemoryHandle<byte> buffer = Memory.SafeAlloc<byte>(secret.Result.Length);
+            using IMemoryHandle<byte> buffer = MemoryUtil.SafeAlloc<byte>(secret.Result.Length);
+
             //Get utf8 bytes
             int count = Encoding.UTF8.GetBytes(secret.Result, buffer.Span);
+            
             //Reader and parse
             Utf8JsonReader reader = new(buffer.Span[..count]);
+            
             return JsonDocument.ParseValue(ref reader);
         }
         
@@ -396,10 +403,13 @@ namespace VNLib.Plugins.Extensions.Loading
         public static PublicKey GetPublicKey(this SecretResult secret)
         {          
             _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            
             //Alloc buffer, base64 is larger than binary value so char len is large enough
-            using IMemoryHandle<byte> buffer = Memory.SafeAlloc<byte>(secret.Result.Length);
+            using IMemoryHandle<byte> buffer = MemoryUtil.SafeAlloc<byte>(secret.Result.Length);
+            
             //Get base64 bytes
             ERRNO count = VnEncoding.TryFromBase64Chars(secret.Result, buffer.Span);
+            
             //Parse the SPKI from base64
             return PublicKey.CreateFromSubjectPublicKeyInfo(buffer.Span[..(int)count], out _);
         }
@@ -429,10 +439,13 @@ namespace VNLib.Plugins.Extensions.Loading
         public static ReadOnlyJsonWebKey GetJsonWebKey(this SecretResult secret)
         {
             _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            
             //Alloc buffer, utf8 so 1 byte per char
-            using IMemoryHandle<byte> buffer = Memory.SafeAlloc<byte>(secret.Result.Length);
+            using IMemoryHandle<byte> buffer = MemoryUtil.SafeAlloc<byte>(secret.Result.Length);
+            
             //Get utf8 bytes
             int count = Encoding.UTF8.GetBytes(secret.Result, buffer.Span);
+
             return new ReadOnlyJsonWebKey(buffer.Span[..count]);
         }
 
@@ -446,7 +459,9 @@ namespace VNLib.Plugins.Extensions.Loading
         public static async Task<ReadOnlyJsonWebKey?> ToJsonWebKey(this Task<SecretResult?> secret)
         {
             _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            
             using SecretResult? sec = await secret.ConfigureAwait(false);
+
             return sec?.GetJsonWebKey();
         }
 
@@ -464,7 +479,9 @@ namespace VNLib.Plugins.Extensions.Loading
         public static async Task<ReadOnlyJsonWebKey> ToJsonWebKey(this Task<SecretResult?> secret, bool required)
         {
             _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            
             using SecretResult? sec = await secret.ConfigureAwait(false);
+            
             //If required is true and result is null, raise an exception
             return required && sec == null ? throw new KeyNotFoundException("A required secret was missing") : (sec?.GetJsonWebKey()!);
         }

@@ -48,13 +48,13 @@ namespace VNLib.Plugins.Extensions.Loading
         ///<inheritdoc/>
         protected override void Free()
         {
-            Memory.InitializeBlock(_secretChars.AsSpan());
+            MemoryUtil.InitializeBlock(_secretChars.AsSpan());
         }
 
         internal static SecretResult ToSecret(string? result)
         {
             SecretResult res = new(result.AsSpan());
-            Memory.UnsafeZeroMemory<char>(result);
+            MemoryUtil.UnsafeZeroMemory<char>(result);
             return res;
         }
     }

@@ -265,7 +265,7 @@ namespace VNLib.Plugins.Extensions.Data.Storage
 
                 //Convert stream to vnstream
                 VnMemoryStream vms = (VnMemoryStream)data;
-                using (IMemoryHandle<byte> encBuffer = Memory.SafeAlloc<byte>((int)vms.Length))
+                using (IMemoryHandle<byte> encBuffer = MemoryUtil.SafeAlloc<byte>((int)vms.Length))
                 {
                     //try to compress
                     if(!BrotliEncoder.TryCompress(vms.AsSpan(), encBuffer.Span, out int compressed))

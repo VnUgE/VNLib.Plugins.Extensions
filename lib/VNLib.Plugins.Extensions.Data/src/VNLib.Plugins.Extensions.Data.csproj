@@ -4,21 +4,20 @@
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>VNLib.Plugins.Extensions.Data</RootNamespace>
     <AssemblyName>VNLib.Plugins.Extensions.Data</AssemblyName>
-    <Authors>Vaughn Nugent</Authors>
-    <Description>Data extensions for VNLib Plugins</Description>
-    <Copyright>Copyright © 2022 Vaughn Nugent</Copyright>
-    <PackageProjectUrl>https://www.vaughnnugent.com/resources</PackageProjectUrl>
     <Version>1.0.1.1</Version>
     <Nullable>enable</Nullable>
     <SignAssembly>True</SignAssembly>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <AssemblyOriginatorKeyFile>\\vaughnnugent.com\Internal\Folder Redirection\vman\Documents\Programming\Software\StrongNameingKey.snk</AssemblyOriginatorKeyFile>
     <AnalysisLevel>latest-all</AnalysisLevel>
   </PropertyGroup>
 
-  <!-- Resolve nuget dll files and store them in the output dir -->
+
   <PropertyGroup>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <Authors>Vaughn Nugent</Authors>
+    <Description>Data extensions for VNLib Plugins</Description>
+    <Copyright>Copyright © 2023 Vaughn Nugent</Copyright>
+    <PackageProjectUrl>https://www.vaughnnugent.com/resources</PackageProjectUrl>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

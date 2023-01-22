@@ -28,14 +28,13 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Security.Cryptography;
 using System.Runtime.CompilerServices;
 
 using VNLib.Utils;
+using VNLib.Utils.Memory;
 using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;
 using VNLib.Plugins.Essentials.Accounts;
-using VNLib.Utils.Memory;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
@@ -382,8 +381,6 @@ namespace VNLib.Plugins.Extensions.Loading
                 //Clear the pepper if set
                 MemoryUtil.InitializeBlock(_pepper.AsSpan());
             }
-
-           
         }
     }
 }

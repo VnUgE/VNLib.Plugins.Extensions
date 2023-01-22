@@ -2,20 +2,22 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <Authors>Vaughn Nugent</Authors>
-    <Copyright>Copyright © 2022 Vaughn Nugent</Copyright>
-    <PackageProjectUrl>https://www.vaughnnugent.com/resources</PackageProjectUrl>
+    <RootNamespace>VNLib.Plugins.Extensions.Loading.Sql</RootNamespace>
+    <AssemblyName>VNLib.Plugins.Extensions.Loading.Sql</AssemblyName>
     <Version>1.0.1.1</Version>
-    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <Nullable>enable</Nullable>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>\\vaughnnugent.com\Internal\Folder Redirection\vman\Documents\Programming\Software\StrongNameingKey.snk</AssemblyOriginatorKeyFile>
+    <AnalysisLevel>latest-all</AnalysisLevel>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <Authors>Vaughn Nugent</Authors>
+    <Copyright>Copyright © 2023 Vaughn Nugent</Copyright>
+    <PackageProjectUrl>https://www.vaughnnugent.com/resources/software</PackageProjectUrl>
   </PropertyGroup>
+
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <Deterministic>False</Deterministic>

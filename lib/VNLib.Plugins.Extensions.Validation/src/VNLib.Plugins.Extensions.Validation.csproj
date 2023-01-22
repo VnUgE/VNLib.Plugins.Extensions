@@ -1,20 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>    
-    <Authors>Vaughn Nugent</Authors>
-    <Copyright>Copyright © 2022 Vaughn Nugent</Copyright>
-    <PackageProjectUrl>https://www.vaughnnugent.com/resources</PackageProjectUrl>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>VNLib.Plugins.Extensions.Validation</RootNamespace>
+    <AssemblyName>VNLib.Plugins.Extensions.Validation</AssemblyName>
     <Version>1.0.1.1</Version>
+    <Nullable>enable</Nullable>
+  
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>\\vaughnnugent.com\Internal\Folder Redirection\vman\Documents\Programming\Software\StrongNameingKey.snk</AssemblyOriginatorKeyFile>
+    <AnalysisLevel>latest-all</AnalysisLevel>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <AnalysisLevel>latest-all</AnalysisLevel>
-    <Nullable>enable</Nullable>
+    <Authors>Vaughn Nugent</Authors>
+    <Copyright>Copyright © 2023 Vaughn Nugent</Copyright>
+    <PackageProjectUrl>https://www.vaughnnugent.com/resources</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>

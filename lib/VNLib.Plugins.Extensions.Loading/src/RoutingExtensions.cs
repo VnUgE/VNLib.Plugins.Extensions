@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using VNLib.Plugins.Extensions.Loading.Events;
+using System.Net;
 
 namespace VNLib.Plugins.Extensions.Loading.Routing
 {
@@ -50,42 +51,53 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
         public static T Route<T>(this PluginBase plugin, string? pluginConfigPathName) where T : IEndpoint
         {
             Type endpointType = typeof(T);
+
+            T endpoint;
+
             //If the config attribute is not set, then ignore the config variables
             if (string.IsNullOrWhiteSpace(pluginConfigPathName))
             {
                 ConstructorInfo? constructor = endpointType.GetConstructor(new Type[] { typeof(PluginBase) });
+
                 _ = constructor ?? throw new EntryPointNotFoundException($"No constructor found for {endpointType.Name}");
+
                 //Create the new endpoint and pass the plugin instance
-                T endpoint = (T)constructor.Invoke(new object[] { plugin });
+                endpoint = (T)constructor.Invoke(new object[] { plugin });
+
                 //Register event handlers for the endpoint
                 ScheduleIntervals(plugin, endpoint, endpointType, null);
-                //Route the endpoint
-                plugin.Route(endpoint);
-
-                //Store ref to plugin for endpoint
-                _pluginRefs.Add(endpoint, plugin);
-
-                return endpoint;
             }
             else
             {
                 ConstructorInfo? constructor = endpointType.GetConstructor(new Type[] { typeof(PluginBase), typeof(IReadOnlyDictionary<string, JsonElement>) });
+
                 //Make sure the constructor exists
                 _ = constructor ?? throw new EntryPointNotFoundException($"No constructor found for {endpointType.Name}");
+
                 //Get config variables for the endpoint
                 IReadOnlyDictionary<string, JsonElement> conf = plugin.GetConfig(pluginConfigPathName);
+
                 //Create the new endpoint and pass the plugin instance along with the configuration object
-                T endpoint = (T)constructor.Invoke(new object[] { plugin, conf });
+                endpoint = (T)constructor.Invoke(new object[] { plugin, conf });
+
                 //Register event handlers for the endpoint
                 ScheduleIntervals(plugin, endpoint, endpointType, conf);
-                //Route the endpoint
-                plugin.Route(endpoint);
-
-                //Store ref to plugin for endpoint
-                _pluginRefs.Add(endpoint, plugin);
-
-                return endpoint;
             }
+
+            //Route the endpoint
+            plugin.Route(endpoint);
+
+            //Store ref to plugin for endpoint
+            _pluginRefs.Add(endpoint, plugin);
+
+            //See if the endpoint is disposable
+            if (endpoint is IDisposable dis)
+            {
+                //Register dispose for unload
+                _ = plugin.RegisterForUnload(dis.Dispose);
+            }
+
+            return endpoint;
         }
 
         /// <summary>

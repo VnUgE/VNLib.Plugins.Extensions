@@ -78,6 +78,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ObjectDisposedException"></exception>
         public static Task<SecretResult?> TryGetSecretAsync(this PluginBase plugin, string secretName)
         {
+            plugin.ThrowIfUnloaded();
             //Get the secret from the config file raw
             string? rawSecret = TryGetSecretInternal(plugin, secretName);
             if (rawSecret == null)
@@ -159,6 +160,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ObjectDisposedException"></exception>
         public static Task<X509Certificate?> TryGetCertificateAsync(this PluginBase plugin, string secretName)
         {
+            plugin.ThrowIfUnloaded();
             //Get the secret from the config file raw
             string? rawSecret = TryGetSecretInternal(plugin, secretName);
             if (rawSecret == null)

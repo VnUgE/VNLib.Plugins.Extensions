@@ -28,7 +28,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
-    <PackageReference Include="VaultSharp" Version="1.7.1" />
+    <PackageReference Include="VaultSharp" Version="1.12.2.1" />
   </ItemGroup>
 
   <ItemGroup>

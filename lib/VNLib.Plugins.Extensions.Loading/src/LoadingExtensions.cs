@@ -38,6 +38,7 @@ using VNLib.Plugins.Essentials.Accounts;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
+
     /// <summary>
     /// Provides common loading (and unloading when required) extensions for plugins
     /// </summary>
@@ -225,7 +226,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <param name="delayMs">An optional startup delay for the operation</param>
         /// <returns>A task that completes when the deferred task completes </returns>
         /// <exception cref="ObjectDisposedException"></exception>
-        public static async Task DeferTask(this PluginBase plugin, Func<Task> asyncTask, int delayMs = 0)
+        public static async Task ObserveTask(this PluginBase plugin, Func<Task> asyncTask, int delayMs = 0)
         {
             /*
              * Motivation:
@@ -266,6 +267,20 @@ namespace VNLib.Plugins.Extensions.Loading
             }
         }
 
+
+        /// <summary>
+        /// Schedules work to begin after the specified delay to be observed by the plugin while 
+        /// passing plugin specifie information. Exceptions are logged to the default plugin log
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <param name="work">The work to be observed</param>
+        /// <param name="delayMs">The time (in milliseconds) to delay dispatching the work item</param>
+        /// <returns>The task that represents the scheduled work</returns>
+        public static Task ObserveWork(this PluginBase plugin, IAsyncBackgroundWork work, int delayMs = 0)
+        {
+            return ObserveTask(plugin, () => work.DoWorkAsync(plugin.Log, plugin.UnloadToken), delayMs);
+        }
+
         /// <summary>
         /// Registers an event to occur when the plugin is unloaded on a background thread
         /// and will cause the Plugin.Unload() method to block until the event completes
@@ -292,9 +307,8 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             //Registaer the task to cause the plugin to wait
-            return pbase.DeferTask(() => WaitForUnload(pbase, callback));
+            return pbase.ObserveTask(() => WaitForUnload(pbase, callback));
         }
-
 
         private sealed class PluginLocalCache
         {
@@ -356,7 +370,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
             public void LoadSecret(PluginBase pbase)
             {
-                _ = pbase.DeferTask(() => LoadSecretInternal(pbase));
+                _ = pbase.ObserveTask(() => LoadSecretInternal(pbase));
             }
 
             private async Task LoadSecretInternal(PluginBase pbase)

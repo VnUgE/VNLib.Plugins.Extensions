@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -26,6 +26,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -37,7 +38,7 @@ using VNLib.Utils.Extensions;
 using VNLib.Plugins.Essentials.Accounts;
 
 namespace VNLib.Plugins.Extensions.Loading
-{
+{   
 
     /// <summary>
     /// Provides common loading (and unloading when required) extensions for plugins
@@ -103,45 +104,12 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="OverflowException"></exception>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
-        public static PasswordHashing GetPasswords(this PluginBase plugin)
+        public static IPasswordHashingProvider GetPasswords(this PluginBase plugin)
         {
             plugin.ThrowIfUnloaded();
-            //Get/load the passwords one time only
-            return GetOrCreateSingleton(plugin, LoadPasswords);
+            //Check if a password configuration element is loaded, otherwise load with defaults
+            return plugin.GetOrCreateSingleton<SecretProvider>().Passwords;
         }
-        
-        private static PasswordHashing LoadPasswords(PluginBase plugin)
-        {
-            PasswordHashing Passwords;
-
-            //Create new session provider
-            SecretProvider secrets = new();
-
-            //Load the secret in the background
-            secrets.LoadSecret(plugin);
-
-            //See hashing params are defined
-            IReadOnlyDictionary<string, JsonElement>? hashingArgs = plugin.TryGetConfig(PASSWORD_HASHING_KEY);
-            if (hashingArgs != null)
-            {
-                //Get hashing arguments
-                uint saltLen = hashingArgs["salt_len"].GetUInt32();
-                uint hashLen = hashingArgs["hash_len"].GetUInt32();
-                uint timeCost = hashingArgs["time_cost"].GetUInt32();
-                uint memoryCost = hashingArgs["memory_cost"].GetUInt32();
-                uint parallelism = hashingArgs["parallelism"].GetUInt32();
-                //Load passwords
-                Passwords = new(secrets, (int)saltLen, timeCost, memoryCost, parallelism, hashLen);
-            }
-            else
-            {
-                //Init default password hashing
-                Passwords = new(secrets);
-            }
-            //return
-            return Passwords;
-        }
-
 
         /// <summary>
         /// Loads an assembly into the current plugins AppDomain and will unload when disposed
@@ -165,21 +133,21 @@ namespace VNLib.Plugins.Extensions.Loading
             _ = assemblyName ?? throw new ArgumentNullException(nameof(assemblyName));
             
             //get plugin directory from config
-            IReadOnlyDictionary<string, JsonElement> config = plugin.GetConfig("plugins");
+            IConfigScope config = plugin.GetConfig("plugins");
 
             /*
              * Allow an assets directory to limit the scope of the search for the desired
              * assembly, otherwise search all plugins directories
              */
             
-            string? assetDir = config.GetPropString("assets");
+            string? assetDir = config.GetPropString(PLUGIN_ASSET_KEY);
             assetDir ??= config["path"].GetString();
 
             /*
              * This should never happen since this method can only be called from a
              * plugin context, which means this path was used to load the current plugin
              */
-            _ = assetDir ?? throw new ArgumentNullException("assets", "No plugin path is defined for the current host configuration, this is likely a bug");
+            _ = assetDir ?? throw new ArgumentNullException(PLUGIN_ASSET_KEY, "No plugin path is defined for the current host configuration, this is likely a bug");
             
             //Get the first file that matches the search file
             string? asmFile = Directory.EnumerateFiles(assetDir, assemblyName, dirSearchOption).FirstOrDefault();
@@ -187,8 +155,7 @@ namespace VNLib.Plugins.Extensions.Loading
             
             //Load the assembly
             return AssemblyLoader<T>.Load(asmFile, plugin.UnloadToken);
-        }
-        
+        }        
 
         /// <summary>
         /// Determintes if the current plugin config has a debug propety set
@@ -226,7 +193,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <param name="delayMs">An optional startup delay for the operation</param>
         /// <returns>A task that completes when the deferred task completes </returns>
         /// <exception cref="ObjectDisposedException"></exception>
-        public static async Task ObserveTask(this PluginBase plugin, Func<Task> asyncTask, int delayMs = 0)
+        public static async Task ObserveWork(this PluginBase plugin, Func<Task> asyncTask, int delayMs = 0)
         {
             /*
              * Motivation:
@@ -267,7 +234,6 @@ namespace VNLib.Plugins.Extensions.Loading
             }
         }
 
-
         /// <summary>
         /// Schedules work to begin after the specified delay to be observed by the plugin while 
         /// passing plugin specifie information. Exceptions are logged to the default plugin log
@@ -278,22 +244,22 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The task that represents the scheduled work</returns>
         public static Task ObserveWork(this PluginBase plugin, IAsyncBackgroundWork work, int delayMs = 0)
         {
-            return ObserveTask(plugin, () => work.DoWorkAsync(plugin.Log, plugin.UnloadToken), delayMs);
+            return ObserveWork(plugin, () => work.DoWorkAsync(plugin.Log, plugin.UnloadToken), delayMs);
         }
 
         /// <summary>
         /// Registers an event to occur when the plugin is unloaded on a background thread
         /// and will cause the Plugin.Unload() method to block until the event completes
         /// </summary>
-        /// <param name="pbase"></param>
+        /// <param name="plugin"></param>
         /// <param name="callback">The method to call when the plugin is unloaded</param>
         /// <returns>A task that represents the registered work</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
-        public static Task RegisterForUnload(this PluginBase pbase, Action callback)
+        public static Task RegisterForUnload(this PluginBase plugin, Action callback)
         {
             //Test status
-            pbase.ThrowIfUnloaded();
+            plugin.ThrowIfUnloaded();
             _ = callback ?? throw new ArgumentNullException(nameof(callback));
 
             //Wait method
@@ -307,8 +273,237 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             //Registaer the task to cause the plugin to wait
-            return pbase.ObserveTask(() => WaitForUnload(pbase, callback));
+            return plugin.ObserveWork(() => WaitForUnload(plugin, callback));
         }
+
+        /// <summary>
+        /// <para>
+        /// Gets or inializes a singleton service of the desired type.
+        /// </para>
+        /// <para>
+        /// If the type derrives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
+        /// method is called once when the instance is loaded, and observed on the plugin scheduler.
+        /// </para>
+        /// <para>
+        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, System.Threading.CancellationToken)"/>
+        /// method is called once when the instance is loaded, and observed on the plugin scheduler.
+        /// </para>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="plugin"></param>
+        /// <returns></returns>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="EntryPointNotFoundException"></exception>
+        public static T GetOrCreateSingleton<T>(this PluginBase plugin)
+        {
+            //Add service to service continer
+            return GetOrCreateSingleton(plugin, CreateService<T>);
+        }  
+
+        /// <summary>
+        /// <para>
+        /// Gets or inializes a singleton service of the desired type.
+        /// </para>
+        /// <para>
+        /// If the type derrives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
+        /// method is called once when the instance is loaded, and observed on the plugin scheduler.
+        /// </para>
+        /// <para>
+        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, System.Threading.CancellationToken)"/>
+        /// method is called once when the instance is loaded, and observed on the plugin scheduler.
+        /// </para>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="plugin"></param>
+        /// <param name="configName">Overrids the default configuration property name</param>
+        /// <returns>The configured service singleton</returns>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="EntryPointNotFoundException"></exception>
+        public static T GetOrCreateSingleton<T>(this PluginBase plugin, string configName)
+        {
+            //Add service to service continer
+            return GetOrCreateSingleton(plugin, (plugin) => CreateService<T>(plugin, configName));
+        }
+
+        /// <summary>
+        /// Configures the service asynchronously on the plugin's scheduler and returns a task
+        /// that represents the configuration work.
+        /// </summary>
+        /// <typeparam name="T">The service type</typeparam>
+        /// <param name="plugin"></param>
+        /// <param name="service">The service to configure</param>
+        /// <param name="delayMs">The time in milliseconds to delay the configuration task</param>
+        /// <returns>A task that complets when the load operation completes</returns>
+        /// <exception cref="ObjectDisposedException"></exception>
+        public static Task ConfigureServiceAsync<T>(this PluginBase plugin, T service, int delayMs = 0) where T : IAsyncConfigurable
+        {
+            //Register async load
+            return ObserveWork(plugin, () => service.ConfigureServiceAsync(plugin), delayMs);
+        }
+
+        /// <summary>
+        /// <para>
+        /// Creates and configures a new instance of the desired type and captures the configuration
+        /// information from the type.
+        /// </para>
+        /// <para>
+        /// If the type derrives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
+        /// method is called once when the instance is loaded, and observed on the plugin scheduler.
+        /// </para>
+        /// <para>
+        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, System.Threading.CancellationToken)"/>
+        /// method is called once when the instance is loaded, and observed on the plugin scheduler.
+        /// </para>
+        /// <para>
+        /// If the type derrives <see cref="IDisposable"/> the <see cref="IDisposable.Dispose"/> method is called once when 
+        /// the plugin is unloaded.
+        /// </para>
+        /// </summary>
+        /// <typeparam name="T">The service type</typeparam>
+        /// <param name="plugin"></param>
+        /// <returns>The a new instance configured service</returns>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="EntryPointNotFoundException"></exception>
+        public static T CreateService<T>(this PluginBase plugin)
+        {
+            if (plugin.HasConfigForType<T>())
+            {
+                IConfigScope config = plugin.GetConfigForType<T>();
+                return CreateService<T>(plugin, config);
+            }
+            else
+            {
+                return CreateService<T>(plugin, (IConfigScope?)null);
+            }
+        }
+
+        /// <summary>
+        /// <para>
+        /// Creates and configures a new instance of the desired type, with the configuration property name
+        /// </para>
+        /// <para>
+        /// If the type derrives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
+        /// method is called once when the instance is loaded, and observed on the plugin scheduler.
+        /// </para>
+        /// <para>
+        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, System.Threading.CancellationToken)"/>
+        /// method is called once when the instance is loaded, and observed on the plugin scheduler.
+        /// </para>
+        /// </summary>
+        /// <typeparam name="T">The service type</typeparam>
+        /// <param name="plugin"></param>
+        /// <param name="configName">The configuration element name to pass to the new instance</param>
+        /// <returns>The a new instance configured service</returns>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="EntryPointNotFoundException"></exception>
+        public static T CreateService<T>(this PluginBase plugin, string configName)
+        {
+            IConfigScope config = plugin.GetConfig(configName);
+            return CreateService<T>(plugin, config);
+        }
+
+        /// <summary>
+        /// <para>
+        /// Creates and configures a new instance of the desired type, with the specified configuration scope
+        /// </para>
+        /// <para>
+        /// If the type derrives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
+        /// method is called once when the instance is loaded, and observed on the plugin scheduler.
+        /// </para>
+        /// <para>
+        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, System.Threading.CancellationToken)"/>
+        /// method is called once when the instance is loaded, and observed on the plugin scheduler.
+        /// </para>
+        /// </summary>
+        /// <typeparam name="T">The service type</typeparam>
+        /// <param name="plugin"></param>
+        /// <param name="config">The configuration scope to pass directly to the new instance</param>
+        /// <returns>The a new instance configured service</returns>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="EntryPointNotFoundException"></exception>
+        public static T CreateService<T>(this PluginBase plugin, IConfigScope? config)
+        {
+            plugin.ThrowIfUnloaded();
+
+            Type serviceType = typeof(T);
+
+            T service;
+
+            //Determin configuration requirments
+            if (ConfigurationExtensions.ConfigurationRequired(serviceType) || config != null)
+            {
+                if(config == null)
+                {
+                    ConfigurationExtensions.ThrowConfigNotFoundForType(serviceType);
+                }
+
+                //Get the constructor for required or available config
+                ConstructorInfo? constructor = serviceType.GetConstructor(new Type[] { typeof(PluginBase), typeof(IConfigScope) });               
+
+                //Make sure the constructor exists
+                _ = constructor ?? throw new EntryPointNotFoundException($"No constructor found for {serviceType.Name}");
+
+                //Call constructore
+                service = (T)constructor.Invoke(new object[2] { plugin, config });
+            }
+            else
+            {
+                //Get the constructor
+                ConstructorInfo? constructor = serviceType.GetConstructor(new Type[] { typeof(PluginBase) });
+
+                //Make sure the constructor exists
+                _ = constructor ?? throw new EntryPointNotFoundException($"No constructor found for {serviceType.Name}");
+
+                //Call constructore
+                service = (T)constructor.Invoke(new object[1] { plugin });
+            }          
+
+            Task? loading = null;
+
+            //If the service is async configurable, configure it
+            if (service is IAsyncConfigurable asc)
+            {
+#pragma warning disable CA5394 // Do not use insecure randomness
+                int randomDelay = Random.Shared.Next(1, 100);
+#pragma warning restore CA5394 // Do not use insecure randomness
+
+                //Register async load
+                loading = plugin.ConfigureServiceAsync(asc, randomDelay);
+            }
+
+            //Allow background work loading
+            if (service is IAsyncBackgroundWork bw)
+            {
+
+#pragma warning disable CA5394 // Do not use insecure randomness
+                int randomDelay = Random.Shared.Next(10, 200);
+#pragma warning restore CA5394 // Do not use insecure randomness
+
+                //If the instances supports async loading, dont start work until its loaded
+                if(loading != null)
+                {
+                    _ = loading.ContinueWith(t => ObserveWork(plugin, bw, randomDelay), TaskScheduler.Default);
+                }
+                else
+                {
+                    _ = ObserveWork(plugin, bw, randomDelay);
+                }
+            }
+
+            //register dispose cleanup
+            if (service is IDisposable disp)
+            {
+                _ = plugin.RegisterForUnload(disp.Dispose);
+            }
+
+            return service;
+        }
+
 
         private sealed class PluginLocalCache
         {
@@ -348,52 +543,91 @@ namespace VNLib.Plugins.Extensions.Loading
             }
         }
 
-        private sealed class SecretProvider : ISecretProvider
+        [ConfigurationName(PASSWORD_HASHING_KEY, Required = false)]
+        private sealed class SecretProvider : VnDisposeable, ISecretProvider, IAsyncConfigurable
         {
             private byte[]? _pepper;
             private Exception? _error;
 
+            public SecretProvider(PluginBase plugin, IConfigScope config)
+            {
+                if(config.TryGetValue("args", out JsonElement el))
+                {
+                    //Convert to dict
+                    IReadOnlyDictionary<string, JsonElement> hashingArgs = el.EnumerateObject().ToDictionary(static k => k.Name, static v => v.Value);
+
+                    //Get hashing arguments
+                    uint saltLen = hashingArgs["salt_len"].GetUInt32();
+                    uint hashLen = hashingArgs["hash_len"].GetUInt32();
+                    uint timeCost = hashingArgs["time_cost"].GetUInt32();
+                    uint memoryCost = hashingArgs["memory_cost"].GetUInt32();
+                    uint parallelism = hashingArgs["parallelism"].GetUInt32();
+                    //Load passwords
+                    Passwords = new(this, (int)saltLen, timeCost, memoryCost, parallelism, hashLen);
+                }
+                else
+                {
+                    Passwords = new(this);
+                }
+            }
+
+            public SecretProvider(PluginBase plugin)
+            {
+                Passwords = new(this);
+            }
+          
+
+            public PasswordHashing Passwords { get; }
+
             ///<inheritdoc/>
-            public int BufferSize => _error != null ? throw _error : _pepper?.Length ?? 0;
+            public int BufferSize
+            {
+                get
+                {
+                    Check();
+                    return _pepper!.Length;
+                }
+            }
 
             public ERRNO GetSecret(Span<byte> buffer)
             {
-                if(_error != null)
-                {
-                    throw _error;
-                }
+                Check();
                 //Coppy pepper to buffer
                 _pepper.CopyTo(buffer);
                 //Return pepper length
                 return _pepper!.Length;
             }
 
-            public void LoadSecret(PluginBase pbase)
+            protected override void Check()
             {
-                _ = pbase.ObserveTask(() => LoadSecretInternal(pbase));
+                base.Check();
+                if(_error != null)
+                {
+                    throw _error;
+                }
             }
 
-            private async Task LoadSecretInternal(PluginBase pbase)
+            protected override void Free()
+            {
+                //Clear the pepper if set
+                MemoryUtil.InitializeBlock(_pepper.AsSpan());
+            }
+
+            public async Task ConfigureServiceAsync(PluginBase plugin)
             {
                 try
                 {
                     //Get the pepper from secret storage
-                    _pepper = await pbase.TryGetSecretAsync(PASSWORD_HASHING_KEY).ToBase64Bytes();
-
-                    //Regsiter cleanup
-                    _ = pbase.RegisterForUnload(Clear);
+                    _pepper = await plugin.TryGetSecretAsync(PASSWORD_HASHING_KEY).ToBase64Bytes();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     //Store exception for re-propagation
                     _error = ex;
-                }
-            }
 
-            public void Clear()
-            {
-                //Clear the pepper if set
-                MemoryUtil.InitializeBlock(_pepper.AsSpan());
+                    //Propagate exception to system
+                    throw;
+                }
             }
         }
     }

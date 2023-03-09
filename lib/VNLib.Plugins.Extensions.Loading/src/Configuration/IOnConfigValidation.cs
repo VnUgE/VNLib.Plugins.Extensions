@@ -3,9 +3,9 @@
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: S3Config.cs 
+* File: IOnConfigValidation.cs 
 *
-* S3Config.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
+* IOnConfigValidation.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
 * VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
@@ -22,25 +22,17 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-using System.Text.Json.Serialization;
-
 namespace VNLib.Plugins.Extensions.Loading
 {
-    public sealed class S3Config
+    /// <summary>
+    /// Called when a configuration deserialzation occurs, to validate
+    /// the configuration.
+    /// </summary>
+    public interface IOnConfigValidation
     {
-        [JsonPropertyName("server_address")]
-        public string? ServerAddress { get; init; }
-
-        [JsonPropertyName("access_key")]
-        public string? ClientId { get; init; }
-
-        [JsonPropertyName("bucket")]
-        public string? BaseBucket { get; init; }
-
-        [JsonPropertyName("use_ssl")]
-        public bool? UseSsl { get; init; }
-
-        [JsonPropertyName("region")]
-        public string? Region { get; init; }
+        /// <summary>
+        /// Validates a json configuration during deserialzation
+        /// </summary>
+        void Validate();
     }
 }

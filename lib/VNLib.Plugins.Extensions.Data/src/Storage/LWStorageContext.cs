@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -22,6 +22,8 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
+using System;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace VNLib.Plugins.Extensions.Data.Storage
@@ -40,9 +42,8 @@ namespace VNLib.Plugins.Extensions.Data.Storage
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            //Set table name
-            modelBuilder.Entity<LWStorageEntry>()
-                .ToTable(TableName);
+            if(TableName != null)
+                throw new NotImplementedException("Table/relational package requires development not yet implemented");
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -23,12 +23,10 @@
 */
 
 using System;
-using System.Linq;
 using System.Text.Json;
 using System.Reflection;
 using System.Collections.Generic;
-
-using VNLib.Utils.Extensions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
@@ -52,8 +50,15 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             ConfigVarName = configVarName;
         }
+
+        /// <summary>
+        /// When true or not configured, signals that the type requires a configuration scope
+        /// when loaded. When false, and configuration is not found, signals to the service loading
+        /// system to continue without configuration
+        /// </summary>
+        public bool Required { get; init; } = true;
     }
-    
+
     /// <summary>
     /// Contains extensions for plugin configuration specifc extensions
     /// </summary>
@@ -69,22 +74,26 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <typeparam name="T">The type to get the configuration of</typeparam>
         /// <param name="plugin"></param>
         /// <returns>A <see cref="Dictionary{TKey, TValue}"/> of top level configuration elements for the type</returns>
+        /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
-        public static IReadOnlyDictionary<string, JsonElement> GetConfigForType<T>(this PluginBase plugin)
+        public static IConfigScope GetConfigForType<T>(this PluginBase plugin)
         {
             Type t = typeof(T);
             return plugin.GetConfigForType(t);
         }
+
         /// <summary>
-        /// Retrieves a top level configuration dictionary of elements with the specified property name,
-        /// from the plugin config first, or falls back to the host config file
+        /// Retrieves a top level configuration dictionary of elements with the specified property name.
         /// </summary>
+        /// <remarks>
+        /// Search order: Plugin config, fall back to host config, throw if not found
+        /// </remarks>
         /// <param name="plugin"></param>
         /// <param name="propName">The config property name to retrieve</param>
-        /// <returns>A <see cref="Dictionary{TKey, TValue}"/> of top level configuration elements for the type</returns>
+        /// <returns>A <see cref="IConfigScope"/> of top level configuration elements for the type</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
-        public static IReadOnlyDictionary<string, JsonElement> GetConfig(this PluginBase plugin, string propName)
+        public static IConfigScope GetConfig(this PluginBase plugin, string propName)
         {
             plugin.ThrowIfUnloaded();
             try
@@ -96,29 +105,33 @@ namespace VNLib.Plugins.Extensions.Loading
                     el = plugin.HostConfig.GetProperty(propName);
                 }
                 //Get the top level config as a dictionary
-                return el.EnumerateObject().ToDictionary(static k => k.Name, static k => k.Value);
+                return new ConfigScope(el, propName);
             }
-            catch(KeyNotFoundException)
+            catch (KeyNotFoundException)
             {
                 throw new KeyNotFoundException($"Missing required top level configuration object '{propName}', in host/plugin configuration files");
             }
         }
+
         /// <summary>
         /// Retrieves a top level configuration dictionary of elements with the specified property name,
-        /// from the plugin config first, or falls back to the host config file
+        /// or null if no configuration could be found
         /// </summary>
+        /// <remarks>
+        /// Search order: Plugin config, fall back to host config, null not found
+        /// </remarks>
         /// <param name="plugin"></param>
         /// <param name="propName">The config property name to retrieve</param>
         /// <returns>A <see cref="Dictionary{TKey, TValue}"/> of top level configuration elements for the type</returns>
         /// <exception cref="ObjectDisposedException"></exception>
-        public static IReadOnlyDictionary<string, JsonElement>? TryGetConfig(this PluginBase plugin, string propName)
+        public static IConfigScope? TryGetConfig(this PluginBase plugin, string propName)
         {
             plugin.ThrowIfUnloaded();
             //Try to get the element from the plugin config first, or fallback to host
             if (plugin.PluginConfig.TryGetProperty(propName, out JsonElement el) || plugin.HostConfig.TryGetProperty(propName, out el))
             {
                 //Get the top level config as a dictionary
-                return el.EnumerateObject().ToDictionary(static k => k.Name, static k => k.Value);
+                return new ConfigScope(el, propName);
             }
             //No config found
             return null;
@@ -130,15 +143,65 @@ namespace VNLib.Plugins.Extensions.Loading
         /// </summary>
         /// <param name="plugin"></param>
         /// <param name="type">The type to get configuration data for</param>
-        /// <returns>A <see cref="Dictionary{TKey, TValue}"/> of top level configuration elements for the type</returns>
+        /// <returns>A <see cref="IConfigScope"/> of top level configuration elements for the type</returns>
         /// <exception cref="ObjectDisposedException"></exception>
-        public static IReadOnlyDictionary<string, JsonElement> GetConfigForType(this PluginBase plugin, Type type)
+        public static IConfigScope GetConfigForType(this PluginBase plugin, Type type)
+        {
+            _ = type ?? throw new ArgumentNullException(nameof(type));
+
+            string? configName = GetConfigNameForType(type);
+
+            if (configName == null)
+            {
+                ThrowConfigNotFoundForType(type);
+            }
+
+            return plugin.GetConfig(configName);
+        }
+
+        /// <summary>
+        /// Gets the configuration property name for the type
+        /// </summary>
+        /// <param name="type">The type to get the configuration name for</param>
+        /// <returns>The configuration property element name</returns>
+        public static string? GetConfigNameForType(Type type)
         {
             //Get config name attribute from plugin type
-            ConfigurationNameAttribute? configName = type.GetCustomAttribute<ConfigurationNameAttribute>();
-            return configName?.ConfigVarName == null
-                ? throw new KeyNotFoundException("No configuration attribute set")
-                : plugin.GetConfig(configName.ConfigVarName);
+            return type.GetCustomAttribute<ConfigurationNameAttribute>()?.ConfigVarName;
+        }
+
+        /// <summary>
+        /// Determines if the type requires a configuration element.
+        /// </summary>
+        /// <param name="type">The type to determine config required status</param>
+        /// <returns>
+        /// True if the configuration is required, or false if the <see cref="ConfigurationNameAttribute"/> 
+        /// was not declared, or <see cref="ConfigurationNameAttribute.Required"/> is false
+        /// </returns>
+        public static bool ConfigurationRequired(Type type)
+        {
+            return type.GetCustomAttribute<ConfigurationNameAttribute>()?.Required ?? false;
+        }
+
+        /// <summary>
+        /// Throws a <see cref="KeyNotFoundException"/> with proper diagnostic information
+        /// for missing configuration for a given type
+        /// </summary>
+        /// <param name="type">The type to raise exception for</param>
+        /// <exception cref="KeyNotFoundException"></exception>
+        [DoesNotReturn]
+        public static void ThrowConfigNotFoundForType(Type type)
+        {
+            //Try to get the config property name for the type
+            string? configName = GetConfigNameForType(type);
+            if (configName != null)
+            {
+                throw new KeyNotFoundException($"Missing required configuration key {configName} for type {type.Name}");
+            }
+            else
+            {
+                throw new KeyNotFoundException($"Missing required configuration key for type {type.Name}");
+            }
         }
 
         /// <summary>
@@ -147,12 +210,35 @@ namespace VNLib.Plugins.Extensions.Loading
         /// </summary>
         /// <param name="obj">The object that a configuration can be retrieved for</param>
         /// <param name="plugin">The plugin containing configuration variables</param>
-        /// <returns>A <see cref="Dictionary{TKey, TValue}"/> of top level configuration elements for the type</returns>
+        /// <returns>A <see cref="IConfigScope"/> of top level configuration elements for the type</returns>
         /// <exception cref="ObjectDisposedException"></exception>
-        public static IReadOnlyDictionary<string, JsonElement> GetConfig(this PluginBase plugin, object obj)
+        public static IConfigScope GetConfig(this PluginBase plugin, object obj)
         {
             Type t = obj.GetType();
             return plugin.GetConfigForType(t);
+        }
+
+        /// <summary>
+        /// Deserialzes the configuration to the desired object and calls its
+        /// <see cref="IOnConfigValidation.Validate"/> method. Validation exceptions 
+        /// are wrapped in a <see cref="ConfigrationValidationException"/>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="scope"></param>
+        /// <returns></returns>
+        /// <exception cref="ConfigrationValidationException"></exception>
+        public static T DeserialzeAndValidate<T>(this IConfigScope scope) where T : IOnConfigValidation
+        {
+            T conf = scope.Deserialze<T>();
+            try
+            {
+                conf.Validate();
+            }
+            catch(Exception ex)
+            {
+                throw new ConfigrationValidationException($"Configuration validation failed for type {typeof(T).Name}", ex);
+            }
+            return conf;
         }
 
         /// <summary>
@@ -171,6 +257,94 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
+        /// Gets a given configuration element from the global configuration scope
+        /// and deserializes it into the desired type. 
+        /// <para>
+        /// If the type inherits <see cref="IOnConfigValidation"/> the <see cref="IOnConfigValidation.Validate"/>
+        /// method is invoked, and exceptions are warpped in <see cref="ConfigrationValidationException"/>
+        /// </para>
+        /// <para>
+        /// If the type inherits <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync(PluginBase)"/>
+        /// method is called by the service scheduler
+        /// </para>
+        /// </summary>
+        /// <typeparam name="TConfig">The configuration type</typeparam>
+        /// <param name="plugin"></param>
+        /// <returns>The deserialzed configuration element</returns>
+        /// <exception cref="ConfigrationValidationException"></exception>
+        public static TConfig GetConfigElement<TConfig>(this PluginBase plugin)
+        {
+            //Deserialze the element
+            TConfig config = plugin.GetConfigForType<TConfig>().Deserialze<TConfig>();
+
+            //If the type is validatable, validate it
+            if(config is IOnConfigValidation conf)
+            {
+                try
+                {
+                    conf.Validate();
+                }
+                catch (Exception ex)
+                {
+                    throw new ConfigrationValidationException($"Configuration validation failed for type {typeof(TConfig).Name}", ex);
+                }
+            }
+
+            //If async config, load async
+            if(config is IAsyncConfigurable ac)
+            {
+                _ = plugin.ConfigureServiceAsync(ac);
+            }
+
+            return config;
+        }
+
+        /// <summary>
+        /// Gets a given configuration element from the global configuration scope
+        /// and deserializes it into the desired type. 
+        /// <para>
+        /// If the type inherits <see cref="IOnConfigValidation"/> the <see cref="IOnConfigValidation.Validate"/>
+        /// method is invoked, and exceptions are warpped in <see cref="ConfigrationValidationException"/>
+        /// </para>
+        /// <para>
+        /// If the type inherits <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync(PluginBase)"/>
+        /// method is called by the service scheduler
+        /// </para>
+        /// </summary>
+        /// <typeparam name="TConfig">The configuration type</typeparam>
+        /// <param name="plugin"></param>
+        /// <param name="elementName">The configuration element name override</param>
+        /// <returns>The deserialzed configuration element</returns>
+        /// <exception cref="ConfigrationValidationException"></exception>
+        public static TConfig GetConfigElement<TConfig>(this PluginBase plugin, string elementName)
+        {
+            //Deserialze the element
+            TConfig config = plugin.GetConfig(elementName).Deserialze<TConfig>();
+
+            //If the type is validatable, validate it
+            if (config is IOnConfigValidation conf)
+            {
+                try
+                {
+                    conf.Validate();
+                }
+                catch (Exception ex)
+                {
+                    throw new ConfigrationValidationException($"Configuration validation failed for type {typeof(TConfig).Name}", ex);
+                }
+            }
+
+            //If async config, load async
+            if (config is IAsyncConfigurable ac)
+            {
+                _ = plugin.ConfigureServiceAsync(ac);
+            }
+
+            return config;
+        }
+
+
+        /// <summary>
         /// Attempts to load the basic S3 configuration variables required
         /// for S3 client access
         /// </summary>
@@ -179,21 +353,8 @@ namespace VNLib.Plugins.Extensions.Loading
         public static S3Config? TryGetS3Config(this PluginBase plugin)
         {
             //Try get the config
-            IReadOnlyDictionary<string, JsonElement>? s3conf = plugin.TryGetConfig(S3_CONFIG);
-            if(s3conf == null)
-            {
-                return null;
-            }
-
-            //Try get the elements
-            return new()
-            {
-                BaseBucket = s3conf.GetPropString("bucket"),
-                ClientId = s3conf.GetPropString("access_key"),
-                ServerAddress = s3conf.GetPropString("server_address"),
-                UseSsl = s3conf.TryGetValue("use_ssl", out JsonElement el) && el.GetBoolean(),
-                Region = s3conf.GetPropString("region"),
-            };
+            IConfigScope? s3conf = plugin.TryGetConfig(S3_CONFIG);
+            return s3conf?.Deserialze<S3Config>();
         }
     }
 }

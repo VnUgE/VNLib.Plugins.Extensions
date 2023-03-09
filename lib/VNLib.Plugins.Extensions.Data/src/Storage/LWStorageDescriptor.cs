@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -33,7 +33,6 @@ using System.Text.Json.Serialization;
 
 using VNLib.Utils;
 using VNLib.Utils.Async;
-using VNLib.Utils.Extensions;
 using VNLib.Utils.Memory;
 
 namespace VNLib.Plugins.Extensions.Data.Storage
@@ -108,7 +107,7 @@ namespace VNLib.Plugins.Extensions.Data.Storage
 
                 //Decode and deserialize the data
                 return BrotliDecoder.TryDecompress(Entry.Data, decodeBuffer, out int written)
-                    ? JsonSerializer.Deserialize<Dictionary<string, string>>(Entry.Data, SerializerOptions) ?? new(StringComparer.OrdinalIgnoreCase)
+                    ? JsonSerializer.Deserialize<Dictionary<string, string>>(decodeBuffer.Span[..written], SerializerOptions) ?? new(StringComparer.OrdinalIgnoreCase)
                     : throw new InvalidDataException("Failed to decompress data");
             }
         }
@@ -122,7 +121,7 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         {
             Check();
             //De-serialize and return object
-            return StringStorage.Value.TryGetValue(key, out string? val) ? val.AsJsonObject<T>(SerializerOptions) : default;
+            return StringStorage.Value.TryGetValue(key, out string? val) ? JsonSerializer.Deserialize<T>(val, SerializerOptions) : default;
         }
         
         /// <inheritdoc/>
@@ -138,7 +137,7 @@ namespace VNLib.Plugins.Extensions.Data.Storage
             else
             {
                 //Serialize the object to a string
-                string value = obj.ToJsonString(SerializerOptions)!;
+                string value = JsonSerializer.Serialize(obj, SerializerOptions);
                 //Attempt to store string in storage
                 SetStringValue(key, value);
             }

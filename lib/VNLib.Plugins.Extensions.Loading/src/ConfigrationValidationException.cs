@@ -3,9 +3,9 @@
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: S3Config.cs 
+* File: ConfigrationValidationException.cs 
 *
-* S3Config.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
+* ConfigrationValidationException.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
 * VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
@@ -22,25 +22,21 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-using System.Text.Json.Serialization;
+using System;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
-    public sealed class S3Config
+    /// <summary>
+    /// An exception raised when a configuration validation exception has occured
+    /// </summary>
+    public class ConfigrationValidationException : Exception
     {
-        [JsonPropertyName("server_address")]
-        public string? ServerAddress { get; init; }
+        public ConfigrationValidationException(string message) : base(message)
+        {}
 
-        [JsonPropertyName("access_key")]
-        public string? ClientId { get; init; }
-
-        [JsonPropertyName("bucket")]
-        public string? BaseBucket { get; init; }
-
-        [JsonPropertyName("use_ssl")]
-        public bool? UseSsl { get; init; }
-
-        [JsonPropertyName("region")]
-        public string? Region { get; init; }
+        public ConfigrationValidationException(string message, Exception innerException) : base(message, innerException)
+        {}
+        public ConfigrationValidationException()
+        {}
     }
 }

@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -60,7 +60,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
             plugin.Log.Verbose("Interval for {t} scheduled", interval);
             
             //Run interval on plugins bg scheduler
-            _ = plugin.ObserveTask(() => RunIntervalOnPluginScheduler(plugin, asyncCallback, interval, immediate));
+            _ = plugin.ObserveWork(() => RunIntervalOnPluginScheduler(plugin, asyncCallback, interval, immediate));
         }
 
         private static async Task RunIntervalOnPluginScheduler(PluginBase plugin, AsyncSchedulableCallback callback, TimeSpan interval, bool immediate)

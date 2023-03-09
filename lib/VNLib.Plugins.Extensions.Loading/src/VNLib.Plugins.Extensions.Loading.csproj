@@ -4,11 +4,8 @@
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>VNLib.Plugins.Extensions.Loading</RootNamespace>
     <AssemblyName>VNLib.Plugins.Extensions.Loading</AssemblyName>
-    <Version>1.0.1.1</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <Nullable>enable</Nullable>
-    <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>\\vaughnnugent.com\Internal\Folder Redirection\vman\Documents\Programming\Software\StrongNameingKey.snk</AssemblyOriginatorKeyFile>
     <AnalysisLevel>latest-all</AnalysisLevel>
   </PropertyGroup>
 
@@ -16,6 +13,21 @@
     <PackageProjectUrl>https://www.vaughnnugent.com/resources/software</PackageProjectUrl>
     <Copyright>Copyright © 2023 Vaughn Nugent</Copyright>
     <Authors>Vaughn Nugent</Authors>
+  </PropertyGroup>
+
+
+  <PropertyGroup>
+    <Authors>Vaughn Nugent</Authors>
+    <Company>Vaughn Nugent</Company>
+    <Product>VNLib.Plugins.Extensions.Loading</Product>
+    <PackageId>VNLib.Plugins.Extensions.Loading</PackageId>
+    <Description>
+      An Essentials framework extension library for common loading/configuration/service operations. Enables rapid plugin
+      and service development.
+    </Description>
+    <Copyright>Copyright © 2023 Vaughn Nugent</Copyright>
+    <PackageProjectUrl>https://www.vaughnnugent.com/resources/software/modules/VNLib.Plugins.Extensions</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/VNLib.Plugins.Extensions.Loading</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,7 +39,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
     <PackageReference Include="VaultSharp" Version="1.12.2.1" />
   </ItemGroup>
 
@@ -35,6 +46,10 @@
     <ProjectReference Include="..\..\..\..\..\core\lib\Plugins.Essentials\src\VNLib.Plugins.Essentials.csproj" />
     <ProjectReference Include="..\..\..\..\..\core\lib\Plugins.PluginBase\src\VNLib.Plugins.PluginBase.csproj" />
     <ProjectReference Include="..\..\..\..\..\core\lib\Utils\src\VNLib.Utils.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Routing\" />
   </ItemGroup>
 
 </Project>

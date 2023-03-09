@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -24,22 +24,22 @@
 
 using System;
 using System.Linq;
-using System.Text.Json;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using VNLib.Plugins.Extensions.Loading.Events;
-using System.Net;
 
 namespace VNLib.Plugins.Extensions.Loading.Routing
 {
+
     /// <summary>
     /// Provides advanced QOL features to plugin loading
     /// </summary>
     public static class RoutingExtensions
     {
         private static readonly ConditionalWeakTable<IEndpoint, PluginBase?> _pluginRefs = new();
+     
 
         /// <summary>
         /// Constructs and routes the specific endpoint type for the current plugin
@@ -69,13 +69,13 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
             }
             else
             {
-                ConstructorInfo? constructor = endpointType.GetConstructor(new Type[] { typeof(PluginBase), typeof(IReadOnlyDictionary<string, JsonElement>) });
+                ConstructorInfo? constructor = endpointType.GetConstructor(new Type[] { typeof(PluginBase), typeof(IConfigScope) });
 
                 //Make sure the constructor exists
                 _ = constructor ?? throw new EntryPointNotFoundException($"No constructor found for {endpointType.Name}");
 
                 //Get config variables for the endpoint
-                IReadOnlyDictionary<string, JsonElement> conf = plugin.GetConfig(pluginConfigPathName);
+                IConfigScope conf = plugin.GetConfig(pluginConfigPathName);
 
                 //Create the new endpoint and pass the plugin instance along with the configuration object
                 endpoint = (T)constructor.Invoke(new object[] { plugin, conf });
@@ -126,10 +126,10 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
             _ = _pluginRefs.TryGetValue(ep, out PluginBase? pBase);
             return pBase ?? throw new InvalidOperationException("Endpoint was not dynamically routed");
         }
-
-        private static void ScheduleIntervals<T>(PluginBase plugin, T endpointInstance, Type epType, IReadOnlyDictionary<string, JsonElement>? endpointLocalConfig) where T : IEndpoint
+       
+        private static void ScheduleIntervals<T>(PluginBase plugin, T endpointInstance, Type epType, IConfigScope? endpointLocalConfig) where T : IEndpoint
         {
-            //Get all methods that have the configureable async interval attribute specified
+            //Get all methods that have the configurable async interval attribute specified
             IEnumerable<Tuple<ConfigurableAsyncIntervalAttribute, AsyncSchedulableCallback>> confIntervals = epType.GetMethods()
                     .Where(m => m.GetCustomAttribute<ConfigurableAsyncIntervalAttribute>() != null)
                     .Select(m => new Tuple<ConfigurableAsyncIntervalAttribute, AsyncSchedulableCallback>
@@ -169,5 +169,6 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
                 plugin.ScheduleInterval(interval.Item2, interval.Item1.Interval);
             }
         }
+      
     }
 }

@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -272,8 +272,9 @@ namespace VNLib.Plugins.Extensions.Data.Storage
                     {
                         throw new InvalidDataException("Failed to compress the descriptor data");
                     }
+
                     //Set the data 
-                    entry.Data = encBuffer.Span.ToArray();
+                    entry.Data = encBuffer.Span[..compressed].ToArray();
                 }
                 //Update modified time
                 entry.LastModified = DateTime.UtcNow;

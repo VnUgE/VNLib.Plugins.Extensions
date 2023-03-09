@@ -4,20 +4,24 @@
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>VNLib.Plugins.Extensions.Data</RootNamespace>
     <AssemblyName>VNLib.Plugins.Extensions.Data</AssemblyName>
-    <Version>1.0.1.1</Version>
     <Nullable>enable</Nullable>
-    <SignAssembly>True</SignAssembly>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <AssemblyOriginatorKeyFile>\\vaughnnugent.com\Internal\Folder Redirection\vman\Documents\Programming\Software\StrongNameingKey.snk</AssemblyOriginatorKeyFile>
     <AnalysisLevel>latest-all</AnalysisLevel>
   </PropertyGroup>
 
 
   <PropertyGroup>
     <Authors>Vaughn Nugent</Authors>
-    <Description>Data extensions for VNLib Plugins</Description>
+    <Company>Vaughn Nugent</Company>
+    <Product>VNLib.Plugins.Extensions.Data</Product>
+    <PackageId>VNLib.Plugins.Extensions.Data</PackageId>
+    <Description>
+      An Essentials framework extension library that provides data structures for abstractions between data and 
+      databases, using the EntityFrameworkCore library and design patterns.
+    </Description>
     <Copyright>Copyright © 2023 Vaughn Nugent</Copyright>
-    <PackageProjectUrl>https://www.vaughnnugent.com/resources</PackageProjectUrl>
+    <PackageProjectUrl>https://www.vaughnnugent.com/resources/software/modules/VNLib.Plugins.Extensions</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/VNLib.Plugins.Extensions.Data</RepositoryUrl>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -37,8 +41,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.13" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.13" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.14" />
   </ItemGroup>
 
   <ItemGroup>

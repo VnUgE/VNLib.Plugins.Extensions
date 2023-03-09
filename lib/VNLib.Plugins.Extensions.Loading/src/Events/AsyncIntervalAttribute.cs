@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -36,12 +36,46 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         internal readonly TimeSpan Interval;
 
         /// <summary>
-        /// Intializes the <see cref="AsyncIntervalAttribute"/> with the specified timeout in milliseconds
+        /// Initializes a new <see cref="AsyncIntervalAttribute"/> with allowing 
+        /// a configurable
         /// </summary>
-        /// <param name="milliseconds">The interval in milliseconds</param>
-        public AsyncIntervalAttribute(int milliseconds)
+        public AsyncIntervalAttribute()
+        {}
+
+        /// <summary>
+        /// Gets or sets the interval in seconds. Choose only ONE internval resolution
+        /// </summary>
+        public int Seconds
         {
-            Interval = TimeSpan.FromMilliseconds(milliseconds);
+            get => (int)Interval.TotalSeconds;
+            init => Interval = TimeSpan.FromSeconds(value);
+        }
+
+        /// <summary>
+        /// Gets or sets the interval in milliseconds. Choose only ONE internval resolution
+        /// </summary>
+        public int MilliSeconds
+        {
+            get => (int)Interval.TotalMilliseconds;
+            init => Interval = TimeSpan.FromMilliseconds(value);
+        }
+
+        /// <summary>
+        /// Gets or sets the interval in minutes. Choose only ONE internval resolution
+        /// </summary>
+        public int Minutes
+        {
+            get => (int)Interval.TotalMinutes; 
+            init => Interval = TimeSpan.FromMinutes(value);
+        }
+
+        /// <summary>
+        /// Gets or sets the interval in hours. Choose only ONE internval resolution
+        /// </summary>
+        public int Hours
+        {
+            get => (int)Interval.TotalMinutes;
+            init => Interval = TimeSpan.FromHours(value);
         }
     }
 }

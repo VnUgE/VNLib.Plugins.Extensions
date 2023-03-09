@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -284,7 +284,7 @@ namespace VNLib.Plugins.Extensions.Loading
         private static IVaultClient? TryGetVaultLoader(PluginBase pbase)
         {
             //Get vault config
-            IReadOnlyDictionary<string, JsonElement>? conf = pbase.TryGetConfig(VAULT_OBJECT_NAME);
+            IConfigScope? conf = pbase.TryGetConfig(VAULT_OBJECT_NAME);
 
             if (conf == null)
             {

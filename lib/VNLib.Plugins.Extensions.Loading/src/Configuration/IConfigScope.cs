@@ -3,9 +3,9 @@
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: S3Config.cs 
+* File: IConfigScope.cs 
 *
-* S3Config.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
+* IConfigScope.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
 * VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
@@ -22,25 +22,26 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-using System.Text.Json.Serialization;
+using System.Text.Json;
+using System.Collections.Generic;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
-    public sealed class S3Config
+    /// <summary>
+    /// A top-level scoped configuration element
+    /// </summary>
+    public interface IConfigScope : IReadOnlyDictionary<string, JsonElement>
     {
-        [JsonPropertyName("server_address")]
-        public string? ServerAddress { get; init; }
+        /// <summary>
+        /// The root level name of the configuration element
+        /// </summary>
+        string ScopeName { get; }
 
-        [JsonPropertyName("access_key")]
-        public string? ClientId { get; init; }
-
-        [JsonPropertyName("bucket")]
-        public string? BaseBucket { get; init; }
-
-        [JsonPropertyName("use_ssl")]
-        public bool? UseSsl { get; init; }
-
-        [JsonPropertyName("region")]
-        public string? Region { get; init; }
+        /// <summary>
+        /// Json deserialzes the current config scope to the desired type
+        /// </summary>
+        /// <typeparam name="T">The type to deserialze the current config to</typeparam>
+        /// <returns>The instance created from the current scope</returns>
+        T Deserialze<T>();
     }
 }

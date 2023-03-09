@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -23,14 +23,14 @@
 */
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
-using McMaster.NETCore.Plugins;
-
+using VNLib.Utils.IO;
 using VNLib.Utils.Resources;
 
 namespace VNLib.Plugins.Extensions.Loading
@@ -48,24 +48,55 @@ namespace VNLib.Plugins.Extensions.Loading
     /// <typeparam name="T">The exported type to manage</typeparam>
     public sealed class AssemblyLoader<T> : OpenResourceHandle<T>
     {
-        private readonly PluginLoader _loader;
         private readonly CancellationTokenRegistration _reg;
         private readonly Lazy<T> _instance;
+        private readonly AssemblyLoadContext _loadContext;
+        private readonly AssemblyDependencyResolver _resolver;
+        private readonly string _assemblyPath;
 
         /// <summary>
         /// The instance of the loaded type
         /// </summary>
         public override T Resource => _instance.Value;
 
-        private AssemblyLoader(PluginLoader loader, in CancellationToken unloadToken)
+        private AssemblyLoader(string assemblyPath, AssemblyLoadContext parentContext, CancellationToken unloadToken)
         {
-            _loader = loader;
+            _loadContext = parentContext;
+            _resolver = new(assemblyPath);
+            _assemblyPath = assemblyPath;
+
+            //Add resolver for context
+            parentContext.Resolving += OnDependencyResolving;
+            parentContext.ResolvingUnmanagedDll += OnNativeLibraryResolving;
+
             //Init lazy loader
             _instance = new(LoadAndGetExportedType, LazyThreadSafetyMode.PublicationOnly);
             //Register dispose
             _reg = unloadToken.Register(Dispose);
         }
-        
+
+        /*
+         * Resolves a native libary isolated to the requested assembly, which 
+         * should be isolated to this assembly or one of its dependencies.
+         */
+        private IntPtr OnNativeLibraryResolving(Assembly assembly, string libname)
+        {
+            //Resolve the desired asm dependency for the current context
+            string? requestedDll = _resolver.ResolveUnmanagedDllToPath(libname);
+
+            //if the dep is resolved, seach in the assembly directory for the manageed dll only
+            return requestedDll == null ? IntPtr.Zero : NativeLibrary.Load(requestedDll, assembly, DllImportSearchPath.AssemblyDirectory);
+        }
+
+        private Assembly? OnDependencyResolving(AssemblyLoadContext context, AssemblyName asmName)
+        {
+            //Resolve the desired asm dependency for the current context
+            string? desiredAsm = _resolver.ResolveAssemblyToPath(asmName);
+
+            //If the asm exists in the dir, load it
+            return desiredAsm == null ? null : _loadContext.LoadFromAssemblyPath(desiredAsm);
+        }
+
         /// <summary>
         /// Loads the default assembly and gets the expected export type,
         /// creates a new instance, and calls its parameterless constructor
@@ -74,8 +105,8 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="EntryPointNotFoundException"></exception>
         private T LoadAndGetExportedType()
         {
-            //Load the assembly
-            Assembly asm = _loader.LoadDefaultAssembly();
+            //Load the assembly into the parent context
+            Assembly asm = _loadContext.LoadFromAssemblyPath(_assemblyPath);
 
             Type resourceType = typeof(T);
 
@@ -109,54 +140,44 @@ namespace VNLib.Plugins.Extensions.Loading
         ///<inheritdoc/>
         protected override void Free()
         {
+            //Remove resolving event handlers
+            _loadContext.Resolving -= OnDependencyResolving;
+            _loadContext.ResolvingUnmanagedDll -= OnNativeLibraryResolving;
+
             //If the instance is disposable, call its dispose method on unload
             if (_instance.IsValueCreated && _instance.Value is IDisposable)
             {
                 (_instance.Value as IDisposable)?.Dispose();
             }
-            _loader.Dispose();
             _reg.Dispose();
         }
 
         /// <summary>
-        /// Creates a new assembly loader for the specified type and 
+        /// Creates a new loader for the desired assembly. The assembly and its dependencies
+        /// will be loaded into the parent context, meaning all loaded types belong to the 
+        /// current <see cref="AssemblyLoadContext"/> which belongs the current plugin instance.
         /// </summary>
         /// <param name="assemblyName">The name of the assmbly within the current plugin directory</param>
         /// <param name="unloadToken">The plugin unload token</param>
+        /// <exception cref="FileNotFoundException"></exception>
         internal static AssemblyLoader<T> Load(string assemblyName, CancellationToken unloadToken)
         {
+            //Make sure the file exists
+            if (!FileOperations.FileExists(assemblyName))
+            {
+                throw new FileNotFoundException($"The desired assembly {assemblyName} could not be found at the file path");
+            }
+
+            /*
+             * Dynamic assemblies are loaded directly to the exe assembly context.
+             * This should always be the plugin isolated context.
+             */
+            
             Assembly executingAsm = Assembly.GetExecutingAssembly();
             AssemblyLoadContext currentCtx = AssemblyLoadContext.GetLoadContext(executingAsm) ?? throw new InvalidOperationException("Could not get default assembly load context");
 
-            List<Type> shared = new ()
-            {
-                typeof(T),
-                typeof(PluginBase),
-            };
-
-            //Share all VNLib internal libraries
-            shared.AddRange(currentCtx.Assemblies.Where(static s => s.FullName.Contains("VNLib", StringComparison.OrdinalIgnoreCase)).SelectMany(static s => s.GetExportedTypes()));
-            
-            PluginLoader loader = PluginLoader.CreateFromAssemblyFile(assemblyName, 
-                currentCtx.IsCollectible,
-                shared.ToArray(), 
-                conf =>
-            {
-                
-                /*
-                 * Load context is required to be set to the executing assembly's load context
-                 * because it is controlled by the host, so this loader should be considered a
-                 * a "child" collection of assemblies
-                 */
-                conf.DefaultContext = currentCtx;
-
-                conf.PreferSharedTypes = true;
-                
-                //Share utils asm
-                conf.SharedAssemblies.Add(typeof(Utils.Memory.MemoryUtil).Assembly.GetName());
-            });
-
-            return new(loader, in unloadToken);
+            return new(assemblyName, currentCtx, unloadToken);
         }
+      
     }
 }

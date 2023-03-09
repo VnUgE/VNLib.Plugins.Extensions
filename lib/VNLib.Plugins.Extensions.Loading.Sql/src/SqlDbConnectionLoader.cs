@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql
@@ -23,7 +23,6 @@
 */
 
 using System;
-using System.Text.Json;
 using System.Data.Common;
 using System.Collections.Generic;
 
@@ -63,7 +62,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
 
         private static Func<DbConnection> FactoryLoader(PluginBase plugin)
         {
-            IReadOnlyDictionary<string, JsonElement> sqlConf = plugin.GetConfig(SQL_CONFIG_KEY);
+            IConfigScope sqlConf = plugin.GetConfig(SQL_CONFIG_KEY);
             
             //Get the db-type
             string? type = sqlConf.GetPropString("db_type");            

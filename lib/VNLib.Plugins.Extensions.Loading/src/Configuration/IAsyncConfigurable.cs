@@ -3,9 +3,9 @@
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: S3Config.cs 
+* File: IAsyncConfigurable.cs 
 *
-* S3Config.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
+* IAsyncConfigurable.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
 * VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
@@ -22,25 +22,21 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
-    public sealed class S3Config
+    /// <summary>
+    /// Allows for asynchronous service configuration during service creation, that 
+    /// will be observed on the plugin
+    /// </summary>
+    public interface IAsyncConfigurable
     {
-        [JsonPropertyName("server_address")]
-        public string? ServerAddress { get; init; }
-
-        [JsonPropertyName("access_key")]
-        public string? ClientId { get; init; }
-
-        [JsonPropertyName("bucket")]
-        public string? BaseBucket { get; init; }
-
-        [JsonPropertyName("use_ssl")]
-        public bool? UseSsl { get; init; }
-
-        [JsonPropertyName("region")]
-        public string? Region { get; init; }
+        /// <summary>
+        /// Configures the service for use. Exceptions will be written to the 
+        /// plugin's default log provider
+        /// </summary>
+        /// <returns>A task that completes when the service has been loaded successfully</returns>
+        Task ConfigureServiceAsync(PluginBase plugin);
     }
 }

@@ -112,7 +112,7 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// Loads an assembly into the current plugins AppDomain and will unload when disposed
+        /// Loads an assembly into the current plugin's load context and will unload when disposed
         /// or the plugin is unloaded from the host application. 
         /// </summary>
         /// <typeparam name="T">The desired exported type to load from the assembly</typeparam>

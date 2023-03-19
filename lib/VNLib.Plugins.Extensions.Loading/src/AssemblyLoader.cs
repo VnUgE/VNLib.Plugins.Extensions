@@ -154,13 +154,14 @@ namespace VNLib.Plugins.Extensions.Loading
 
         /// <summary>
         /// Creates a new loader for the desired assembly. The assembly and its dependencies
-        /// will be loaded into the parent context, meaning all loaded types belong to the 
-        /// current <see cref="AssemblyLoadContext"/> which belongs the current plugin instance.
+        /// will be loaded into the specified context. If no context is specified the current assemblie's load
+        /// context is captured.
         /// </summary>
         /// <param name="assemblyName">The name of the assmbly within the current plugin directory</param>
         /// <param name="unloadToken">The plugin unload token</param>
+        /// <param name="explicitContext">Explicitly set an assembly load context to load the requested assembly into</param>
         /// <exception cref="FileNotFoundException"></exception>
-        internal static AssemblyLoader<T> Load(string assemblyName, CancellationToken unloadToken)
+        internal static AssemblyLoader<T> Load(string assemblyName, AssemblyLoadContext? explicitContext, CancellationToken unloadToken)
         {
             //Make sure the file exists
             if (!FileOperations.FileExists(assemblyName))
@@ -168,15 +169,19 @@ namespace VNLib.Plugins.Extensions.Loading
                 throw new FileNotFoundException($"The desired assembly {assemblyName} could not be found at the file path");
             }
 
-            /*
-             * Dynamic assemblies are loaded directly to the exe assembly context.
-             * This should always be the plugin isolated context.
-             */
             
-            Assembly executingAsm = Assembly.GetExecutingAssembly();
-            AssemblyLoadContext currentCtx = AssemblyLoadContext.GetLoadContext(executingAsm) ?? throw new InvalidOperationException("Could not get default assembly load context");
+            if(explicitContext == null)
+            {
+                /*
+                 * Dynamic assemblies are loaded directly to the exe assembly context.
+                 * This should always be the plugin isolated context.
+                 */
 
-            return new(assemblyName, currentCtx, unloadToken);
+                Assembly executingAsm = Assembly.GetExecutingAssembly();
+                explicitContext = AssemblyLoadContext.GetLoadContext(executingAsm) ?? throw new InvalidOperationException("Could not get default assembly load context");
+            }
+
+            return new(assemblyName, explicitContext, unloadToken);
         }
       
     }

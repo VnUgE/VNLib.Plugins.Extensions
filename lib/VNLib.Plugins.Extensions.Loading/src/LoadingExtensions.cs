@@ -27,6 +27,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -119,6 +120,10 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <param name="plugin"></param>
         /// <param name="assemblyName">The name of the assembly (ex: 'file.dll') to search for</param>
         /// <param name="dirSearchOption">Directory/file search option</param>
+        /// <param name="explictAlc">
+        /// Explicitly define an <see cref="AssemblyLoadContext"/> to load the assmbly, and it's dependencies
+        /// into. If null, uses the plugin's alc.
+        /// </param>
         /// <returns>The <see cref="AssemblyLoader{T}"/> managing the loaded assmbly in the current AppDomain</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="FileNotFoundException"></exception>
@@ -127,7 +132,11 @@ namespace VNLib.Plugins.Extensions.Loading
         /// The assembly is searched within the 'assets' directory specified in the plugin config
         /// or the global plugins ('path' key) directory if an assets directory is not defined.
         /// </remarks>
-        public static AssemblyLoader<T> LoadAssembly<T>(this PluginBase plugin, string assemblyName, SearchOption dirSearchOption = SearchOption.AllDirectories)
+        public static AssemblyLoader<T> LoadAssembly<T>(
+            this PluginBase plugin, 
+            string assemblyName, 
+            SearchOption dirSearchOption = SearchOption.AllDirectories, 
+            AssemblyLoadContext? explictAlc = null)
         {
             plugin.ThrowIfUnloaded();
             _ = assemblyName ?? throw new ArgumentNullException(nameof(assemblyName));
@@ -154,7 +163,7 @@ namespace VNLib.Plugins.Extensions.Loading
             _ = asmFile ?? throw new FileNotFoundException($"Failed to load custom assembly {assemblyName} from plugin directory");
             
             //Load the assembly
-            return AssemblyLoader<T>.Load(asmFile, plugin.UnloadToken);
+            return AssemblyLoader<T>.Load(asmFile, explictAlc, plugin.UnloadToken);
         }        
 
         /// <summary>

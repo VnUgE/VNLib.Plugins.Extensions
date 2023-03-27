@@ -103,7 +103,7 @@ namespace VNLib.Plugins.Extensions.Data.Storage
                 //Calc and alloc decode buffer
                 int bufferSize = (int)(Entry.Data.Length * 1.75);
                 
-                using UnsafeMemoryHandle<byte> decodeBuffer = MemoryUtil.UnsafeAlloc<byte>(bufferSize);
+                using UnsafeMemoryHandle<byte> decodeBuffer = MemoryUtil.UnsafeAlloc(bufferSize);
 
                 //Decode and deserialize the data
                 return BrotliDecoder.TryDecompress(Entry.Data, decodeBuffer, out int written)

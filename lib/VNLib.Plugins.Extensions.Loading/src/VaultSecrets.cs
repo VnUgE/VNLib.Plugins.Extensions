@@ -330,7 +330,7 @@ namespace VNLib.Plugins.Extensions.Loading
             _ = secret ?? throw new ArgumentNullException(nameof(secret));
             
             //Temp buffer
-            using UnsafeMemoryHandle<byte> buffer = MemoryUtil.UnsafeAlloc<byte>(secret.Result.Length);
+            using UnsafeMemoryHandle<byte> buffer = MemoryUtil.UnsafeAlloc(secret.Result.Length);
             
             //Get base64
             if(!Convert.TryFromBase64Chars(secret.Result, buffer, out int count))

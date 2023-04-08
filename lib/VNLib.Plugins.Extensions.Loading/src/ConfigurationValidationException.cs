@@ -3,9 +3,9 @@
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: ConfigrationValidationException.cs 
+* File: ConfigurationValidationException.cs 
 *
-* ConfigrationValidationException.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
+* ConfigurationValidationException.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
 * VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
@@ -29,14 +29,14 @@ namespace VNLib.Plugins.Extensions.Loading
     /// <summary>
     /// An exception raised when a configuration validation exception has occured
     /// </summary>
-    public class ConfigrationValidationException : Exception
+    public class ConfigurationValidationException : Exception
     {
-        public ConfigrationValidationException(string message) : base(message)
+        public ConfigurationValidationException(string message) : base(message)
         {}
 
-        public ConfigrationValidationException(string message, Exception innerException) : base(message, innerException)
+        public ConfigurationValidationException(string message, Exception innerException) : base(message, innerException)
         {}
-        public ConfigrationValidationException()
+        public ConfigurationValidationException()
         {}
     }
 }

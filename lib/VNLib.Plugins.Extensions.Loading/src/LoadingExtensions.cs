@@ -32,14 +32,11 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-using VNLib.Utils;
-using VNLib.Utils.Memory;
 using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;
-using VNLib.Plugins.Essentials.Accounts;
 
 namespace VNLib.Plugins.Extensions.Loading
-{   
+{
 
     /// <summary>
     /// Provides common loading (and unloading when required) extensions for plugins
@@ -54,6 +51,7 @@ namespace VNLib.Plugins.Extensions.Loading
         public const string DEBUG_CONFIG_KEY = "debug";
         public const string SECRETS_CONFIG_KEY = "secrets";
         public const string PASSWORD_HASHING_KEY = "passwords";
+        public const string CUSTOM_PASSWORD_ASM_KEY = "custom_asm";
 
         /*
          * Plugin local cache used for storing singletons for a plugin instance
@@ -94,23 +92,6 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The cached or newly created singleton</returns>
         public static T GetOrCreateSingleton<T>(PluginBase plugin, Func<PluginBase, T> serviceFactory) 
             => (T)GetOrCreateSingleton(plugin, typeof(T), p => serviceFactory(p)!);
-
-        
-        /// <summary>
-        /// Gets the plugins ambient <see cref="PasswordHashing"/> if loaded, or loads it if required. This class will
-        /// be unloaded when the plugin us unloaded.
-        /// </summary>
-        /// <param name="plugin"></param>
-        /// <returns>The ambient <see cref="PasswordHashing"/></returns>
-        /// <exception cref="OverflowException"></exception>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
-        public static IPasswordHashingProvider GetPasswords(this PluginBase plugin)
-        {
-            plugin.ThrowIfUnloaded();
-            //Check if a password configuration element is loaded, otherwise load with defaults
-            return plugin.GetOrCreateSingleton<SecretProvider>().Passwords;
-        }
 
         /// <summary>
         /// Loads an assembly into the current plugin's load context and will unload when disposed
@@ -549,94 +530,6 @@ namespace VNLib.Plugins.Extensions.Loading
                 _store.Add(serviceType, lazyFactory);
                 //Pass the lazy factory back
                 return lazyFactory;
-            }
-        }
-
-        [ConfigurationName(PASSWORD_HASHING_KEY, Required = false)]
-        private sealed class SecretProvider : VnDisposeable, ISecretProvider, IAsyncConfigurable
-        {
-            private byte[]? _pepper;
-            private Exception? _error;
-
-            public SecretProvider(PluginBase plugin, IConfigScope config)
-            {
-                if(config.TryGetValue("args", out JsonElement el))
-                {
-                    //Convert to dict
-                    IReadOnlyDictionary<string, JsonElement> hashingArgs = el.EnumerateObject().ToDictionary(static k => k.Name, static v => v.Value);
-
-                    //Get hashing arguments
-                    uint saltLen = hashingArgs["salt_len"].GetUInt32();
-                    uint hashLen = hashingArgs["hash_len"].GetUInt32();
-                    uint timeCost = hashingArgs["time_cost"].GetUInt32();
-                    uint memoryCost = hashingArgs["memory_cost"].GetUInt32();
-                    uint parallelism = hashingArgs["parallelism"].GetUInt32();
-                    //Load passwords
-                    Passwords = new(this, (int)saltLen, timeCost, memoryCost, parallelism, hashLen);
-                }
-                else
-                {
-                    Passwords = new(this);
-                }
-            }
-
-            public SecretProvider(PluginBase plugin)
-            {
-                Passwords = new(this);
-            }
-          
-
-            public PasswordHashing Passwords { get; }
-
-            ///<inheritdoc/>
-            public int BufferSize
-            {
-                get
-                {
-                    Check();
-                    return _pepper!.Length;
-                }
-            }
-
-            public ERRNO GetSecret(Span<byte> buffer)
-            {
-                Check();
-                //Coppy pepper to buffer
-                _pepper.CopyTo(buffer);
-                //Return pepper length
-                return _pepper!.Length;
-            }
-
-            protected override void Check()
-            {
-                base.Check();
-                if(_error != null)
-                {
-                    throw _error;
-                }
-            }
-
-            protected override void Free()
-            {
-                //Clear the pepper if set
-                MemoryUtil.InitializeBlock(_pepper.AsSpan());
-            }
-
-            public async Task ConfigureServiceAsync(PluginBase plugin)
-            {
-                try
-                {
-                    //Get the pepper from secret storage
-                    _pepper = await plugin.TryGetSecretAsync(PASSWORD_HASHING_KEY).ToBase64Bytes();
-                }
-                catch (Exception ex)
-                {
-                    //Store exception for re-propagation
-                    _error = ex;
-
-                    //Propagate exception to system
-                    throw;
-                }
             }
         }
     }

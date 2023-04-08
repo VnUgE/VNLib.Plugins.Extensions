@@ -221,12 +221,12 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <summary>
         /// Deserialzes the configuration to the desired object and calls its
         /// <see cref="IOnConfigValidation.Validate"/> method. Validation exceptions 
-        /// are wrapped in a <see cref="ConfigrationValidationException"/>
+        /// are wrapped in a <see cref="ConfigurationValidationException"/>
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="scope"></param>
         /// <returns></returns>
-        /// <exception cref="ConfigrationValidationException"></exception>
+        /// <exception cref="ConfigurationValidationException"></exception>
         public static T DeserialzeAndValidate<T>(this IConfigScope scope) where T : IOnConfigValidation
         {
             T conf = scope.Deserialze<T>();
@@ -236,7 +236,7 @@ namespace VNLib.Plugins.Extensions.Loading
             }
             catch(Exception ex)
             {
-                throw new ConfigrationValidationException($"Configuration validation failed for type {typeof(T).Name}", ex);
+                throw new ConfigurationValidationException($"Configuration validation failed for type {typeof(T).Name}", ex);
             }
             return conf;
         }
@@ -261,7 +261,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// and deserializes it into the desired type. 
         /// <para>
         /// If the type inherits <see cref="IOnConfigValidation"/> the <see cref="IOnConfigValidation.Validate"/>
-        /// method is invoked, and exceptions are warpped in <see cref="ConfigrationValidationException"/>
+        /// method is invoked, and exceptions are warpped in <see cref="ConfigurationValidationException"/>
         /// </para>
         /// <para>
         /// If the type inherits <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync(PluginBase)"/>
@@ -271,7 +271,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <typeparam name="TConfig">The configuration type</typeparam>
         /// <param name="plugin"></param>
         /// <returns>The deserialzed configuration element</returns>
-        /// <exception cref="ConfigrationValidationException"></exception>
+        /// <exception cref="ConfigurationValidationException"></exception>
         public static TConfig GetConfigElement<TConfig>(this PluginBase plugin)
         {
             //Deserialze the element
@@ -286,7 +286,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 }
                 catch (Exception ex)
                 {
-                    throw new ConfigrationValidationException($"Configuration validation failed for type {typeof(TConfig).Name}", ex);
+                    throw new ConfigurationValidationException($"Configuration validation failed for type {typeof(TConfig).Name}", ex);
                 }
             }
 
@@ -304,7 +304,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// and deserializes it into the desired type. 
         /// <para>
         /// If the type inherits <see cref="IOnConfigValidation"/> the <see cref="IOnConfigValidation.Validate"/>
-        /// method is invoked, and exceptions are warpped in <see cref="ConfigrationValidationException"/>
+        /// method is invoked, and exceptions are warpped in <see cref="ConfigurationValidationException"/>
         /// </para>
         /// <para>
         /// If the type inherits <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync(PluginBase)"/>
@@ -315,7 +315,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <param name="plugin"></param>
         /// <param name="elementName">The configuration element name override</param>
         /// <returns>The deserialzed configuration element</returns>
-        /// <exception cref="ConfigrationValidationException"></exception>
+        /// <exception cref="ConfigurationValidationException"></exception>
         public static TConfig GetConfigElement<TConfig>(this PluginBase plugin, string elementName)
         {
             //Deserialze the element
@@ -330,7 +330,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 }
                 catch (Exception ex)
                 {
-                    throw new ConfigrationValidationException($"Configuration validation failed for type {typeof(TConfig).Name}", ex);
+                    throw new ConfigurationValidationException($"Configuration validation failed for type {typeof(TConfig).Name}", ex);
                 }
             }
 

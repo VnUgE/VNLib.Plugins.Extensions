@@ -56,6 +56,7 @@ namespace VNLib.Plugins.Extensions.Loading
         public const string VAULT_TOKEN_KEY = "token";
         public const string VAULT_ROLE_KEY = "role";
         public const string VAULT_SECRET_KEY = "secret";
+        public const string VAULT_TOKNE_ENV_NAME = "VNLIB_PLUGINS_VAULT_TOKEN";
 
         public const string VAULT_URL_KEY = "url";
 
@@ -305,6 +306,12 @@ namespace VNLib.Plugins.Extensions.Loading
             else if (conf.TryGetValue(VAULT_ROLE_KEY, out JsonElement roleEl) && conf.TryGetValue(VAULT_SECRET_KEY, out JsonElement secretEl))
             {
                 authMethod = new AppRoleAuthMethodInfo(roleEl.GetString(), secretEl.GetString());
+            }
+            //Try to get the token as an environment variable
+            else if(Environment.GetEnvironmentVariable(VAULT_TOKNE_ENV_NAME) != null)
+            {
+                string tokenValue = Environment.GetEnvironmentVariable(VAULT_TOKNE_ENV_NAME)!;
+                authMethod = new TokenAuthMethodInfo(tokenValue);
             }
             else
             {

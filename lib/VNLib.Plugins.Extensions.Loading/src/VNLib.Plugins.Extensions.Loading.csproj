@@ -8,14 +8,7 @@
     <Nullable>enable</Nullable>
     <AnalysisLevel>latest-all</AnalysisLevel>
   </PropertyGroup>
-
-  <PropertyGroup>
-    <PackageProjectUrl>https://www.vaughnnugent.com/resources/software</PackageProjectUrl>
-    <Copyright>Copyright © 2023 Vaughn Nugent</Copyright>
-    <Authors>Vaughn Nugent</Authors>
-  </PropertyGroup>
-
-
+  
   <PropertyGroup>
     <Authors>Vaughn Nugent</Authors>
     <Company>Vaughn Nugent</Company>
@@ -39,13 +32,14 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="VaultSharp" Version="1.12.2.1" />
+    <PackageReference Include="VaultSharp" Version="1.13.0.1" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\core\lib\Utils\src\VNLib.Utils.csproj" />
+    <ProjectReference Include="..\..\..\..\..\core\lib\Plugins\src\VNLib.Plugins.csproj" />
     <ProjectReference Include="..\..\..\..\..\core\lib\Plugins.Essentials\src\VNLib.Plugins.Essentials.csproj" />
     <ProjectReference Include="..\..\..\..\..\core\lib\Plugins.PluginBase\src\VNLib.Plugins.PluginBase.csproj" />
-    <ProjectReference Include="..\..\..\..\..\core\lib\Utils\src\VNLib.Utils.csproj" />
   </ItemGroup>
 
   <ItemGroup>

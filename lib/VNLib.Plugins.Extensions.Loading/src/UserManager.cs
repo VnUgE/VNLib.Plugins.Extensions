@@ -25,7 +25,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
 
 using VNLib.Utils;
 using VNLib.Utils.Memory;
@@ -49,6 +48,7 @@ namespace VNLib.Plugins.Extensions.Loading.Users
 
         public UserManager(PluginBase plugin)
         {
+            //Load the default user assembly
             _dynamicLoader = LoadUserAssembly(plugin, DEFAULT_USER_ASM);
         }
 
@@ -88,48 +88,42 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         }
 
         ///<inheritdoc/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Task<IUser> CreateUserAsync(string userid, string emailAddress, ulong privilages, PrivateString passHash, CancellationToken cancellation = default)
         {
             return _dynamicLoader.CreateUserAsync(userid, emailAddress, privilages, passHash, cancellation);
         }
 
         ///<inheritdoc/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Task<IUser?> GetUserAndPassFromEmailAsync(string emailAddress, CancellationToken cancellationToken = default)
         {
             return _dynamicLoader.GetUserAndPassFromEmailAsync(emailAddress, cancellationToken);
         }
 
         ///<inheritdoc/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Task<IUser?> GetUserAndPassFromIDAsync(string userid, CancellationToken cancellation = default)
         {
             return _dynamicLoader.GetUserAndPassFromIDAsync(userid, cancellation);
         }
 
         ///<inheritdoc/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Task<long> GetUserCountAsync(CancellationToken cancellation = default)
         {
             return _dynamicLoader.GetUserCountAsync(cancellation);
         }
 
         ///<inheritdoc/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Task<IUser?> GetUserFromEmailAsync(string emailAddress, CancellationToken cancellationToken = default)
         {
             return _dynamicLoader.GetUserFromEmailAsync(emailAddress, cancellationToken);
         }
 
         ///<inheritdoc/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Task<IUser?> GetUserFromIDAsync(string userId, CancellationToken cancellationToken = default)
         {
             return _dynamicLoader.GetUserFromIDAsync(userId, cancellationToken);
         }
+
         ///<inheritdoc/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Task<ERRNO> UpdatePassAsync(IUser user, PrivateString newPass, CancellationToken cancellation = default)
         {
             return _dynamicLoader.UpdatePassAsync(user, newPass, cancellation);

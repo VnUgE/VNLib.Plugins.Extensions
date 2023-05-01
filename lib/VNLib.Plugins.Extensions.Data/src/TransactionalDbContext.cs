@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -31,22 +31,23 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace VNLib.Plugins.Extensions.Data
 {
-    public abstract class TransactionalDbContext : DbContext, IAsyncDisposable
+    /// <summary>
+    /// Abstract implementation of <see cref="ITransactionalDbContext"/> that provides a transactional context for database operations
+    /// </summary>
+    public abstract class TransactionalDbContext : DbContext, IAsyncDisposable, ITransactionalDbContext
     {
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
         protected TransactionalDbContext()
-        {}
+        { }
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
         protected TransactionalDbContext(DbContextOptions options) : base(options)
-        {}
+        { }
 
-        /// <summary>
-        /// The transaction that was opened on the current context
-        /// </summary>
+        ///<inheritdoc/>
         public IDbContextTransaction? Transaction { get; set; }
 
 
@@ -58,7 +59,7 @@ namespace VNLib.Plugins.Extensions.Data
             Transaction?.Dispose();
             base.Dispose();
         }
-        
+
         ///<inheritdoc/>
         public override async ValueTask DisposeAsync()
         {
@@ -71,29 +72,24 @@ namespace VNLib.Plugins.Extensions.Data
         }
 #pragma warning restore CA1816 // Dispose methods should call SuppressFinalize
 
-        /// <summary>
-        /// Opens a single transaction on the current context. If a transaction is already open, 
-        /// it is disposed and a new transaction is begun.
-        /// </summary>
+        ///<inheritdoc/>
         public async Task OpenTransactionAsync(CancellationToken cancellationToken = default)
         {
             //open a new transaction on the current database
             this.Transaction = await base.Database.BeginTransactionAsync(cancellationToken);
         }
-        /// <summary>
-        /// Invokes the <see cref="IDbContextTransaction.Commit"/> on the current context
-        /// </summary>
+
+        ///<inheritdoc/>
         public Task CommitTransactionAsync(CancellationToken token = default)
         {
             return Transaction != null ? Transaction.CommitAsync(token) : Task.CompletedTask;
         }
-        /// <summary>
-        /// Invokes the <see cref="IDbContextTransaction.Rollback"/> on the current context
-        /// </summary>
+
+        ///<inheritdoc/>
         public Task RollbackTransctionAsync(CancellationToken token = default)
         {
             return Transaction != null ? Transaction.RollbackAsync(token) : Task.CompletedTask;
         }
-     
+
     }
 }

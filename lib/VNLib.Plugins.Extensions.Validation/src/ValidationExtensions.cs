@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Validation
@@ -28,8 +28,6 @@ using System.Diagnostics.CodeAnalysis;
 using FluentValidation;
 using FluentValidation.Results;
 
-#nullable enable
-
 namespace VNLib.Plugins.Extensions.Validation
 {
     /// <summary>
@@ -38,7 +36,7 @@ namespace VNLib.Plugins.Extensions.Validation
     public static class ValidationExtensions
     {
         /// <summary>
-        /// If <paramref name="assertion"/> evalues to false, sets the specified assertion message
+        /// If <paramref name="assertion"/> evaluates to false, sets the specified assertion message
         /// to the <see cref="WebMessage.Result"/> to the specified string
         /// </summary>
         /// <param name="webm"></param>
@@ -54,9 +52,9 @@ namespace VNLib.Plugins.Extensions.Validation
             }
             return !assertion;
         }
+
         /// <summary>
         /// Validates the specified instance, and stores errors to the specified <paramref name="webMessage"/>
-        /// and sets the <see cref="ValErrWebMessage.IsError"/>
         /// </summary>
         /// <param name="instance">The instance to validate</param>
         /// <param name="validator"></param>

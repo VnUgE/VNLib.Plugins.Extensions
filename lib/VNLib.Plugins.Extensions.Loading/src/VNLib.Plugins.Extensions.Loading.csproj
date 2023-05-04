@@ -42,8 +42,4 @@
     <ProjectReference Include="..\..\..\..\..\core\lib\Plugins.PluginBase\src\VNLib.Plugins.PluginBase.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Routing\" />
-  </ItemGroup>
-
 </Project>

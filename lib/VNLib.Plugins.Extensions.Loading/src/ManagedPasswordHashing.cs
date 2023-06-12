@@ -25,7 +25,6 @@
 using System;
 using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 
 using VNLib.Utils;
@@ -121,10 +120,9 @@ namespace VNLib.Plugins.Extensions.Loading
             public bool Verify(ReadOnlySpan<byte> passHash, ReadOnlySpan<byte> password) => _loader.Resource.Verify(passHash, password);
         }
 
-        private sealed class SecretProvider : VnDisposeable, ISecretProvider, IAsyncConfigurable
+        private sealed class SecretProvider : VnDisposeable, ISecretProvider
         {
-            private byte[]? _pepper;
-            private Exception? _error;
+            private readonly IAsyncLazy<byte[]> _pepper;
 
             public SecretProvider(PluginBase plugin, IConfigScope config)
             {
@@ -146,11 +144,19 @@ namespace VNLib.Plugins.Extensions.Loading
                 {
                     Passwords = new(this);
                 }
+
+                //Get the pepper from secret storage
+                _pepper = plugin.GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
+                    .ToLazy(static sr => sr.GetFromBase64());
             }
 
             public SecretProvider(PluginBase plugin)
             {
                 Passwords = new(this);
+
+                //Get the pepper from secret storage
+                _pepper = plugin.GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
+                    .ToLazy(static sr => sr.GetFromBase64());
             }
 
 
@@ -162,7 +168,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 get
                 {
                     Check();
-                    return _pepper!.Length;
+                    return _pepper.Value.Length;
                 }
             }
 
@@ -170,41 +176,21 @@ namespace VNLib.Plugins.Extensions.Loading
             {
                 Check();
                 //Coppy pepper to buffer
-                _pepper.CopyTo(buffer);
+                _pepper.Value.CopyTo(buffer);
                 //Return pepper length
-                return _pepper!.Length;
+                return _pepper.Value.Length;
             }
 
             protected override void Check()
             {
                 base.Check();
-                if (_error != null)
-                {
-                    throw _error;
-                }
+                _ = _pepper.Value;
             }
 
             protected override void Free()
             {
                 //Clear the pepper if set
-                MemoryUtil.InitializeBlock(_pepper.AsSpan());
-            }
-
-            public async Task ConfigureServiceAsync(PluginBase plugin)
-            {
-                try
-                {
-                    //Get the pepper from secret storage
-                    _pepper = await plugin.TryGetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY).ToBase64Bytes();
-                }
-                catch (Exception ex)
-                {
-                    //Store exception for re-propagation
-                    _error = ex;
-
-                    //Propagate exception to system
-                    throw;
-                }
+                MemoryUtil.InitializeBlock(_pepper.Value.AsSpan());
             }
         }
     }

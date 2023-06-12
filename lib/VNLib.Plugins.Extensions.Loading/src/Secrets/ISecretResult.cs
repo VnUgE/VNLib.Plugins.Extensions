@@ -1,11 +1,11 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: SecretResult.cs 
+* File: ISecretResult.cs 
 *
-* SecretResult.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
+* ISecretResult.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
 * VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
@@ -24,38 +24,16 @@
 
 using System;
 
-using VNLib.Utils;
-using VNLib.Utils.Extensions;
-using VNLib.Utils.Memory;
-
 namespace VNLib.Plugins.Extensions.Loading
 {
     /// <summary>
     /// The result of a secret fetch operation
     /// </summary>
-    public sealed class SecretResult : VnDisposeable
+    public interface ISecretResult : IDisposable
     {
-        private readonly char[] _secretChars;
-
         /// <summary>
         /// The protected raw result value
         /// </summary>
-        public ReadOnlySpan<char> Result => _secretChars;
-
-
-        internal SecretResult(ReadOnlySpan<char> value) => _secretChars = value.ToArray();
-
-        ///<inheritdoc/>
-        protected override void Free()
-        {
-            MemoryUtil.InitializeBlock(_secretChars.AsSpan());
-        }
-
-        internal static SecretResult ToSecret(string? result)
-        {
-            SecretResult res = new(result.AsSpan());
-            MemoryUtil.UnsafeZeroMemory<char>(result);
-            return res;
-        }
+        ReadOnlySpan<char> Result { get; }
     }
 }

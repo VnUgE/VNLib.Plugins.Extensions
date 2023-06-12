@@ -159,29 +159,19 @@ namespace VNLib.Plugins.Extensions.Loading
         /// </summary>
         /// <param name="assemblyName">The name of the assmbly within the current plugin directory</param>
         /// <param name="unloadToken">The plugin unload token</param>
-        /// <param name="explicitContext">Explicitly set an assembly load context to load the requested assembly into</param>
+        /// <param name="loadContext">The assembly load context to load the assmbly into</param>
         /// <exception cref="FileNotFoundException"></exception>
-        internal static AssemblyLoader<T> Load(string assemblyName, AssemblyLoadContext? explicitContext, CancellationToken unloadToken)
+        internal static AssemblyLoader<T> Load(string assemblyName, AssemblyLoadContext loadContext, CancellationToken unloadToken)
         {
+            _ = loadContext ?? throw new ArgumentNullException(nameof(loadContext));
+
             //Make sure the file exists
             if (!FileOperations.FileExists(assemblyName))
             {
                 throw new FileNotFoundException($"The desired assembly {assemblyName} could not be found at the file path");
             }
 
-            
-            if(explicitContext == null)
-            {
-                /*
-                 * Dynamic assemblies are loaded directly to the exe assembly context.
-                 * This should always be the plugin isolated context.
-                 */
-
-                Assembly executingAsm = Assembly.GetExecutingAssembly();
-                explicitContext = AssemblyLoadContext.GetLoadContext(executingAsm) ?? throw new InvalidOperationException("Could not get default assembly load context");
-            }
-
-            return new(assemblyName, explicitContext, unloadToken);
+            return new(assemblyName, loadContext, unloadToken);
         }
       
     }

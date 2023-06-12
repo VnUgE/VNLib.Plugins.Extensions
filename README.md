@@ -9,5 +9,5 @@ Debug build w/ symbols & xml docs, release builds, NuGet packages, and individua
 
 ## License
 All source files in this repository is licensed under the GNU Affero General Public License (or any later version).
-See the LICENSE files for more information.
+See the LICENSE file for more information.
 

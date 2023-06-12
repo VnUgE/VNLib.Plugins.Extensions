@@ -56,7 +56,8 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         private const string TIMESTAMP_BYPASS = "TimeStamp";
 
         /// <summary>
-        /// Gets (or loads) the ambient sql connection factory for the current plugin
+        /// Gets (or loads) the ambient sql connection factory for the current plugin 
+        /// and synchronously blocks the current thread until the connection is ready.
         /// </summary>
         /// <param name="plugin"></param>
         /// <returns>The ambient <see cref="DbConnection"/> factory</returns>
@@ -64,24 +65,50 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <exception cref="ObjectDisposedException"></exception>
         public static Func<DbConnection> GetConnectionFactory(this PluginBase plugin)
         {
+            //Get the async factory
+            IAsyncLazy<Func<DbConnection>> async = plugin.GetConnectionFactoryAsync();
+
+            //Block the current thread until the connection is ready
+            return async.GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Gets (or loads) the ambient sql connection factory for the current plugin
+        /// asynchronously
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <returns>The ambient <see cref="DbConnection"/> factory</returns>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        public static IAsyncLazy<Func<DbConnection>> GetConnectionFactoryAsync(this PluginBase plugin)
+        {
+            static IAsyncLazy<Func<DbConnection>> FactoryLoader(PluginBase plugin)
+            {
+                return GetFactoryLoaderAsync(plugin).AsLazy();
+            }
+
             plugin.ThrowIfUnloaded();
+
             //Get or load
             return LoadingExtensions.GetOrCreateSingleton(plugin, FactoryLoader);
         }
 
-        private static Func<DbConnection> FactoryLoader(PluginBase plugin)
+        private async static Task<Func<DbConnection>> GetFactoryLoaderAsync(PluginBase plugin)
         {
             IConfigScope sqlConf = plugin.GetConfig(SQL_CONFIG_KEY);
             
             //Get the db-type
-            string? type = sqlConf.GetPropString("db_type");            
+            string? type = sqlConf.GetPropString("db_type");
+
+            //Try to get the password and always dispose the secret value
+            using ISecretResult? password = await plugin.TryGetSecretAsync(DB_PASSWORD_KEY);
+
+            DbConnectionStringBuilder sqlBuilder;
 
             if ("sqlite".Equals(type, StringComparison.OrdinalIgnoreCase))
             {
-                using SecretResult? password = plugin.TryGetSecretAsync(DB_PASSWORD_KEY).GetAwaiter().GetResult();
-
                 //Use connection builder
-                DbConnectionStringBuilder sqlBuilder = new SqliteConnectionStringBuilder()
+                sqlBuilder = new SqliteConnectionStringBuilder()
                 {
                     DataSource = sqlConf["source"].GetString(),
                     Password = password?.Result.ToString(),
@@ -90,14 +117,11 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
                 };
 
                 string connectionString = sqlBuilder.ToString();
-                DbConnection DbFactory() => new SqliteConnection(connectionString);
-                return DbFactory;
+                return () => new SqliteConnection(connectionString);
             }
             else if("mysql".Equals(type, StringComparison.OrdinalIgnoreCase))
             {
-                using SecretResult? password = plugin.TryGetSecretAsync(DB_PASSWORD_KEY).GetAwaiter().GetResult();
-
-                DbConnectionStringBuilder sqlBuilder = new MySqlConnectionStringBuilder()
+                sqlBuilder = new MySqlConnectionStringBuilder()
                 {
                     Server = sqlConf["hostname"].GetString(),
                     Database = sqlConf["database"].GetString(),
@@ -107,18 +131,15 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
                     LoadBalance = MySqlLoadBalance.LeastConnections,
                     MinimumPoolSize = sqlConf["min_pool_size"].GetUInt32(),
                 };
-                
+
                 string connectionString = sqlBuilder.ToString();
-                DbConnection DbFactory() => new MySqlConnection(connectionString);
-                return DbFactory;
+                return () => new MySqlConnection(connectionString);
             }
             //Default to mssql
             else
             {
-                using SecretResult? password = plugin.TryGetSecretAsync(DB_PASSWORD_KEY).GetAwaiter().GetResult();
-                
                 //Use connection builder
-                DbConnectionStringBuilder sqlBuilder = new SqlConnectionStringBuilder()
+                sqlBuilder = new SqlConnectionStringBuilder()
                 {
                     DataSource = sqlConf["hostname"].GetString(),
                     UserID = sqlConf["username"].GetString(),
@@ -131,9 +152,26 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
                 };
 
                 string connectionString = sqlBuilder.ToString();
-                DbConnection DbFactory() => new SqlConnection(connectionString);
-                return DbFactory;
-            }           
+                return () => new SqlConnection(connectionString);
+            }
+        }
+
+        /// <summary>
+        /// Gets (or loads) the ambient <see cref="DbContextOptions"/> configured from 
+        /// the ambient sql factory and blocks the current thread until the options are ready
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <returns>The ambient <see cref="DbContextOptions"/> for the current plugin</returns>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        /// <remarks>If plugin is in debug mode, writes log data to the default log</remarks>
+        public static DbContextOptions GetContextOptions(this PluginBase plugin)
+        {
+            //Get the async factory
+            IAsyncLazy<DbContextOptions> async = plugin.GetContextOptionsAsync();
+
+            //Block the current thread until the connection is ready
+            return async.GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -145,46 +183,61 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
         /// <remarks>If plugin is in debug mode, writes log data to the default log</remarks>
-        public static DbContextOptions GetContextOptions(this PluginBase plugin)
+        public static IAsyncLazy<DbContextOptions> GetContextOptionsAsync(this PluginBase plugin)
         {
+            static IAsyncLazy<DbContextOptions> LoadOptions(PluginBase plugin)
+            {
+                //Wrap in a lazy options
+                return GetDbOptionsAsync(plugin).AsLazy();
+            }
+
             plugin.ThrowIfUnloaded();
-            return LoadingExtensions.GetOrCreateSingleton(plugin, GetDbOptionsLoader);
+            return LoadingExtensions.GetOrCreateSingleton(plugin, LoadOptions);
         }
 
-        private static DbContextOptions GetDbOptionsLoader(PluginBase plugin)
+        private async static Task<DbContextOptions> GetDbOptionsAsync(PluginBase plugin)
         {
-            //Get a db connection object
-            using DbConnection connection = plugin.GetConnectionFactory().Invoke();
-            DbContextOptionsBuilder builder = new();
-            
-            //Determine connection type
-            if(connection is SqlConnection sql)
+            try
             {
-                //Use sql server from connection
-                builder.UseSqlServer(sql.ConnectionString);
-            }
-            else if(connection is SqliteConnection slc)
-            {
-                builder.UseSqlite(slc.ConnectionString);
-            }
-            else if(connection is MySqlConnection msconn)
-            {
-                //Detect version
-                ServerVersion version = ServerVersion.AutoDetect(msconn);
+                //Get a db connection object, we must wait synchronously tho
+                await using DbConnection connection = (await plugin.GetConnectionFactoryAsync()).Invoke();
 
-                builder.UseMySql(msconn.ConnectionString, version);
+                DbContextOptionsBuilder builder = new();
+
+                //Determine connection type
+                if (connection is SqlConnection sql)
+                {
+                    //Use sql server from connection 
+                    builder.UseSqlServer(sql.ConnectionString);
+                }
+                else if (connection is SqliteConnection slc)
+                {
+                    builder.UseSqlite(slc.ConnectionString);
+                }
+                else if (connection is MySqlConnection msconn)
+                {
+                    //Detect version
+                    ServerVersion version = ServerVersion.AutoDetect(msconn);
+
+                    builder.UseMySql(msconn.ConnectionString, version);
+                }
+
+                //Enable logging
+                if (plugin.IsDebug())
+                {
+                    builder.LogTo(plugin.Log.Debug);
+                }
+
+                //Get context and freez it before returning
+                DbContextOptions options = builder.Options;
+                options.Freeze();
+                return options;
             }
-            
-            //Enable logging
-            if(plugin.IsDebug())
+            catch(Exception ex)
             {
-                builder.LogTo(plugin.Log.Debug);
+                plugin.Log.Error(ex, "DBContext options load error");
+                throw;
             }
-            
-            //Get context and freez it before returning
-            DbContextOptions options = builder.Options;
-            options.Freeze();
-            return options;
         }
 
         /// <summary>
@@ -218,7 +271,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
             dbCreator.OnDatabaseCreating(builder, state);
 
             //Create a new db connection
-            await using DbConnection connection = plugin.GetConnectionFactory()();
+            await using DbConnection connection = (await plugin.GetConnectionFactoryAsync()).Invoke();
 
             //Get the abstract database from the connection type
             IDBCommandGenerator cb = connection.GetCmGenerator();

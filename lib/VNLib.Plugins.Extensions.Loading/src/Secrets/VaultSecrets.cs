@@ -61,6 +61,7 @@ namespace VNLib.Plugins.Extensions.Loading
         public const string VAULT_URL_KEY = "url";
 
         public const string VAULT_URL_SCHEME = "vault://";
+        public const string ENV_URL_SCHEME = "env://";
 
 
         /// <summary>
@@ -110,12 +111,23 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             //Secret is a vault path, or return the raw value
-            if (!rawSecret.StartsWith(VAULT_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
+            if (rawSecret.StartsWith(VAULT_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
             {
-                return Task.FromResult<ISecretResult?>(new SecretResult(rawSecret.AsSpan()));
+                return GetSecretFromVaultAsync(plugin, rawSecret);
             }
 
-            return GetSecretFromVaultAsync(plugin, rawSecret);
+            //See if the secret is an environment variable path
+            if (rawSecret.StartsWith(ENV_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
+            {
+                //try to get the environment variable
+                string envVar = rawSecret[ENV_URL_SCHEME.Length..];
+                string? envVal = Environment.GetEnvironmentVariable(envVar);
+
+                return Task.FromResult<ISecretResult?>(envVal == null ? null : new SecretResult(envVal));
+            }
+
+            //Finally, return the raw value
+            return Task.FromResult<ISecretResult?>(new SecretResult(rawSecret.AsSpan()));
         }
 
         /// <summary>
@@ -197,6 +209,7 @@ namespace VNLib.Plugins.Extensions.Loading
             {
                 return Task.FromResult<X509Certificate?>(new (rawSecret));
             }
+
             return GetCertFromVaultAsync(plugin, rawSecret);
         }
 

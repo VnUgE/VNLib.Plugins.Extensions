@@ -561,33 +561,40 @@ namespace VNLib.Plugins.Extensions.Loading
 
             object service;
 
-            //Determin configuration requirments
-            if (ConfigurationExtensions.ConfigurationRequired(serviceType) || config != null)
+            try
             {
-                if (config == null)
+                //Determin configuration requirments
+                if (ConfigurationExtensions.ConfigurationRequired(serviceType) || config != null)
                 {
-                    ConfigurationExtensions.ThrowConfigNotFoundForType(serviceType);
+                    if (config == null)
+                    {
+                        ConfigurationExtensions.ThrowConfigNotFoundForType(serviceType);
+                    }
+
+                    //Get the constructor for required or available config
+                    ConstructorInfo? constructor = serviceType.GetConstructor(new Type[] { typeof(PluginBase), typeof(IConfigScope) });
+
+                    //Make sure the constructor exists
+                    _ = constructor ?? throw new EntryPointNotFoundException($"No constructor found for {serviceType.Name}");
+
+                    //Call constructore
+                    service = constructor.Invoke(new object[2] { plugin, config });
                 }
+                else
+                {
+                    //Get the constructor
+                    ConstructorInfo? constructor = serviceType.GetConstructor(new Type[] { typeof(PluginBase) });
 
-                //Get the constructor for required or available config
-                ConstructorInfo? constructor = serviceType.GetConstructor(new Type[] { typeof(PluginBase), typeof(IConfigScope) });
+                    //Make sure the constructor exists
+                    _ = constructor ?? throw new EntryPointNotFoundException($"No constructor found for {serviceType.Name}");
 
-                //Make sure the constructor exists
-                _ = constructor ?? throw new EntryPointNotFoundException($"No constructor found for {serviceType.Name}");
-
-                //Call constructore
-                service = constructor.Invoke(new object[2] { plugin, config });
+                    //Call constructore
+                    service = constructor.Invoke(new object[1] { plugin });
+                }
             }
-            else
+            catch(TargetInvocationException te) when (te.InnerException != null) 
             {
-                //Get the constructor
-                ConstructorInfo? constructor = serviceType.GetConstructor(new Type[] { typeof(PluginBase) });
-
-                //Make sure the constructor exists
-                _ = constructor ?? throw new EntryPointNotFoundException($"No constructor found for {serviceType.Name}");
-
-                //Call constructore
-                service = constructor.Invoke(new object[1] { plugin });
+                throw te.InnerException;
             }
 
             Task? loading = null;

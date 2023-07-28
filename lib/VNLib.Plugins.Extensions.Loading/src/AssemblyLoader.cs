@@ -24,21 +24,20 @@
 
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Runtime.InteropServices;
 
 using VNLib.Utils.IO;
 using VNLib.Utils.Resources;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
+
     /// <summary>
     /// <para>
     /// Represents a disposable assembly loader wrapper for 
-    /// exporting a signle type from a loaded assembly
+    /// exporting a single type from a loaded assembly
     /// </para>
     /// <para>
     /// If the loaded type implements <see cref="IDisposable"/> the 
@@ -46,79 +45,26 @@ namespace VNLib.Plugins.Extensions.Loading
     /// </para>
     /// </summary>
     /// <typeparam name="T">The exported type to manage</typeparam>
-    public sealed class AssemblyLoader<T> : OpenResourceHandle<T>
+    public sealed class AssemblyLoader<T> : ManagedLibrary, IDisposable
     {
         private readonly CancellationTokenRegistration _reg;
         private readonly Lazy<T> _instance;
-        private readonly AssemblyLoadContext _loadContext;
-        private readonly AssemblyDependencyResolver _resolver;
-        private readonly string _assemblyPath;
+        private bool disposedValue;
 
         /// <summary>
         /// The instance of the loaded type
         /// </summary>
-        public override T Resource => _instance.Value;
+        public T Resource => _instance.Value;
 
         private AssemblyLoader(string assemblyPath, AssemblyLoadContext parentContext, CancellationToken unloadToken)
+            :base(assemblyPath, parentContext)
         {
-            _loadContext = parentContext;
-            _resolver = new(assemblyPath);
-            _assemblyPath = assemblyPath;
-
-            //Add resolver for context
-            parentContext.Resolving += OnDependencyResolving;
-            parentContext.ResolvingUnmanagedDll += OnNativeLibraryResolving;
-
-            //Init lazy loader
-            _instance = new(LoadAndGetExportedType, LazyThreadSafetyMode.PublicationOnly);
+            //Init lazy type loader
+            _instance = new(LoadTypeFromAssembly<T>, LazyThreadSafetyMode.PublicationOnly);            
             //Register dispose
             _reg = unloadToken.Register(Dispose);
         }
-
-        /*
-         * Resolves a native libary isolated to the requested assembly, which 
-         * should be isolated to this assembly or one of its dependencies.
-         */
-        private IntPtr OnNativeLibraryResolving(Assembly assembly, string libname)
-        {
-            //Resolve the desired asm dependency for the current context
-            string? requestedDll = _resolver.ResolveUnmanagedDllToPath(libname);
-
-            //if the dep is resolved, seach in the assembly directory for the manageed dll only
-            return requestedDll == null ? IntPtr.Zero : NativeLibrary.Load(requestedDll, assembly, DllImportSearchPath.AssemblyDirectory);
-        }
-
-        private Assembly? OnDependencyResolving(AssemblyLoadContext context, AssemblyName asmName)
-        {
-            //Resolve the desired asm dependency for the current context
-            string? desiredAsm = _resolver.ResolveAssemblyToPath(asmName);
-
-            //If the asm exists in the dir, load it
-            return desiredAsm == null ? null : _loadContext.LoadFromAssemblyPath(desiredAsm);
-        }
-
-        /// <summary>
-        /// Loads the default assembly and gets the expected export type,
-        /// creates a new instance, and calls its parameterless constructor
-        /// </summary>
-        /// <returns>The desired type instance</returns>
-        /// <exception cref="EntryPointNotFoundException"></exception>
-        private T LoadAndGetExportedType()
-        {
-            //Load the assembly into the parent context
-            Assembly asm = _loadContext.LoadFromAssemblyPath(_assemblyPath);
-
-            Type resourceType = typeof(T);
-
-            //See if the type is exported
-            Type exp = (from type in asm.GetExportedTypes()
-                        where resourceType.IsAssignableFrom(type)
-                        select type)
-                        .FirstOrDefault()
-                        ?? throw new EntryPointNotFoundException($"Imported assembly does not export desired type {resourceType.FullName}");
-            //Create instance
-            return (T)Activator.CreateInstance(exp)!;
-        }
+      
 
         /// <summary>
         /// Creates a method delegate for the given method name from
@@ -132,24 +78,53 @@ namespace VNLib.Plugins.Extensions.Loading
         public TDelegate? TryGetMethod<TDelegate>(string methodName) where TDelegate : Delegate
         {
             //get the type info of the actual resource
-            return Resource!.GetType()
+            return Resource.GetType()
                 .GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance)
                 ?.CreateDelegate<TDelegate>(Resource);
         }
 
-        ///<inheritdoc/>
-        protected override void Free()
+        private void Dispose(bool disposing)
         {
-            //Remove resolving event handlers
-            _loadContext.Resolving -= OnDependencyResolving;
-            _loadContext.ResolvingUnmanagedDll -= OnNativeLibraryResolving;
-
-            //If the instance is disposable, call its dispose method on unload
-            if (_instance.IsValueCreated && _instance.Value is IDisposable)
+            if (!disposedValue)
             {
-                (_instance.Value as IDisposable)?.Dispose();
+                //Call base unload during dispose (or finalize)
+                OnUnload();
+
+                //Always cleanup registration
+                _reg.Dispose();
+
+                if (disposing)
+                {
+                    //If the instance is disposable, call its dispose method on unload
+                    if (_instance.IsValueCreated && _instance.Value is IDisposable)
+                    {
+                        (_instance.Value as IDisposable)?.Dispose();
+                    }
+                }
+               
+                disposedValue = true;
             }
-            _reg.Dispose();
+        }
+
+        /// <summary>
+        /// Cleans up any unused internals
+        /// </summary>
+        ~AssemblyLoader()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: false);
+        }
+
+       
+        /// <summary>
+        /// Disposes the assembly loader and cleans up resources. If the <typeparamref name="T"/> 
+        /// inherits <see cref="IDisposable"/> the intrance is disposed.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -171,8 +146,9 @@ namespace VNLib.Plugins.Extensions.Loading
                 throw new FileNotFoundException($"The desired assembly {assemblyName} could not be found at the file path");
             }
 
-            return new(assemblyName, loadContext, unloadToken);
+            //Create the loader from its absolute file path
+            FileInfo fi = new(assemblyName);
+            return new(fi.FullName, loadContext, unloadToken);
         }
-      
     }
 }

@@ -134,7 +134,8 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             plugin.ThrowIfUnloaded();
             //Try to get the element from the plugin config first, or fallback to host
-            if (plugin.PluginConfig.TryGetProperty(propName, out JsonElement el) || plugin.HostConfig.TryGetProperty(propName, out el))
+            if (plugin.PluginConfig.TryGetProperty(propName, out JsonElement el) 
+                || plugin.HostConfig.TryGetProperty(propName, out el))
             {
                 //Get the top level config as a dictionary
                 return new ConfigScope(el, propName);
@@ -202,7 +203,7 @@ namespace VNLib.Plugins.Extensions.Loading
             string? configName = GetConfigNameForType(type);
             if (configName != null)
             {
-                throw new KeyNotFoundException($"Missing required configuration key {configName} for type {type.Name}");
+                throw new KeyNotFoundException($"Missing required configuration key '{configName}' for type {type.Name}");
             }
             else
             {
@@ -259,7 +260,10 @@ namespace VNLib.Plugins.Extensions.Loading
             Type type = typeof(T);
             ConfigurationNameAttribute? configName = type.GetCustomAttribute<ConfigurationNameAttribute>();
             //See if the plugin contains a configuration varables
-            return configName != null && plugin.PluginConfig.TryGetProperty(configName.ConfigVarName, out _);
+            return configName != null && (   
+                    plugin.PluginConfig.TryGetProperty(configName.ConfigVarName, out _) ||
+                    plugin.HostConfig.TryGetProperty(configName.ConfigVarName, out _)
+                );
         }
 
         /// <summary>

@@ -46,9 +46,10 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
         /// </summary>
         /// <typeparam name="T">The <see cref="IEndpoint"/> type</typeparam>
         /// <param name="plugin"></param>
+        /// <param name="configRequired">If true, requires the configuration exist in the config file</param>
         /// <param name="pluginConfigPathName">The path to the plugin sepcific configuration property</param>
         /// <exception cref="TargetInvocationException"></exception>
-        public static T Route<T>(this PluginBase plugin, string? pluginConfigPathName) where T : IEndpoint
+        public static T Route<T>(this PluginBase plugin, string? pluginConfigPathName, bool configRequired = true) where T : IEndpoint
         {
             Type endpointType = typeof(T);
 
@@ -59,7 +60,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
             {
                 ConstructorInfo? constructor = endpointType.GetConstructor(new Type[] { typeof(PluginBase) });
 
-                _ = constructor ?? throw new EntryPointNotFoundException($"No constructor found for {endpointType.Name}");
+                _ = constructor ?? throw new EntryPointNotFoundException($"No constructor t(PluginBase p) found for {endpointType.Name}");
 
                 //Create the new endpoint and pass the plugin instance
                 endpoint = (T)constructor.Invoke(new object[] { plugin });
@@ -69,19 +70,42 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
             }
             else
             {
-                ConstructorInfo? constructor = endpointType.GetConstructor(new Type[] { typeof(PluginBase), typeof(IConfigScope) });
+                //Try to get config but allow null if not required
+                IConfigScope? config = plugin.TryGetConfig(pluginConfigPathName);
 
-                //Make sure the constructor exists
-                _ = constructor ?? throw new EntryPointNotFoundException($"No constructor found for {endpointType.Name}");
+                if(configRequired && config == null)
+                {
+                    ConfigurationExtensions.ThrowConfigNotFoundForType(endpointType);
+                    return default;
+                }
 
-                //Get config variables for the endpoint
-                IConfigScope conf = plugin.GetConfig(pluginConfigPathName);
+                //Choose constructor based on config
+                if (config != null)
+                {
+                    ConstructorInfo? constructor = endpointType.GetConstructor(new Type[] { typeof(PluginBase), typeof(IConfigScope) });
 
-                //Create the new endpoint and pass the plugin instance along with the configuration object
-                endpoint = (T)constructor.Invoke(new object[] { plugin, conf });
+                    //Make sure the constructor exists
+                    _ = constructor ?? throw new EntryPointNotFoundException($"No constructor t(PluginBase p, IConfigScope cs) found for {endpointType.Name}");
 
-                //Register event handlers for the endpoint
-                ScheduleIntervals(plugin, endpoint, endpointType, conf);
+                    //Create the new endpoint and pass the plugin instance along with the configuration object
+                    endpoint = (T)constructor.Invoke(new object[] { plugin, config });
+
+                    //Register event handlers for the endpoint
+                    ScheduleIntervals(plugin, endpoint, endpointType, config);
+                }
+                else
+                {
+                    //Config does not exist, so use the default constructor
+                    ConstructorInfo? constructor = endpointType.GetConstructor(new Type[] { typeof(PluginBase) });
+
+                    _ = constructor ?? throw new EntryPointNotFoundException($"No constructor t(PluginBase p) found for {endpointType.Name}");
+
+                    //Create the new endpoint and pass the plugin instance
+                    endpoint = (T)constructor.Invoke(new object[] { plugin });
+
+                    //Register event handlers for the endpoint
+                    ScheduleIntervals(plugin, endpoint, endpointType, null);
+                }              
             }
 
             //Route the endpoint
@@ -112,7 +136,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
             //Get config name attribute
             ConfigurationNameAttribute? configAttr = endpointType.GetCustomAttribute<ConfigurationNameAttribute>();
             //Route using attribute
-            return plugin.Route<T>(configAttr?.ConfigVarName);
+            return plugin.Route<T>(configAttr?.ConfigVarName, configAttr?.Required == true);
         }
 
         /// <summary>

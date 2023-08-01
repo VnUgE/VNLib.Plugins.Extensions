@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -22,8 +22,9 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace VNLib.Plugins.Extensions.Data.Abstractions
 {
@@ -40,8 +41,9 @@ namespace VNLib.Plugins.Extensions.Data.Abstractions
         /// <param name="collection">The collection to add records to</param>
         /// <param name="page">Pagination page to get records from</param>
         /// <param name="limit">The maximum number of items to retrieve from the store</param>
+        /// <param name="cancellation">A cancellation token to cancel the operation</param>
         /// <returns>A task that resolves the number of items added to the collection</returns>
-        Task<int> GetPageAsync(ICollection<T> collection, int page, int limit);
+        Task<int> GetPageAsync(ICollection<T> collection, int page, int limit, CancellationToken cancellation = default);
         /// <summary>
         /// Gets a collection of records using a pagination style query with constraint arguments, and adds the records to the collecion
         /// </summary>

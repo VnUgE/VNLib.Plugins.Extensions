@@ -1,0 +1,56 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNLib.Plugins.Extensions.Data", "lib\VNLib.Plugins.Extensions.Data\src\VNLib.Plugins.Extensions.Data.csproj", "{6A3D4938-0064-443A-A87C-5DB8F8811110}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNLib.Plugins.Extensions.Loading", "lib\VNLib.Plugins.Extensions.Loading\src\VNLib.Plugins.Extensions.Loading.csproj", "{B8D6ED0A-92C5-437F-A33E-2D8C3FC2EA30}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNLib.Plugins.Extensions.Loading.Sql", "lib\VNLib.Plugins.Extensions.Loading.Sql\src\VNLib.Plugins.Extensions.Loading.Sql.csproj", "{A9942495-EB73-4A54-B64D-F2F7CA4C3F46}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNLib.Plugins.Extensions.Validation", "lib\VNLib.Plugins.Extensions.Validation\src\VNLib.Plugins.Extensions.Validation.csproj", "{857DA423-DD18-40B4-AABB-0C12DB5E389D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4EA8C491-99BE-49FA-AE9E-FCF822BC4937}"
+	ProjectSection(SolutionItems) = preProject
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		.onedev-buildspec.yml = .onedev-buildspec.yml
+		Extensions.sln.licenseheader = Extensions.sln.licenseheader
+		GitVersion.yml = GitVersion.yml
+		LICENSE.txt = LICENSE.txt
+		Module.Taskfile.yaml = Module.Taskfile.yaml
+		README.md = README.md
+		Taskfile.yaml = Taskfile.yaml
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6A3D4938-0064-443A-A87C-5DB8F8811110}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A3D4938-0064-443A-A87C-5DB8F8811110}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A3D4938-0064-443A-A87C-5DB8F8811110}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A3D4938-0064-443A-A87C-5DB8F8811110}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8D6ED0A-92C5-437F-A33E-2D8C3FC2EA30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8D6ED0A-92C5-437F-A33E-2D8C3FC2EA30}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8D6ED0A-92C5-437F-A33E-2D8C3FC2EA30}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8D6ED0A-92C5-437F-A33E-2D8C3FC2EA30}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9942495-EB73-4A54-B64D-F2F7CA4C3F46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9942495-EB73-4A54-B64D-F2F7CA4C3F46}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9942495-EB73-4A54-B64D-F2F7CA4C3F46}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9942495-EB73-4A54-B64D-F2F7CA4C3F46}.Release|Any CPU.Build.0 = Release|Any CPU
+		{857DA423-DD18-40B4-AABB-0C12DB5E389D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{857DA423-DD18-40B4-AABB-0C12DB5E389D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{857DA423-DD18-40B4-AABB-0C12DB5E389D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{857DA423-DD18-40B4-AABB-0C12DB5E389D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BC28944A-A5ED-4433-AAC7-82840C94387A}
+	EndGlobalSection
+EndGlobal

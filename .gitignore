@@ -363,10 +363,3 @@ MigrationBackup/
 FodyWeavers.xsd
 
 *.licenseheader
-/lib/.task/checksum
-
-*[Tt]askfile.*
-
-*.sln
-
-*.ps1

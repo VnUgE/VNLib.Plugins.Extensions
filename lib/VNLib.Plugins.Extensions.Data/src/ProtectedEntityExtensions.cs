@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -24,12 +24,12 @@
 
 using System.Linq;
 using System.Threading;
+using System.Transactions;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
 using VNLib.Utils;
 using VNLib.Plugins.Extensions.Data.Abstractions;
-
 
 namespace VNLib.Plugins.Extensions.Data
 {
@@ -41,11 +41,13 @@ namespace VNLib.Plugins.Extensions.Data
         /// <param name="store"></param>
         /// <param name="record">The record to update</param>
         /// <param name="userId">The userid of the record owner</param>
+        /// <param name="cancellation">A token to cancel the operation</param>
         /// <returns>A task that evaluates to the number of records modified</returns>
-        public static Task<ERRNO> UpdateUserRecordAsync<TEntity>(this IDataStore<TEntity> store, TEntity record, string userId) where TEntity : class, IDbModel, IUserEntity
+        public static Task<ERRNO> UpdateUserRecordAsync<TEntity>(this IDataStore<TEntity> store, TEntity record, string userId, CancellationToken cancellation = default) 
+            where TEntity : class, IDbModel, IUserEntity
         {
             record.UserId = userId;
-            return store.UpdateAsync(record);
+            return store.UpdateAsync(record, cancellation);
         }
 
         /// <summary>
@@ -54,11 +56,13 @@ namespace VNLib.Plugins.Extensions.Data
         /// <param name="store"></param>
         /// <param name="record">The record to update</param>
         /// <param name="userId">The userid of the record owner</param>
+        /// <param name="cancellation">A token to cancel the operation</param>
         /// <returns>A task that evaluates to the number of records modified</returns>
-        public static Task<ERRNO> CreateUserRecordAsync<TEntity>(this IDataStore<TEntity> store, TEntity record, string userId) where TEntity : class, IDbModel, IUserEntity
+        public static Task<ERRNO> CreateUserRecordAsync<TEntity>(this IDataStore<TEntity> store, TEntity record, string userId, CancellationToken cancellation = default) 
+            where TEntity : class, IDbModel, IUserEntity
         {
             record.UserId = userId;
-            return store.CreateAsync(record);
+            return store.CreateAsync(record, cancellation);
         }
 
         /// <summary>
@@ -108,10 +112,33 @@ namespace VNLib.Plugins.Extensions.Data
         /// <typeparam name="TEntity"></typeparam>
         /// <param name="store"></param>
         /// <param name="userId">The unique id of the user to query record count</param>
+        /// <param name="cancellation">A token to cancel the operation</param>
         /// <returns>A task that resolves the number of records belonging to the specified user</returns>
-        public static Task<long> GetUserRecordCountAsync<TEntity>(this IDataStore<TEntity> store, string userId) where TEntity : class, IDbModel, IUserEntity
+        public static Task<long> GetUserRecordCountAsync<TEntity>(this IDataStore<TEntity> store, string userId, CancellationToken cancellation = default)
+            where TEntity : class, IDbModel, IUserEntity
         {
-            return store.GetCountAsync(userId);
+            return store.GetCountAsync(userId, cancellation);
+        }
+
+        /// <summary>
+        /// If the current context instance inherits the <see cref="IConcurrentDbContext"/> interface,
+        /// attempts to open a transaction with the specified isolation level.
+        /// </summary>
+        /// <param name="tdb"></param>
+        /// <param name="isolationLevel">The transaction isolation level</param>
+        /// <param name="cancellationToken">A token to cancel the operation</param>
+        /// <returns></returns>
+        internal static Task OpenTransactionAsync(this ITransactionalDbContext tdb, IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
+        {
+            if(tdb is IConcurrentDbContext ccdb)
+            {
+                return ccdb.OpenTransactionAsync(isolationLevel, cancellationToken);
+            }
+            else
+            {
+                //Just ignore the isolation level
+                return tdb.OpenTransactionAsync(cancellationToken);
+            }
         }
     }
 }

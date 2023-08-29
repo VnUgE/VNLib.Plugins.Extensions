@@ -3,9 +3,9 @@
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
-* File: IConcurrentDbContext.cs 
+* File: IDbModel.cs 
 *
-* IConcurrentDbContext.cs is part of VNLib.Plugins.Extensions.Data which is part of the larger 
+* IDbModel.cs is part of VNLib.Plugins.Extensions.Data which is part of the larger 
 * VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Data is free software: you can redistribute it and/or modify 
@@ -22,23 +22,34 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-using System.Threading;
-using System.Threading.Tasks;
-using System.Transactions;
+using System;
 
-namespace VNLib.Plugins.Extensions.Data
+namespace VNLib.Plugins.Extensions.Data.Abstractions
 {
     /// <summary>
-    /// Represents a database context that can manage concurrency via transactions
+    /// Represents a basic data model for an EFCore entity
+    /// for support in data-stores
     /// </summary>
-    public interface IConcurrentDbContext : ITransactionalDbContext
+    public interface IDbModel
     {
         /// <summary>
-        /// Opens a single transaction on the current context. If a transaction is already open, 
-        /// it is disposed and a new transaction is begun.
+        /// A unique id for the entity
         /// </summary>
-        /// <param name="isolationLevel">The isolation level of the transaction</param>
-        /// <param name="cancellationToken">A token to cancel the operations</param>
-        Task OpenTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default);
+        string Id { get; set; }
+
+        /// <summary>
+        /// The <see cref="DateTime"/> the entity was created in the store
+        /// </summary>
+        DateTime Created { get; set; }
+
+        /// <summary>
+        /// The <see cref="DateTime"/> the entity was last modified in the store
+        /// </summary>
+        DateTime LastModified { get; set; }
+
+        /// <summary>
+        /// Entity concurrency token
+        /// </summary>
+        byte[]? Version { get; set; }
     }
 }

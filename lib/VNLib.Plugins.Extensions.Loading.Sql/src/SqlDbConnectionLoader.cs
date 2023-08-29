@@ -124,7 +124,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
                 sqlBuilder = new MySqlConnectionStringBuilder()
                 {
                     Server = sqlConf["hostname"].GetString(),
-                    Database = sqlConf["database"].GetString(),
+                    Database = sqlConf["catalog"].GetString(),
                     UserID = sqlConf["username"].GetString(),
                     Password = password?.Result.ToString(),
                     Pooling = true,

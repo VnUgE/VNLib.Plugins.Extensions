@@ -23,24 +23,31 @@
 */
 
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+
+using VNLib.Utils;
+using VNLib.Plugins.Extensions.Data.Abstractions;
+
 
 namespace VNLib.Plugins.Extensions.Data
 {
     /// <summary>
     /// Abstract implementation of <see cref="ITransactionalDbContext"/> that provides a transactional context for database operations
     /// </summary>
-    public abstract class TransactionalDbContext : DbContext, IAsyncDisposable, ITransactionalDbContext
+    public abstract class TransactionalDbContext : DbContext, IAsyncDisposable, ITransactionalDbContext, IDbContextHandle
     {
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
         protected TransactionalDbContext()
         { }
+
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
@@ -50,6 +57,63 @@ namespace VNLib.Plugins.Extensions.Data
         ///<inheritdoc/>
         public IDbContextTransaction? Transaction { get; set; }
 
+        ///<inheritdoc/>
+        public async Task OpenTransactionAsync(CancellationToken cancellationToken = default)
+        {
+            //open a new transaction on the current database
+            this.Transaction = await base.Database.BeginTransactionAsync(cancellationToken);
+        }
+
+        ///<inheritdoc/>
+        public Task CommitTransactionAsync(CancellationToken token = default)
+        {
+            return Transaction != null ? Transaction.CommitAsync(token) : Task.CompletedTask;
+        }
+
+        ///<inheritdoc/>
+        public Task RollbackTransctionAsync(CancellationToken token = default)
+        {
+            return Transaction != null ? Transaction.RollbackAsync(token) : Task.CompletedTask;
+        }
+
+        ///<inheritdoc/>
+        IQueryable<T> IDbContextHandle.Set<T>() => base.Set<T>();
+
+        ///<inheritdoc/>
+        void IDbContextHandle.Add<T>(T entity) => base.Add(entity);
+
+        ///<inheritdoc/>
+        void IDbContextHandle.Remove<T>(T entity) => base.Remove<T>(entity);
+
+        ///<inheritdoc/>
+        public virtual void AddRange<T>(IEnumerable<T> entities) where T : class
+        {
+            DbSet<T> set = base.Set<T>();
+            set.AddRange(entities);
+        }
+
+        ///<inheritdoc/>
+        public virtual async Task<ERRNO> SaveAndCloseAsync(bool commit, CancellationToken cancellation = default)
+        {
+            //Save db changes
+            ERRNO result = await base.SaveChangesAsync(cancellation);
+            if (commit)
+            {
+                await CommitTransactionAsync(cancellation);
+            }
+            else
+            {
+                await RollbackTransctionAsync(cancellation);
+            }
+            return result;
+        }
+
+        ///<inheritdoc/>
+        public virtual void RemoveRange<T>(IEnumerable<T> entities) where T : class
+        {
+            DbSet<T> set = base.Set<T>();
+            set.RemoveRange(entities);
+        }
 
 #pragma warning disable CA1816 // Dispose methods should call SuppressFinalize, ignore because base.Dispose() is called
         ///<inheritdoc/>
@@ -71,25 +135,5 @@ namespace VNLib.Plugins.Extensions.Data
             await base.DisposeAsync();
         }
 #pragma warning restore CA1816 // Dispose methods should call SuppressFinalize
-
-        ///<inheritdoc/>
-        public async Task OpenTransactionAsync(CancellationToken cancellationToken = default)
-        {
-            //open a new transaction on the current database
-            this.Transaction = await base.Database.BeginTransactionAsync(cancellationToken);
-        }
-
-        ///<inheritdoc/>
-        public Task CommitTransactionAsync(CancellationToken token = default)
-        {
-            return Transaction != null ? Transaction.CommitAsync(token) : Task.CompletedTask;
-        }
-
-        ///<inheritdoc/>
-        public Task RollbackTransctionAsync(CancellationToken token = default)
-        {
-            return Transaction != null ? Transaction.RollbackAsync(token) : Task.CompletedTask;
-        }
-
     }
 }

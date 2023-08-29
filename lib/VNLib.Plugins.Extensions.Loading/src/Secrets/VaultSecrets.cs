@@ -23,9 +23,11 @@
 */
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
@@ -62,6 +64,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
         public const string VAULT_URL_SCHEME = "vault://";
         public const string ENV_URL_SCHEME = "env://";
+        public const string FILE_URL_SCHEME = "file://";
 
 
         /// <summary>
@@ -125,9 +128,34 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 return Task.FromResult<ISecretResult?>(envVal == null ? null : new SecretResult(envVal));
             }
+            
+            //See if the secret is a file path
+            if (rawSecret.StartsWith(FILE_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
+            {
+                string filePath = rawSecret[FILE_URL_SCHEME.Length..];
+                return GetSecretFromFileAsync(filePath, plugin.UnloadToken);
+            }
 
             //Finally, return the raw value
             return Task.FromResult<ISecretResult?>(new SecretResult(rawSecret.AsSpan()));
+        }
+
+        private static async Task<ISecretResult?> GetSecretFromFileAsync(string filePath, CancellationToken ct)
+        {
+            //read the file data
+            byte[] secretFileData = await File.ReadAllBytesAsync(filePath, ct);
+            
+            //recover the character data from the file data
+            int chars = Encoding.UTF8.GetCharCount(secretFileData);
+            char[] secretFileChars = new char[chars];
+            Encoding.UTF8.GetChars(secretFileData, secretFileChars);
+
+            //Create secret from the file data
+            SecretResult sr = SecretResult.ToSecret(secretFileChars);
+
+            //Clear file data buffer
+            MemoryUtil.InitializeBlock(secretFileData.AsSpan());
+            return sr;
         }
 
         /// <summary>

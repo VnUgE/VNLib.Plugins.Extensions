@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -27,7 +27,7 @@ using System.Threading.Tasks;
 
 using Microsoft.EntityFrameworkCore.Storage;
 
-namespace VNLib.Plugins.Extensions.Data
+namespace VNLib.Plugins.Extensions.Data.Abstractions
 {
     /// <summary>
     /// Represents a database context that can manage concurrency via transactions

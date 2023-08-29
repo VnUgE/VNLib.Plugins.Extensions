@@ -22,17 +22,18 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-using System.Linq;
 using System.Threading;
-using System.Transactions;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
 using VNLib.Utils;
 using VNLib.Plugins.Extensions.Data.Abstractions;
 
-namespace VNLib.Plugins.Extensions.Data
+namespace VNLib.Plugins.Extensions.Data.Extensions
 {
+    /// <summary>
+    /// Extension methods for <see cref="IDataStore{TEntity}"/> implementations that support user-protected entities
+    /// </summary>
     public static class ProtectedEntityExtensions
     {
         /// <summary>
@@ -43,7 +44,7 @@ namespace VNLib.Plugins.Extensions.Data
         /// <param name="userId">The userid of the record owner</param>
         /// <param name="cancellation">A token to cancel the operation</param>
         /// <returns>A task that evaluates to the number of records modified</returns>
-        public static Task<ERRNO> UpdateUserRecordAsync<TEntity>(this IDataStore<TEntity> store, TEntity record, string userId, CancellationToken cancellation = default) 
+        public static Task<ERRNO> UpdateUserRecordAsync<TEntity>(this IDataStore<TEntity> store, TEntity record, string userId, CancellationToken cancellation = default)
             where TEntity : class, IDbModel, IUserEntity
         {
             record.UserId = userId;
@@ -58,7 +59,7 @@ namespace VNLib.Plugins.Extensions.Data
         /// <param name="userId">The userid of the record owner</param>
         /// <param name="cancellation">A token to cancel the operation</param>
         /// <returns>A task that evaluates to the number of records modified</returns>
-        public static Task<ERRNO> CreateUserRecordAsync<TEntity>(this IDataStore<TEntity> store, TEntity record, string userId, CancellationToken cancellation = default) 
+        public static Task<ERRNO> CreateUserRecordAsync<TEntity>(this IDataStore<TEntity> store, TEntity record, string userId, CancellationToken cancellation = default)
             where TEntity : class, IDbModel, IUserEntity
         {
             record.UserId = userId;
@@ -88,7 +89,7 @@ namespace VNLib.Plugins.Extensions.Data
         /// <param name="page">The page offset</param>
         /// <param name="limit">The record limit for the page</param>
         /// <returns>A task that resolves the number of entities added to the collection</returns>
-        public static Task<int> GetUserPageAsync<TEntity>(this IPaginatedDataStore<TEntity> store, ICollection<TEntity> collection, string userId, int page, int limit) 
+        public static Task<int> GetUserPageAsync<TEntity>(this IDataStore<TEntity> store, ICollection<TEntity> collection, string userId, int page, int limit)
             where TEntity : class, IDbModel, IUserEntity
         {
             return store.GetPageAsync(collection, page, limit, userId);
@@ -120,25 +121,5 @@ namespace VNLib.Plugins.Extensions.Data
             return store.GetCountAsync(userId, cancellation);
         }
 
-        /// <summary>
-        /// If the current context instance inherits the <see cref="IConcurrentDbContext"/> interface,
-        /// attempts to open a transaction with the specified isolation level.
-        /// </summary>
-        /// <param name="tdb"></param>
-        /// <param name="isolationLevel">The transaction isolation level</param>
-        /// <param name="cancellationToken">A token to cancel the operation</param>
-        /// <returns></returns>
-        internal static Task OpenTransactionAsync(this ITransactionalDbContext tdb, IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
-        {
-            if(tdb is IConcurrentDbContext ccdb)
-            {
-                return ccdb.OpenTransactionAsync(isolationLevel, cancellationToken);
-            }
-            else
-            {
-                //Just ignore the isolation level
-                return tdb.OpenTransactionAsync(cancellationToken);
-            }
-        }
     }
 }

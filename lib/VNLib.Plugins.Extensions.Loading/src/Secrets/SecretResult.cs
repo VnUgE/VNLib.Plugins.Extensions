@@ -42,7 +42,14 @@ namespace VNLib.Plugins.Extensions.Loading
         public ReadOnlySpan<char> Result => _secretChars;
 
 
-        internal SecretResult(ReadOnlySpan<char> value) => _secretChars = value.ToArray();
+        internal SecretResult(ReadOnlySpan<char> value) : this(value.ToArray())
+        { }
+
+        private SecretResult(char[] secretChars)
+        {
+            _secretChars = secretChars;
+        }
+
 
         ///<inheritdoc/>
         protected override void Free()
@@ -56,5 +63,7 @@ namespace VNLib.Plugins.Extensions.Loading
             MemoryUtil.UnsafeZeroMemory<char>(result);
             return res;
         }
+
+        internal static SecretResult ToSecret(char[] result) => new(result);
     }
 }

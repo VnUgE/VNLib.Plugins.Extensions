@@ -57,7 +57,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         {
             plugin.ThrowIfUnloaded();
             
-            plugin.Log.Verbose("Interval for {t} scheduled", interval);
+            plugin.Log.Verbose("Interval for {t} scheduled on type {rr}", interval, asyncCallback.Target);
             
             //Run interval on plugins bg scheduler
             _ = plugin.ObserveWork(() => RunIntervalOnPluginScheduler(plugin, asyncCallback, interval, immediate));

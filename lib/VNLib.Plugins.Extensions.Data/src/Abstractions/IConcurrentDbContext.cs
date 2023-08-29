@@ -1,11 +1,11 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
-* File: IDbModel.cs 
+* File: IConcurrentDbContext.cs 
 *
-* IDbModel.cs is part of VNLib.Plugins.Extensions.Data which is part of the larger 
+* IConcurrentDbContext.cs is part of VNLib.Plugins.Extensions.Data which is part of the larger 
 * VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Data is free software: you can redistribute it and/or modify 
@@ -22,31 +22,23 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-using System;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Transactions;
 
-namespace VNLib.Plugins.Extensions.Data
+namespace VNLib.Plugins.Extensions.Data.Abstractions
 {
     /// <summary>
-    /// Represents a basic data model for an EFCore entity
-    /// for support in data-stores
+    /// Represents a database context that can manage concurrency via transactions
     /// </summary>
-    public interface IDbModel
+    public interface IConcurrentDbContext : ITransactionalDbContext
     {
         /// <summary>
-        /// A unique id for the entity
+        /// Opens a single transaction on the current context. If a transaction is already open, 
+        /// it is disposed and a new transaction is begun.
         /// </summary>
-        string Id { get; set; }
-        /// <summary>
-        /// The <see cref="DateTime"/> the entity was created in the store
-        /// </summary>
-        DateTime Created { get; set; }
-        /// <summary>
-        /// The <see cref="DateTime"/> the entity was last modified in the store
-        /// </summary>
-        DateTime LastModified { get; set; }
-        /// <summary>
-        /// Entity concurrency token
-        /// </summary>
-        byte[]? Version { get; set; }
+        /// <param name="isolationLevel">The isolation level of the transaction</param>
+        /// <param name="cancellationToken">A token to cancel the operations</param>
+        Task OpenTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default);
     }
 }

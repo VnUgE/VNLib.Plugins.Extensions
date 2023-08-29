@@ -167,6 +167,52 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
+        /// Gets a required configuration property from the specified configuration scope
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the property to get</param>
+        /// <param name="getter">A function to get the value from the json type</param>
+        /// <returns>The property value</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static T? GetProperty<T>(this IConfigScope config, string property, Func<JsonElement, T> getter)
+        {
+            //Check null
+            _ = config ?? throw new ArgumentNullException(nameof(config));
+            _ = property ?? throw new ArgumentNullException(nameof(property));
+            _ = getter ?? throw new ArgumentNullException(nameof(getter));
+
+            return !config.TryGetValue(property, out JsonElement el) ? default : getter(el);
+        }
+
+        /// <summary>
+        /// Gets a required configuration property from the specified configuration scope
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the property to get</param>
+        /// <param name="getter">A function to get the value from the json type</param>
+        /// <returns>The property value</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="KeyNotFoundException"></exception>
+        public static T GetRequiredProperty<T>(this IConfigScope config, string property, Func<JsonElement, T> getter)
+        {
+            //Check null
+            _ = config ?? throw new ArgumentNullException(nameof(config));
+            _ = property ?? throw new ArgumentNullException(nameof(property));
+            _ = getter ?? throw new ArgumentNullException(nameof(getter));
+
+            //Get the property
+            if(!config.TryGetValue(property, out JsonElement el))
+            {
+                throw new KeyNotFoundException($"Missing required configuration property '{property}'");
+            }
+
+            //Even if the getter returns null, throw
+            return getter(el) ?? throw new KeyNotFoundException($"Missing required configuration property '{property}'");
+        }
+
+        /// <summary>
         /// Gets the configuration property name for the type
         /// </summary>
         /// <param name="type">The type to get the configuration name for</param>

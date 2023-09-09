@@ -131,18 +131,22 @@ namespace VNLib.Plugins.Extensions.Loading
                     //Convert to dict
                     IReadOnlyDictionary<string, JsonElement> hashingArgs = el.EnumerateObject().ToDictionary(static k => k.Name, static v => v.Value);
 
-                    //Get hashing arguments
-                    uint saltLen = hashingArgs["salt_len"].GetUInt32();
-                    uint hashLen = hashingArgs["hash_len"].GetUInt32();
-                    uint timeCost = hashingArgs["time_cost"].GetUInt32();
-                    uint memoryCost = hashingArgs["memory_cost"].GetUInt32();
-                    uint parallelism = hashingArgs["parallelism"].GetUInt32();
+                    Argon2ConfigParams p = new()
+                    {
+                        HashLen = hashingArgs["hash_len"].GetUInt32(),
+                        MemoryCost = hashingArgs["memory_cost"].GetUInt32(),
+                        Parallelism = hashingArgs["parallelism"].GetUInt32(),
+                        SaltLen = (int)hashingArgs["salt_len"].GetUInt32(),
+                        TimeCost = hashingArgs["time_cost"].GetUInt32()
+                    };
+                   
                     //Load passwords
-                    Passwords = new(this, (int)saltLen, timeCost, memoryCost, parallelism, hashLen);
+                    Passwords = PasswordHashing.Create(this, in p);
                 }
                 else
                 {
-                    Passwords = new(this);
+                    //Load passwords with default config
+                    Passwords = PasswordHashing.Create(this, new Argon2ConfigParams());
                 }
 
                 //Get the pepper from secret storage
@@ -152,7 +156,8 @@ namespace VNLib.Plugins.Extensions.Loading
 
             public SecretProvider(PluginBase plugin)
             {
-                Passwords = new(this);
+                //Load passwords with default config
+                Passwords = PasswordHashing.Create(this, new Argon2ConfigParams());
 
                 //Get the pepper from secret storage
                 _pepper = plugin.GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)

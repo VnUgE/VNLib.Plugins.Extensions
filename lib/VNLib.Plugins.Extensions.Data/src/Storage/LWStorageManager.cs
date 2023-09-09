@@ -23,18 +23,17 @@
 */
 
 using System;
-using System.IO;
 using System.Data;
 using System.Linq;
 using System.Threading;
-using System.IO.Compression;
 using System.Threading.Tasks;
 
 using Microsoft.EntityFrameworkCore;
 
 using VNLib.Utils;
-using VNLib.Utils.IO;
-using VNLib.Utils.Memory;
+using VNLib.Utils.Async;
+using VNLib.Plugins.Extensions.Data.Extensions;
+
 
 namespace VNLib.Plugins.Extensions.Data.Storage
 {
@@ -42,8 +41,9 @@ namespace VNLib.Plugins.Extensions.Data.Storage
     /// <summary>
     /// Provides single table database object storage services
     /// </summary>
-    public sealed class LWStorageManager
+    public sealed class LWStorageManager : IAsyncResourceStateHandler
     { 
+       
         /// <summary>
         /// The generator function that is invoked when a new <see cref="LWStorageDescriptor"/> is to 
         /// be created without an explicit id
@@ -112,20 +112,11 @@ namespace VNLib.Plugins.Extensions.Data.Storage
             //Add and save changes
             ctx.Descriptors.Add(entry);
 
-            ERRNO result = await ctx.SaveChangesAsync(cancellation);
+            ERRNO result = await ctx.SaveAndCloseAsync(true, cancellation);
 
-            if (!result)
-            {
-                //Rollback and raise exception
-                await ctx.RollbackTransctionAsync(cancellation);
-                throw new LWDescriptorCreationException("Failed to create descriptor, because changes could not be saved");
-            }
-            else
-            {
-                //Commit transaction and return the new descriptor
-                await ctx.CommitTransactionAsync(cancellation);
-                return new LWStorageDescriptor(this, entry);
-            }
+            return result
+                ? new LWStorageDescriptor(this, entry)
+                : throw new LWDescriptorCreationException("Failed to create descriptor, because changes could not be saved");
         }
 
         /// <summary>
@@ -154,17 +145,10 @@ namespace VNLib.Plugins.Extensions.Data.Storage
                                            select s)
                                            .SingleOrDefaultAsync(cancellation);
 
+            await db.SaveAndCloseAsync(true, cancellation);
+
             //Close transactions and return
-            if (entry == null)
-            {
-                await db.RollbackTransctionAsync(cancellation);
-                return null;
-            }
-            else
-            {
-                await db.CommitTransactionAsync(cancellation);
-                return new (this, entry);
-            }
+            return entry == null ? null : new (this, entry);
         }
         
         /// <summary>
@@ -193,17 +177,10 @@ namespace VNLib.Plugins.Extensions.Data.Storage
                                            select s)
                                            .SingleOrDefaultAsync(cancellation);
 
+            await db.SaveAndCloseAsync(true, cancellation);
+
             //Close transactions and return
-            if (entry == null)
-            {
-                await db.RollbackTransctionAsync(cancellation);
-                return null;
-            }
-            else
-            {
-                await db.CommitTransactionAsync(cancellation);
-                return new (this, entry);
-            }
+            return entry == null ? null : new(this, entry);
         }
        
         /// <summary>
@@ -236,61 +213,27 @@ namespace VNLib.Plugins.Extensions.Data.Storage
             //Delete
             db.Descriptors.RemoveRange(expired);
 
-            //Save changes
-            ERRNO count = await db.SaveChangesAsync(cancellation);
-
             //Commit transaction
-            await db.CommitTransactionAsync(cancellation);
-
-            return count;
+            return await db.SaveAndCloseAsync(true, cancellation);
         }
-
-        /// <summary>
-        /// Updates a descriptor's data field
-        /// </summary>
-        /// <param name="descriptorObj">Descriptor to update</param>
-        /// <param name="data">Data string to store to descriptor record</param>
-        /// <exception cref="LWStorageUpdateFailedException"></exception>
-        internal async Task UpdateDescriptorAsync(object descriptorObj, Stream data)
+       
+        async Task IAsyncResourceStateHandler.UpdateAsync(AsyncUpdatableResource resource, object state, CancellationToken cancellation)
         {
-            LWStorageEntry entry = (descriptorObj as LWStorageDescriptor)!.Entry;
+            LWStorageEntry entry = (state as LWStorageEntry)!;
             ERRNO result = 0;
             try
             {
                 await using LWStorageContext ctx = GetContext();
-                await ctx.OpenTransactionAsync(CancellationToken.None);
+                await ctx.OpenTransactionAsync(System.Transactions.IsolationLevel.RepeatableRead, cancellation);
 
                 //Begin tracking
                 ctx.Descriptors.Attach(entry);
-
-                //Convert stream to vnstream
-                VnMemoryStream vms = (VnMemoryStream)data;
-                using (IMemoryHandle<byte> encBuffer = MemoryUtil.SafeAlloc<byte>((int)vms.Length))
-                {
-                    //try to compress
-                    if(!BrotliEncoder.TryCompress(vms.AsSpan(), encBuffer.Span, out int compressed))
-                    {
-                        throw new InvalidDataException("Failed to compress the descriptor data");
-                    }
-
-                    //Set the data 
-                    entry.Data = encBuffer.Span[..compressed].ToArray();
-                }
+                
                 //Update modified time
                 entry.LastModified = DateTime.UtcNow;
 
                 //Save changes
-                result = await ctx.SaveChangesAsync(CancellationToken.None);
-
-                //Commit or rollback
-                if (result)
-                {
-                    await ctx.CommitTransactionAsync(CancellationToken.None);
-                }
-                else
-                {
-                    await ctx.RollbackTransctionAsync(CancellationToken.None);
-                }
+                result = await ctx.SaveAndCloseAsync(true, cancellation);
             }
             catch (Exception ex)
             {
@@ -302,37 +245,23 @@ namespace VNLib.Plugins.Extensions.Data.Storage
                 throw new LWStorageUpdateFailedException($"Descriptor {entry.Id} failed to update");
             }
         }
-        
-        /// <summary>
-        /// Function to remove the specified descriptor 
-        /// </summary>
-        /// <param name="descriptorObj">The active descriptor to remove from the database</param>
-        /// <exception cref="LWStorageRemoveFailedException"></exception>
-        internal async Task RemoveDescriptorAsync(object descriptorObj)
+
+        async Task IAsyncResourceStateHandler.DeleteAsync(AsyncUpdatableResource resource, CancellationToken cancellation)
         {
-            LWStorageEntry descriptor = (descriptorObj as LWStorageDescriptor)!.Entry;
+            LWStorageEntry descriptor = (resource as LWStorageDescriptor)!.Entry;
             ERRNO result;
             try
             {
                 //Init db
                 await using LWStorageContext db = GetContext();
                 //Begin transaction
-                await db.OpenTransactionAsync();
+                await db.OpenTransactionAsync(cancellation);
 
                 //Delete the user from the database
                 db.Descriptors.Remove(descriptor);
 
                 //Save changes and commit if successful
-                result = await db.SaveChangesAsync();
-
-                if (result)
-                {
-                    await db.CommitTransactionAsync();
-                }
-                else
-                {
-                    await db.RollbackTransctionAsync();
-                }
+                result = await db.SaveAndCloseAsync(true, cancellation);
             }
             catch (Exception ex)
             {
@@ -343,6 +272,5 @@ namespace VNLib.Plugins.Extensions.Data.Storage
                 throw new LWStorageRemoveFailedException("Failed to delete the user account because of a database failure, the user may already be deleted");
             }
         }
-        
     }
 }

@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2023 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -24,6 +24,7 @@
 
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
 
@@ -206,7 +207,7 @@ namespace VNLib.Plugins.Extensions.Data.Storage
             GC.SuppressFinalize(this);
         }
         ///<inheritdoc/>
-        public async ValueTask ReleaseAsync()
+        public async ValueTask ReleaseAsync(CancellationToken cancellation = default)
         {
             try
             {
@@ -237,7 +238,7 @@ namespace VNLib.Plugins.Extensions.Data.Storage
                 //Dispose the stream
                 await BaseStream.DisposeAsync();
                 //Release the descriptor
-                await Descriptor.ReleaseAsync();
+                await Descriptor.ReleaseAsync(cancellation);
             }
         }
     }

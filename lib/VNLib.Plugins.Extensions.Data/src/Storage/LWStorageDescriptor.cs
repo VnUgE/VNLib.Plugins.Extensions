@@ -23,17 +23,15 @@
 */
 
 using System;
-using System.IO;
 using System.Text.Json;
+using System.Threading;
 using System.Collections;
-using System.IO.Compression;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 using VNLib.Utils;
 using VNLib.Utils.Async;
-using VNLib.Utils.Memory;
 
 namespace VNLib.Plugins.Extensions.Data.Storage
 {
@@ -60,35 +58,32 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         
         private readonly Lazy<Dictionary<string, string>> StringStorage;
 
+        protected override IAsyncResourceStateHandler AsyncHandler { get; }
+
         /// <summary>
         /// The currnt descriptor's identifier string within its backing table. Usually the primary key.
         /// </summary>
         public string DescriptorID => Entry.Id;
+
         /// <summary>
         /// The identifier of the user for which this descriptor belongs to
         /// </summary>
         public string UserID => Entry.UserId!;
+
         /// <summary>
         /// The <see cref="DateTime"/> when the descriptor was created
         /// </summary>
         public DateTimeOffset Created => Entry.Created;
+
         /// <summary>
         /// The last time this descriptor was updated
         /// </summary>
         public DateTimeOffset LastModified => Entry.LastModified;
 
-        ///<inheritdoc/>
-        protected override AsyncUpdateCallback UpdateCb { get; }
-        ///<inheritdoc/>
-        protected override AsyncDeleteCallback DeleteCb { get; }
-        ///<inheritdoc/>
-        protected override JsonSerializerOptions JSO => SerializerOptions;
-
-        internal LWStorageDescriptor(LWStorageManager manager, LWStorageEntry entry)
+        internal LWStorageDescriptor(IAsyncResourceStateHandler handler, LWStorageEntry entry)
         {
             Entry = entry;
-            UpdateCb = manager.UpdateDescriptorAsync;
-            DeleteCb = manager.RemoveDescriptorAsync;
+            AsyncHandler = handler;
             StringStorage = new(OnStringStoreLoad);
         }
 
@@ -100,15 +95,8 @@ namespace VNLib.Plugins.Extensions.Data.Storage
             }
             else
             {
-                //Calc and alloc decode buffer
-                int bufferSize = (int)(Entry.Data.Length * 1.75);
-                
-                using UnsafeMemoryHandle<byte> decodeBuffer = MemoryUtil.UnsafeAlloc(bufferSize);
-
                 //Decode and deserialize the data
-                return BrotliDecoder.TryDecompress(Entry.Data, decodeBuffer, out int written)
-                    ? JsonSerializer.Deserialize<Dictionary<string, string>>(decodeBuffer.Span[..written], SerializerOptions) ?? new(StringComparer.OrdinalIgnoreCase)
-                    : throw new InvalidDataException("Failed to decompress data");
+                return JsonSerializer.Deserialize<Dictionary<string, string>>(Entry.Data, SerializerOptions) ?? new(StringComparer.OrdinalIgnoreCase);
             }
         }
 
@@ -142,7 +130,6 @@ namespace VNLib.Plugins.Extensions.Data.Storage
                 SetStringValue(key, value);
             }
         }
-
         
         /// <summary>
         /// Gets a string value from string storage matching a given key
@@ -211,9 +198,10 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         }
 
         ///<inheritdoc/>
-        public override async ValueTask ReleaseAsync()
+        public override async ValueTask ReleaseAsync(CancellationToken cancellation = default)
         {
-            await base.ReleaseAsync();
+            await base.ReleaseAsync(cancellation);
+
             //Cleanup dict on exit
             if (StringStorage.IsValueCreated)
             {
@@ -223,8 +211,15 @@ namespace VNLib.Plugins.Extensions.Data.Storage
 
         ///<inheritdoc/>
         public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => StringStorage.Value.GetEnumerator();
+
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
         ///<inheritdoc/>
-        protected override object GetResource() => StringStorage.Value;
+        protected override object GetResource()
+        {
+            //Serlaize the state data and store it in the data entry
+            Entry.Data = JsonSerializer.SerializeToUtf8Bytes(StringStorage.Value, SerializerOptions);
+            return Entry;
+        }
     }
 }

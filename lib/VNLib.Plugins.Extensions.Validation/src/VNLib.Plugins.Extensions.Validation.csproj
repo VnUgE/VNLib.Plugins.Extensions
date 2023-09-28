@@ -4,10 +4,10 @@
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>VNLib.Plugins.Extensions.Validation</RootNamespace>
     <AssemblyName>VNLib.Plugins.Extensions.Validation</AssemblyName>
-    <Nullable>enable</Nullable>
-  
+    <Nullable>enable</Nullable>  
     <AnalysisLevel>latest-all</AnalysisLevel>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -15,15 +15,27 @@
     <Company>Vaughn Nugent</Company>
     <Product>VNLib.Plugins.Extensions.Validation</Product>
     <PackageId>VNLib.Plugins.Extensions.Validation</PackageId>
-    <Description>
-      An Essentials framework extension library for extending FluentValidation validators for common checks
-      including minium password validation.
-    </Description>
+    <Description>An Essentials framework extension library for extending FluentValidation validators for common checks including minium password validation.</Description>
     <Copyright>Copyright © 2023 Vaughn Nugent</Copyright>
     <PackageProjectUrl>https://www.vaughnnugent.com/resources/software/modules/VNLib.Plugins.Sessions</PackageProjectUrl>
     <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/VNLib.Plugins.Extensions.Validation</RepositoryUrl>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.1.2">

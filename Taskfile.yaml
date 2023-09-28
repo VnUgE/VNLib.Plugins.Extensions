@@ -49,9 +49,7 @@ tasks:
       BUILD_OUT: "{{.USER_WORKING_DIR}}/bin/{{.BUILD_MODE}}/{{.TARGET_FRAMEWORK}}/publish" 
 
     cmds:
-     
      #copy license and readme to target
-     - cd .. && powershell -Command "Copy-Item -Path ./LICENSE.txt -Destination '{{.BUILD_OUT}}/license.txt'"
      - cd .. && powershell -Command "Copy-Item -Path ./build.readme.md -Destination '{{.BUILD_OUT}}/readme.md'"
 
      #tar outputs

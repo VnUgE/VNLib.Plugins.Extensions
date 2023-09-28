@@ -7,30 +7,35 @@
     <Nullable>enable</Nullable>
     <AnalysisLevel>latest-all</AnalysisLevel>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
   
   <PropertyGroup>
     <Authors>Vaughn Nugent</Authors>
     <Company>Vaughn Nugent</Company>
     <Product>VNLib.Plugins.Extensions.Loading.Sql</Product>
-    <PackageId>VVNLib.Plugins.Extensions.Loading.Sql</PackageId>
-    <Description>
-      An Essentials framework extension library for configuring database connections using the EntityFrameworkCore
-      patterns and abstractions. Supports MSSql, MySql and SqlLite database connections via plugin configuration.
-    </Description>
+    <PackageId>VNLib.Plugins.Extensions.Loading.Sql</PackageId>
+    <Description>An Essentials framework extension library for configuring database connections using the EntityFrameworkCore patterns and abstractions. Supports MSSql, MySql and SqlLite database connections via plugin configuration.</Description>
     <Copyright>Copyright © 2023 Vaughn Nugent</Copyright>
     <PackageProjectUrl>https://www.vaughnnugent.com/resources/software/modules/VNLib.Plugins.Extensions</PackageProjectUrl>
     <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/VNLib.Plugins.Extensions.Loading.Sql</RepositoryUrl>
   </PropertyGroup>
-
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <Deterministic>False</Deterministic>
+  
+  <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <Deterministic>False</Deterministic>
-  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.21" />

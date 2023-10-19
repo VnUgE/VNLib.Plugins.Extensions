@@ -30,6 +30,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Runtime.CompilerServices;
 
 using VNLib.Utils.Logging;
@@ -356,6 +357,21 @@ namespace VNLib.Plugins.Extensions.Loading
 
             //Registaer the task to cause the plugin to wait
             return plugin.ObserveWork(() => WaitForUnload(plugin, callback));
+        }
+
+        /// <summary>
+        /// Adds a service to the <see cref="IServiceContainer"/> using generics syntax
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="container"></param>
+        /// <param name="service">The service instance to add to the container</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static void AddService<T>(this IServiceContainer container, T service)
+        {
+            _ = container ?? throw new ArgumentNullException(nameof(container));
+            _ = service ?? throw new ArgumentNullException(nameof(service));
+
+            container.AddService(typeof(T), service);
         }
 
         /// <summary>

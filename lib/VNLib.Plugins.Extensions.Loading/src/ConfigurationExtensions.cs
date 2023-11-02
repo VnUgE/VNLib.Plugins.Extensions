@@ -205,11 +205,11 @@ namespace VNLib.Plugins.Extensions.Loading
             //Get the property
             if(!config.TryGetValue(property, out JsonElement el))
             {
-                throw new KeyNotFoundException($"Missing required configuration property '{property}'");
+                throw new KeyNotFoundException($"Missing required configuration property '{property}' in config {config.ScopeName}");
             }
 
             //Even if the getter returns null, throw
-            return getter(el) ?? throw new KeyNotFoundException($"Missing required configuration property '{property}'");
+            return getter(el) ?? throw new KeyNotFoundException($"Missing required configuration property '{property}' in config {config.ScopeName}");
         }
 
         /// <summary>
@@ -301,12 +301,21 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <typeparam name="T"></typeparam>
         /// <param name="plugin"></param>
         /// <returns>True if the plugin config contains the require configuration property</returns>
-        public static bool HasConfigForType<T>(this PluginBase plugin) 
+        public static bool HasConfigForType<T>(this PluginBase plugin) => HasConfigForType(plugin, typeof(T));
+
+
+        /// <summary>
+        /// Determines if the current plugin configuration contains the require properties to initialize 
+        /// the type
+        /// </summary>
+        /// <param name="type">The type to get the configuration for</param>
+        /// <param name="plugin"></param>
+        /// <returns>True if the plugin config contains the require configuration property</returns>
+        public static bool HasConfigForType(this PluginBase plugin, Type type)
         {
-            Type type = typeof(T);
             ConfigurationNameAttribute? configName = type.GetCustomAttribute<ConfigurationNameAttribute>();
             //See if the plugin contains a configuration varables
-            return configName != null && (   
+            return configName != null && (
                     plugin.PluginConfig.TryGetProperty(configName.ConfigVarName, out _) ||
                     plugin.HostConfig.TryGetProperty(configName.ConfigVarName, out _)
                 );

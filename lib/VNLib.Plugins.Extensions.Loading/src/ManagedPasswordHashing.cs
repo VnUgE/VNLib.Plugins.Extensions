@@ -27,6 +27,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Collections.Generic;
 
+using VNLib.Hashing;
 using VNLib.Utils;
 using VNLib.Utils.Memory;
 using VNLib.Utils.Extensions;
@@ -50,17 +51,10 @@ namespace VNLib.Plugins.Extensions.Loading
                 string customAsm = el.GetString() ?? throw new KeyNotFoundException("You must specify a string file path for your custom password hashing assembly");
 
                 //Load the custom assembly
-                AssemblyLoader<IPasswordHashingProvider> prov = plugin.LoadAssembly<IPasswordHashingProvider>(customAsm);
-
-                //Configure async
-                if (prov.Resource is IAsyncConfigurable ac)
-                {
-                    //Configure async
-                    _ = plugin.ConfigureServiceAsync(ac);
-                }
+                IPasswordHashingProvider userProvider = plugin.CreateServiceExternal<IPasswordHashingProvider>(customAsm);
 
                 //Store
-                Passwords = new CustomPasswordHashingAsm(prov);
+                Passwords = new CustomPasswordHashingAsm(userProvider);
             }
             else
             {
@@ -96,12 +90,9 @@ namespace VNLib.Plugins.Extensions.Loading
 
         sealed class CustomPasswordHashingAsm : IPasswordHashingProvider
         {
-            private readonly AssemblyLoader<IPasswordHashingProvider> _loader;
+            private readonly IPasswordHashingProvider _provider;
 
-            public CustomPasswordHashingAsm(AssemblyLoader<IPasswordHashingProvider> loader)
-            {
-                _loader = loader;
-            }
+            public CustomPasswordHashingAsm(IPasswordHashingProvider loader) => _provider = loader;
 
             /*
              * Password hashing isnt a super high performance system
@@ -109,29 +100,45 @@ namespace VNLib.Plugins.Extensions.Loading
              * asm wrapper providing unload protection
              */
 
-            public PrivateString Hash(ReadOnlySpan<char> password) => _loader.Resource.Hash(password);
+            public PrivateString Hash(ReadOnlySpan<char> password) => _provider.Hash(password);
 
-            public PrivateString Hash(ReadOnlySpan<byte> password) => _loader.Resource.Hash(password);
+            public PrivateString Hash(ReadOnlySpan<byte> password) => _provider.Hash(password);
 
-            public ERRNO Hash(ReadOnlySpan<byte> password, Span<byte> hashOutput) => _loader.Resource.Hash(password, hashOutput);
+            public ERRNO Hash(ReadOnlySpan<byte> password, Span<byte> hashOutput) => _provider.Hash(password, hashOutput);
 
-            public bool Verify(ReadOnlySpan<char> passHash, ReadOnlySpan<char> password) => _loader.Resource.Verify(passHash, password);
+            public bool Verify(ReadOnlySpan<char> passHash, ReadOnlySpan<char> password) => _provider.Verify(passHash, password);
 
-            public bool Verify(ReadOnlySpan<byte> passHash, ReadOnlySpan<byte> password) => _loader.Resource.Verify(passHash, password);
+            public bool Verify(ReadOnlySpan<byte> passHash, ReadOnlySpan<byte> password) => _provider.Verify(passHash, password);
         }
 
         private sealed class SecretProvider : VnDisposeable, ISecretProvider
         {
             private readonly IAsyncLazy<byte[]> _pepper;
 
+            public PasswordHashing Passwords { get; }
+
             public SecretProvider(PluginBase plugin, IConfigScope config)
             {
+                IArgon2Library? safeLib = null;
+
+                if(config.TryGetValue("lib_path", out JsonElement manualLibPath))
+                {
+                    SafeArgon2Library lib = VnArgon2.LoadCustomLibrary(manualLibPath.GetString()!, System.Runtime.InteropServices.DllImportSearchPath.SafeDirectories);
+                    _ = plugin.RegisterForUnload(lib.Dispose);
+                    safeLib = lib;
+                }
+
+                //Load default library if the user did not explictly specify one
+                safeLib ??= VnArgon2.GetOrLoadSharedLib();
+
+                Argon2ConfigParams costParams = new();
+
                 if (config.TryGetValue("args", out JsonElement el))
                 {
                     //Convert to dict
                     IReadOnlyDictionary<string, JsonElement> hashingArgs = el.EnumerateObject().ToDictionary(static k => k.Name, static v => v.Value);
 
-                    Argon2ConfigParams p = new()
+                    costParams = new()
                     {
                         HashLen = hashingArgs["hash_len"].GetUInt32(),
                         MemoryCost = hashingArgs["memory_cost"].GetUInt32(),
@@ -139,15 +146,10 @@ namespace VNLib.Plugins.Extensions.Loading
                         SaltLen = (int)hashingArgs["salt_len"].GetUInt32(),
                         TimeCost = hashingArgs["time_cost"].GetUInt32()
                     };
-                   
-                    //Load passwords
-                    Passwords = PasswordHashing.Create(this, in p);
                 }
-                else
-                {
-                    //Load passwords with default config
-                    Passwords = PasswordHashing.Create(this, new Argon2ConfigParams());
-                }
+
+                //Create passwords with the configuration and library
+                Passwords = PasswordHashing.Create(safeLib, this, in costParams);
 
                 //Get the pepper from secret storage
                 _pepper = plugin.GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
@@ -163,9 +165,6 @@ namespace VNLib.Plugins.Extensions.Loading
                 _pepper = plugin.GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
                     .ToLazy(static sr => sr.GetFromBase64());
             }
-
-
-            public PasswordHashing Passwords { get; }
 
             ///<inheritdoc/>
             public int BufferSize
@@ -194,8 +193,11 @@ namespace VNLib.Plugins.Extensions.Loading
 
             protected override void Free()
             {
-                //Clear the pepper if set
-                MemoryUtil.InitializeBlock(_pepper.Value.AsSpan());
+                if (_pepper.Completed)
+                {
+                    //Clear the pepper if set
+                    MemoryUtil.InitializeBlock(_pepper.Value.AsSpan());
+                }
             }
         }
     }

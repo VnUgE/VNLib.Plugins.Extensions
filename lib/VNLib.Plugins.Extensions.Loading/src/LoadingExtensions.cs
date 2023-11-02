@@ -31,57 +31,17 @@ using System.Runtime.Loader;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 
 using VNLib.Utils.Logging;
+using VNLib.Utils.Resources;
 using VNLib.Utils.Extensions;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
-    /// <summary>
-    /// Base class for concrete type loading exceptions. Raised when searching 
-    /// for a concrete type fails.
-    /// </summary>
-    public class ConcreteTypeException : TypeLoadException
-    {
-        public ConcreteTypeException() : base()
-        { }
-
-        public ConcreteTypeException(string? message) : base(message)
-        { }
-
-        public ConcreteTypeException(string? message, Exception? innerException) : base(message, innerException)
-        { }
-    }
-
-    /// <summary>
-    /// Raised when a concrete type is found but is ambiguous because more than one 
-    /// type implements the desired abstract type.
-    /// </summary>
-    public sealed class ConcreteTypeAmbiguousMatchException : ConcreteTypeException
-    {
-        public ConcreteTypeAmbiguousMatchException(string message) : base(message)
-        { }
-
-        public ConcreteTypeAmbiguousMatchException(string message, Exception innerException) : base(message, innerException)
-        { }
-
-        public ConcreteTypeAmbiguousMatchException()
-        { }
-    }
-
-    /// <summary>
-    /// The requested concrete type was not found in the assembly
-    /// </summary>
-    public sealed class ConcreteTypeNotFoundException : ConcreteTypeException
-    {
-        public ConcreteTypeNotFoundException(string message) : base(message)
-        { }
-        public ConcreteTypeNotFoundException(string message, Exception innerException) : base(message, innerException)
-        { }
-        public ConcreteTypeNotFoundException()
-        { }
-    }
 
     /// <summary>
     /// Provides common loading (and unloading when required) extensions for plugins
@@ -102,7 +62,9 @@ namespace VNLib.Plugins.Extensions.Loading
          * Plugin local cache used for storing singletons for a plugin instance
          */
         private static readonly ConditionalWeakTable<PluginBase, PluginLocalCache> _localCache = new();
-       
+        private static readonly ConcurrentDictionary<string, ManagedLibrary> _assemblyCache = new();
+
+
         /// <summary>
         /// Gets a previously cached service singleton for the desired plugin
         /// </summary>
@@ -189,6 +151,10 @@ namespace VNLib.Plugins.Extensions.Loading
             //Get the plugin's load context if not explicitly supplied
             explictAlc ??= GetPluginLoadContext();
 
+            if (plugin.IsDebug())
+            {
+                plugin.Log.Verbose("Loading assembly {asm}: from file {file}", assemblyName, asmFile);
+            }
             //Load the assembly
             return AssemblyLoader<T>.Load(asmFile, explictAlc, plugin.UnloadToken);
         }
@@ -375,6 +341,52 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
+        /// Creates a new instance of the desired service type from an external assembly and 
+        /// caches the loaded assembly so it's never loaded more than once. Managed assembly 
+        /// life cycles are managed by the plugin. Instances are treated as services and 
+        /// their service hooks will be called like any internal service.
+        /// </summary>
+        /// <typeparam name="T">The service type, may be an interface or abstract type</typeparam>
+        /// <param name="plugin"></param>
+        /// <param name="assemblyDllName">The name of the assembly that contains the desired type to search for</param>
+        /// <param name="search">The directory search method</param>
+        /// <param name="defaultCtx">A <see cref="AssemblyLoadContext"/> to load the assembly into. Defaults to the plugins current ALC</param>
+        /// <returns>A new instance of the desired service type </returns>
+        /// <exception cref="TypeLoadException"></exception>
+        public static T CreateServiceExternal<T>(
+            this PluginBase plugin, 
+            string assemblyDllName, 
+            SearchOption search = SearchOption.AllDirectories, 
+            AssemblyLoadContext? defaultCtx = null
+        )
+        {
+            /*
+             * Get or create the library for the assembly path, but only load it once
+             * Loading it on the plugin will also cause it be cleaned up when the plugin 
+             * is unloaded.
+             */
+            ManagedLibrary manLib = _assemblyCache.GetOrAdd(assemblyDllName, (name) => plugin.LoadAssembly<T>(name, search, defaultCtx));
+            Type[] matchingTypes = manLib.TryGetAllMatchingTypes<T>().ToArray();
+
+            //try to get the first type that has the extern attribute, or fall back to the first public & concrete type
+            Type? exported = matchingTypes.FirstOrDefault(t => t.GetCustomAttribute<ExternServiceAttribute>() != null)
+                ?? matchingTypes.Where(t => !t.IsAbstract && t.IsPublic).FirstOrDefault();
+           
+            _ = exported ?? throw new TypeLoadException($"The desired external asset type {typeof(T).Name} is not exported as part of the assembly {manLib.Assembly.FullName}");
+
+            //Try to get a configuration for the exported type
+            if (plugin.HasConfigForType(exported))
+            {
+                //Get the config for the type and create the service
+                return (T)CreateService(plugin, exported, plugin.GetConfigForType(exported));
+            }
+
+            //Create new instance of the desired type
+            return (T)CreateService(plugin, exported, null);
+        }
+
+
+        /// <summary>
         /// <para>
         /// Gets or inializes a singleton service of the desired type.
         /// </para>
@@ -395,11 +407,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="EntryPointNotFoundException"></exception>
         /// <exception cref="ConcreteTypeNotFoundException"></exception>
         /// <exception cref="ConcreteTypeAmbiguousMatchException"></exception>
-        public static T GetOrCreateSingleton<T>(this PluginBase plugin)
-        {
-            //Add service to service continer
-            return GetOrCreateSingleton(plugin, CreateService<T>);
-        }
+        public static T GetOrCreateSingleton<T>(this PluginBase plugin) => GetOrCreateSingleton(plugin, CreateService<T>);
 
         /// <summary>
         /// <para>
@@ -423,11 +431,8 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="EntryPointNotFoundException"></exception>
         /// <exception cref="ConcreteTypeNotFoundException"></exception>
         /// <exception cref="ConcreteTypeAmbiguousMatchException"></exception>
-        public static T GetOrCreateSingleton<T>(this PluginBase plugin, string configName)
-        {
-            //Add service to service continer
-            return GetOrCreateSingleton(plugin, (plugin) => CreateService<T>(plugin, configName));
-        }
+        public static T GetOrCreateSingleton<T>(this PluginBase plugin, string configName) 
+            => GetOrCreateSingleton(plugin, (plugin) => CreateService<T>(plugin, configName));
 
         /// <summary>
         /// Configures the service asynchronously on the plugin's scheduler and returns a task
@@ -534,10 +539,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="EntryPointNotFoundException"></exception>
         /// <exception cref="ConcreteTypeNotFoundException"></exception>
         /// <exception cref="ConcreteTypeAmbiguousMatchException"></exception>
-        public static T CreateService<T>(this PluginBase plugin, IConfigScope? config)
-        {
-            return (T)CreateService(plugin, typeof(T), config);
-        }
+        public static T CreateService<T>(this PluginBase plugin, IConfigScope? config) => (T)CreateService(plugin, typeof(T), config);
 
         /// <summary>
         /// <para>
@@ -591,7 +593,7 @@ namespace VNLib.Plugins.Extensions.Loading
                     ConstructorInfo? constructor = serviceType.GetConstructor(new Type[] { typeof(PluginBase), typeof(IConfigScope) });
 
                     //Make sure the constructor exists
-                    _ = constructor ?? throw new EntryPointNotFoundException($"No constructor found for {serviceType.Name}");
+                    _ = constructor ?? throw new MissingMemberException($"No constructor found for {serviceType.Name}");
 
                     //Call constructore
                     service = constructor.Invoke(new object[2] { plugin, config });
@@ -602,7 +604,7 @@ namespace VNLib.Plugins.Extensions.Loading
                     ConstructorInfo? constructor = serviceType.GetConstructor(new Type[] { typeof(PluginBase) });
 
                     //Make sure the constructor exists
-                    _ = constructor ?? throw new EntryPointNotFoundException($"No constructor found for {serviceType.Name}");
+                    _ = constructor ?? throw new MissingMemberException($"No constructor found for {serviceType.Name}");
 
                     //Call constructore
                     service = constructor.Invoke(new object[1] { plugin });
@@ -610,7 +612,8 @@ namespace VNLib.Plugins.Extensions.Loading
             }
             catch(TargetInvocationException te) when (te.InnerException != null) 
             {
-                throw te.InnerException;
+                FindAndThrowInnerException(te);
+                throw;
             }
 
             Task? loading = null;
@@ -652,6 +655,20 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             return service;
+        }
+
+        [DoesNotReturn]
+        internal static void FindAndThrowInnerException(Exception ex)
+        {
+            //Recursivley search for the innermost exception of a TIE
+            if (ex is TargetInvocationException && ex.InnerException != null)
+            {
+                FindAndThrowInnerException(ex.InnerException);
+            }
+            else
+            {
+                ExceptionDispatchInfo.Throw(ex);
+            }
         }
 
 

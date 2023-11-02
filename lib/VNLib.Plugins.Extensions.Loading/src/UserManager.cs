@@ -42,7 +42,6 @@ namespace VNLib.Plugins.Extensions.Loading.Users
     {
         public const string USER_CUSTOM_ASSEMBLY = "custom_assembly";
         public const string DEFAULT_USER_ASM = "VNLib.Plugins.Essentials.Users.dll";
-        public const string ONLOAD_METHOD_NAME = "OnPluginLoading";
 
         private readonly IUserManager _dynamicLoader;
 
@@ -63,28 +62,14 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         private static IUserManager LoadUserAssembly(PluginBase plugin, string customAsm)
         {
             //Try to load a custom assembly
-            AssemblyLoader<IUserManager> loader = plugin.LoadAssembly<IUserManager>(customAsm);
-            try
+            IUserManager externManager = plugin.CreateServiceExternal<IUserManager>(customAsm);    
+
+            if (plugin.IsDebug())
             {
-                //Try to get the onload method
-                Action<object>? onLoadMethod = loader.TryGetMethod<Action<object>>(ONLOAD_METHOD_NAME);
-
-                //Call the onplugin load method
-                onLoadMethod?.Invoke(plugin);
-
-                if (plugin.IsDebug())
-                {
-                    plugin.Log.Debug("Loading user manager from assembly {name}", loader.Resource.GetType().AssemblyQualifiedName);
-                }
-
-                //Return the loaded instance (may raise exception)
-                return loader.Resource;
+                plugin.Log.Debug("Loading user manager from assembly {name}", externManager.GetType().AssemblyQualifiedName);
             }
-            catch
-            {
-                loader.Dispose();
-                throw;
-            }
+
+            return externManager;
         }
 
         ///<inheritdoc/>

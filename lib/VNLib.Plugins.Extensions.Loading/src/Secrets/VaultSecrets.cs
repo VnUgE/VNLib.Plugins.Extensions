@@ -78,7 +78,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// </summary>
         /// <param name="plugin"></param>
         /// <param name="secretName">The name of the secret propery to get</param>
-        /// <returns>The element from the configuration file with the given name, or null if the configuration or property does not exist</returns>
+        /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
         public static async Task<ISecretResult> GetSecretAsync(this PluginBase plugin, string secretName)

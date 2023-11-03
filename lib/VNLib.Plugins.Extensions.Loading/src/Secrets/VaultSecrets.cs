@@ -404,7 +404,7 @@ namespace VNLib.Plugins.Extensions.Loading
             using UnsafeMemoryHandle<byte> buffer = MemoryUtil.UnsafeAlloc(secret.Result.Length);
             
             //Get base64
-            if(!Convert.TryFromBase64Chars(secret.Result, buffer, out int count))
+            if(!Convert.TryFromBase64Chars(secret.Result, buffer.Span, out int count))
             {
                 throw new InternalBufferTooSmallException("internal buffer too small");
             }
@@ -413,7 +413,7 @@ namespace VNLib.Plugins.Extensions.Loading
             byte[] value = buffer.Span[..count].ToArray();
 
             //Clear block before returning
-            MemoryUtil.InitializeBlock<byte>(buffer);
+            MemoryUtil.InitializeBlock(buffer.Span);
 
             return value;
         }

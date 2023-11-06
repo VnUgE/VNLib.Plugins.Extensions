@@ -100,6 +100,39 @@ namespace VNLib.Plugins.Extensions.Loading
         public static T GetOrCreateSingleton<T>(PluginBase plugin, Func<PluginBase, T> serviceFactory) 
             => (T)GetOrCreateSingleton(plugin, typeof(T), p => serviceFactory(p)!);
 
+
+        /// <summary>
+        /// Gets the full file path for the assembly asset file name within the assets
+        /// directory. 
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <param name="assemblyName">The name of the assembly (ex: 'file.dll') to search for</param>
+        /// <param name="searchOption">Directory search flags</param>
+        /// <returns>The full path to the assembly asset file, or null if the file does not exist</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static string? GetAssetFilePath(this PluginBase plugin, string assemblyName, SearchOption searchOption)
+        {
+            plugin.ThrowIfUnloaded();
+            _ = assemblyName ?? throw new ArgumentNullException(nameof(assemblyName));
+
+            /*
+             * Allow an assets directory to limit the scope of the search for the desired
+             * assembly, otherwise search all plugins directories
+             */
+
+            string? assetDir = plugin.GetAssetsPath();
+            assetDir ??= plugin.GetPluginsPath();
+
+            /*
+             * This should never happen since this method can only be called from a
+             * plugin context, which means this path was used to load the current plugin
+             */
+            _ = assetDir ?? throw new ArgumentNullException(ConfigurationExtensions.PLUGIN_ASSET_KEY, "No plugin path is defined for the current host configuration, this is likely a bug");
+
+            //Get the first file that matches the search file
+            return Directory.EnumerateFiles(assetDir, assemblyName, searchOption).FirstOrDefault();
+        }
+
         /// <summary>
         /// Loads an assembly into the current plugin's load context and will unload when disposed
         /// or the plugin is unloaded from the host application. 
@@ -115,7 +148,6 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The <see cref="AssemblyLoader{T}"/> managing the loaded assmbly in the current AppDomain</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="FileNotFoundException"></exception>
-        /// <exception cref="EntryPointNotFoundException"></exception>
         /// <remarks>
         /// The assembly is searched within the 'assets' directory specified in the plugin config
         /// or the global plugins ('path' key) directory if an assets directory is not defined.
@@ -126,27 +158,9 @@ namespace VNLib.Plugins.Extensions.Loading
             SearchOption dirSearchOption = SearchOption.AllDirectories, 
             AssemblyLoadContext? explictAlc = null)
         {
-            plugin.ThrowIfUnloaded();
-            _ = assemblyName ?? throw new ArgumentNullException(nameof(assemblyName));
-
-
-            /*
-             * Allow an assets directory to limit the scope of the search for the desired
-             * assembly, otherwise search all plugins directories
-             */
-
-            string? assetDir = plugin.GetAssetsPath();
-            assetDir ??= plugin.GetPluginsPath();
-
-            /*
-             * This should never happen since this method can only be called from a
-             * plugin context, which means this path was used to load the current plugin
-             */
-            _ = assetDir ?? throw new ArgumentNullException(ConfigurationExtensions.PLUGIN_ASSET_KEY, "No plugin path is defined for the current host configuration, this is likely a bug");
-            
-            //Get the first file that matches the search file
-            string? asmFile = Directory.EnumerateFiles(assetDir, assemblyName, dirSearchOption).FirstOrDefault();
-            _ = asmFile ?? throw new FileNotFoundException($"Failed to load custom assembly {assemblyName} from plugin directory");
+            //Get the file path for the assembly
+            string asmFile = GetAssetFilePath(plugin, assemblyName, dirSearchOption)
+                 ?? throw new FileNotFoundException($"Failed to load custom assembly {assemblyName} from plugin directory");
 
             //Get the plugin's load context if not explicitly supplied
             explictAlc ??= GetPluginLoadContext();

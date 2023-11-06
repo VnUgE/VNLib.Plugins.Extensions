@@ -30,6 +30,7 @@ using VNLib.Utils;
 using VNLib.Utils.Memory;
 using VNLib.Utils.Logging;
 using VNLib.Plugins.Essentials.Users;
+using VNLib.Plugins.Essentials.Accounts;
 
 namespace VNLib.Plugins.Extensions.Loading.Users
 {
@@ -39,7 +40,8 @@ namespace VNLib.Plugins.Extensions.Loading.Users
     /// </summary>
     [ConfigurationName("users", Required = false)]
     public class UserManager : IUserManager
-    {
+    {       
+
         public const string USER_CUSTOM_ASSEMBLY = "custom_assembly";
         public const string DEFAULT_USER_ASM = "VNLib.Plugins.Essentials.Users.dll";
 
@@ -72,22 +74,22 @@ namespace VNLib.Plugins.Extensions.Loading.Users
             return externManager;
         }
 
+        /// <summary>
+        /// Gets the underlying <see cref="IUserManager"/> that was dynamically loaded.
+        /// </summary>
+        /// <returns>The user manager instance</returns>
+        public IUserManager InternalManager => _dynamicLoader;
+
         ///<inheritdoc/>
-        public Task<IUser> CreateUserAsync(string userid, string emailAddress, ulong privilages, PrivateString passHash, CancellationToken cancellation = default)
+        public Task<IUser> CreateUserAsync(IUserCreationRequest creation, string? userId, CancellationToken cancellation = default)
         {
-            return _dynamicLoader.CreateUserAsync(userid, emailAddress, privilages, passHash, cancellation);
+            return _dynamicLoader.CreateUserAsync(creation, userId, cancellation);
         }
 
         ///<inheritdoc/>
-        public Task<IUser?> GetUserAndPassFromEmailAsync(string emailAddress, CancellationToken cancellationToken = default)
+        public IPasswordHashingProvider? GetHashProvider()
         {
-            return _dynamicLoader.GetUserAndPassFromEmailAsync(emailAddress, cancellationToken);
-        }
-
-        ///<inheritdoc/>
-        public Task<IUser?> GetUserAndPassFromIDAsync(string userid, CancellationToken cancellation = default)
-        {
-            return _dynamicLoader.GetUserAndPassFromIDAsync(userid, cancellation);
+            return _dynamicLoader.GetHashProvider();
         }
 
         ///<inheritdoc/>
@@ -109,9 +111,27 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         }
 
         ///<inheritdoc/>
-        public Task<ERRNO> UpdatePassAsync(IUser user, PrivateString newPass, CancellationToken cancellation = default)
+        public Task<PrivateString?> RecoverPasswordAsync(IUser user, CancellationToken cancellation = default)
         {
-            return _dynamicLoader.UpdatePassAsync(user, newPass, cancellation);
+            return _dynamicLoader.RecoverPasswordAsync(user, cancellation);
+        }
+
+        ///<inheritdoc/>
+        public Task<ERRNO> UpdatePasswordAsync(IUser user, PrivateString newPass, CancellationToken cancellation = default)
+        {
+            return _dynamicLoader.UpdatePasswordAsync(user, newPass, cancellation);
+        }
+
+        ///<inheritdoc/>
+        public Task<ERRNO> ValidatePasswordAsync(IUser user, PrivateString password, PassValidateFlags flags, CancellationToken cancellation = default)
+        {
+            return _dynamicLoader.ValidatePasswordAsync(user, password, flags, cancellation);
+        }
+
+        ///<inheritdoc/>
+        public string ComputeSafeUserId(string input)
+        {
+            return _dynamicLoader.ComputeSafeUserId(input);
         }
     }
 }

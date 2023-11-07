@@ -383,7 +383,7 @@ namespace VNLib.Plugins.Extensions.Loading
             Type[] matchingTypes = manLib.TryGetAllMatchingTypes<T>().ToArray();
 
             //try to get the first type that has the extern attribute, or fall back to the first public & concrete type
-            Type? exported = matchingTypes.FirstOrDefault(t => t.GetCustomAttribute<ExternServiceAttribute>() != null)
+            Type? exported = matchingTypes.FirstOrDefault(t => t.GetCustomAttribute<ServiceExportAttribute>() != null)
                 ?? matchingTypes.Where(t => !t.IsAbstract && t.IsPublic).FirstOrDefault();
            
             _ = exported ?? throw new TypeLoadException($"The desired external asset type {typeof(T).Name} is not exported as part of the assembly {manLib.Assembly.FullName}");

@@ -37,6 +37,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 using VNLib.Utils.Logging;
+using VNLib.Utils.Resources;
 using VNLib.Utils.Extensions;
 using VNLib.Plugins.Extensions.Loading.Sql.DatabaseBuilder;
 using VNLib.Plugins.Extensions.Loading.Sql.DatabaseBuilder.Helpers;
@@ -51,9 +52,13 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
     {
         public const string SQL_CONFIG_KEY = "sql";
         public const string DB_PASSWORD_KEY = "db_password";
+        public const string EXTERN_SQL_LIB_KEY = "custom_assembly";
+
+        public const string EXTERN_LIB_GET_CONN_FUNC_NAME = "GetDbConnections";
 
         private const string MAX_LEN_BYPASS_KEY = "MaxLen";
-        private const string TIMESTAMP_BYPASS = "TimeStamp";
+        private const string TIMESTAMP_BYPASS = "TimeStamp";        
+  
 
         /// <summary>
         /// Gets (or loads) the ambient sql connection factory for the current plugin 
@@ -84,7 +89,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         {
             static IAsyncLazy<Func<DbConnection>> FactoryLoader(PluginBase plugin)
             {
-                return GetFactoryLoaderAsync(plugin).AsLazy();
+                return Task.Run(() => GetFactoryLoaderAsync(plugin)).AsLazy();
             }
 
             plugin.ThrowIfUnloaded();
@@ -96,6 +101,17 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         private async static Task<Func<DbConnection>> GetFactoryLoaderAsync(PluginBase plugin)
         {
             IConfigScope sqlConf = plugin.GetConfig(SQL_CONFIG_KEY);
+
+            //See if the user wants to use a custom assembly
+            if (sqlConf.ContainsKey(EXTERN_SQL_LIB_KEY))
+            {
+                string dllPath = sqlConf.GetRequiredProperty(EXTERN_SQL_LIB_KEY, k => k.GetString()!);
+
+                //Load the library and get instance
+                object dbProvider = plugin.CreateServiceExternal<object>(dllPath);
+
+                return ManagedLibrary.GetMethod<Func<DbConnection>>(dbProvider, EXTERN_LIB_GET_CONN_FUNC_NAME);
+            }
             
             //Get the db-type
             string? type = sqlConf.GetPropString("db_type");
@@ -270,8 +286,11 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
             //Invoke ontbCreating to setup the dbBuilder
             dbCreator.OnDatabaseCreating(builder, state);
 
+            //Wait for the connection factory to load
+            Func<DbConnection> dbConFactory = await GetConnectionFactoryAsync(plugin);
+
             //Create a new db connection
-            await using DbConnection connection = (await plugin.GetConnectionFactoryAsync()).Invoke();
+            await using DbConnection connection = dbConFactory();
 
             //Get the abstract database from the connection type
             IDBCommandGenerator cb = connection.GetCmGenerator();

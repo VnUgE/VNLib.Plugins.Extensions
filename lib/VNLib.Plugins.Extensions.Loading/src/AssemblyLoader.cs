@@ -96,9 +96,9 @@ namespace VNLib.Plugins.Extensions.Loading
                 if (disposing)
                 {
                     //If the instance is disposable, call its dispose method on unload
-                    if (_instance.IsValueCreated && _instance.Value is IDisposable)
+                    if (_instance.IsValueCreated && _instance.Value is IDisposable disposable)
                     {
-                        (_instance.Value as IDisposable)?.Dispose();
+                        disposable.Dispose();
                     }
                 }
                

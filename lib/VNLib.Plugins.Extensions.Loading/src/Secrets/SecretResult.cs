@@ -54,7 +54,7 @@ namespace VNLib.Plugins.Extensions.Loading
         ///<inheritdoc/>
         protected override void Free()
         {
-            MemoryUtil.InitializeBlock(_secretChars.AsSpan());
+            MemoryUtil.InitializeBlock(_secretChars);
         }
 
         internal static SecretResult ToSecret(string? result)

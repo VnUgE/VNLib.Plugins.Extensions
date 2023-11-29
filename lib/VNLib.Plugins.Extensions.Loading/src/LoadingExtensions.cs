@@ -134,7 +134,7 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// Loads an assembly into the current plugin's load context and will unload when disposed
+        /// Loads a managed assembly into the current plugin's load context and will unload when disposed
         /// or the plugin is unloaded from the host application. 
         /// </summary>
         /// <typeparam name="T">The desired exported type to load from the assembly</typeparam>
@@ -160,7 +160,7 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             //Get the file path for the assembly
             string asmFile = GetAssetFilePath(plugin, assemblyName, dirSearchOption)
-                 ?? throw new FileNotFoundException($"Failed to load custom assembly {assemblyName} from plugin directory");
+                 ?? throw new FileNotFoundException($"Failed to find custom assembly {assemblyName} from plugin directory");
 
             //Get the plugin's load context if not explicitly supplied
             explictAlc ??= GetPluginLoadContext();
@@ -172,7 +172,40 @@ namespace VNLib.Plugins.Extensions.Loading
             //Load the assembly
             return AssemblyLoader<T>.Load(asmFile, explictAlc, plugin.UnloadToken);
         }
-        
+
+        /// <summary>
+        /// Loads a managed assembly into the current plugin's load context and will unload when disposed
+        /// or the plugin is unloaded from the host application. 
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <param name="assemblyName">The name of the assembly (ex: 'file.dll') to search for</param>
+        /// <param name="dirSearchOption">Directory/file search option</param>
+        /// <param name="explictAlc">
+        /// Explicitly define an <see cref="AssemblyLoadContext"/> to load the assmbly, and it's dependencies
+        /// into. If null, uses the plugin's alc.
+        /// </param>
+        /// <returns>The <see cref="AssemblyLoader{T}"/> managing the loaded assmbly in the current AppDomain</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="FileNotFoundException"></exception>
+        /// <remarks>
+        /// The assembly is searched within the 'assets' directory specified in the plugin config
+        /// or the global plugins ('path' key) directory if an assets directory is not defined.
+        /// </remarks>
+        public static ManagedLibrary LoadAssembly(
+            this PluginBase plugin,
+            string assemblyName,
+            SearchOption dirSearchOption = SearchOption.AllDirectories,
+            AssemblyLoadContext? explictAlc = null)
+        {
+            /*
+             * Using an assembly loader instance instead of managed library, so it respects 
+             * the plugin's unload events. Returning the managed library instance will
+             * hide the overloads that would cause possible type load issues, so using
+             * an object as the generic type parameter shouldn't be an issue.
+             */
+            return LoadAssembly<object>(plugin, assemblyName, dirSearchOption, explictAlc);
+        }
+
         /// <summary>
         /// Gets the current plugin's <see cref="AssemblyLoadContext"/>.
         /// </summary>
@@ -379,7 +412,7 @@ namespace VNLib.Plugins.Extensions.Loading
              * Loading it on the plugin will also cause it be cleaned up when the plugin 
              * is unloaded.
              */
-            ManagedLibrary manLib = _assemblyCache.GetOrAdd(assemblyDllName, (name) => plugin.LoadAssembly<T>(name, search, defaultCtx));
+            ManagedLibrary manLib = _assemblyCache.GetOrAdd(assemblyDllName, (name) => LoadAssembly<T>(plugin, name, search, defaultCtx));
             Type[] matchingTypes = manLib.TryGetAllMatchingTypes<T>().ToArray();
 
             //try to get the first type that has the extern attribute, or fall back to the first public & concrete type
@@ -592,6 +625,7 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             object service;
+            ConstructorInfo? constructor;
 
             try
             {
@@ -604,7 +638,7 @@ namespace VNLib.Plugins.Extensions.Loading
                     }
 
                     //Get the constructor for required or available config
-                    ConstructorInfo? constructor = serviceType.GetConstructor(new Type[] { typeof(PluginBase), typeof(IConfigScope) });
+                    constructor = serviceType.GetConstructor(new Type[] { typeof(PluginBase), typeof(IConfigScope) });
 
                     //Make sure the constructor exists
                     _ = constructor ?? throw new MissingMemberException($"No constructor found for {serviceType.Name}");
@@ -612,16 +646,20 @@ namespace VNLib.Plugins.Extensions.Loading
                     //Call constructore
                     service = constructor.Invoke(new object[2] { plugin, config });
                 }
+                else if((constructor = serviceType.GetConstructor(new Type[] { typeof(PluginBase) })) != null)
+                {
+                    //Call constructor
+                    service = constructor.Invoke(new object[1] { plugin });
+                }
+                //try to get empty constructor
+                else if ((constructor = serviceType.GetConstructor(Array.Empty<Type>())) != null)
+                {
+                    //Invoked empty constructor
+                    service = constructor.Invoke(null);
+                }
                 else
                 {
-                    //Get the constructor
-                    ConstructorInfo? constructor = serviceType.GetConstructor(new Type[] { typeof(PluginBase) });
-
-                    //Make sure the constructor exists
-                    _ = constructor ?? throw new MissingMemberException($"No constructor found for {serviceType.Name}");
-
-                    //Call constructore
-                    service = constructor.Invoke(new object[1] { plugin });
+                    throw new MissingMemberException($"No constructor found for {serviceType.Name}");
                 }
             }
             catch(TargetInvocationException te) when (te.InnerException != null) 

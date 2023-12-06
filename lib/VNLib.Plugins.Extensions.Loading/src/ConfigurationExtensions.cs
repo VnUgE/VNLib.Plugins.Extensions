@@ -213,6 +213,35 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
+        /// Attempts to get a configuration property from the specified configuration scope
+        /// and invokes your callback function on the element if found to transform the 
+        /// output value
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the configuration element to get</param>
+        /// <param name="getter">The function used to set the desired value from the config element</param>
+        /// <param name="value">The output value to set</param>
+        /// <returns>A value that indicates if the property was found</returns>
+        public static bool TryGetProperty<T>(this IConfigScope config, string property, Func<JsonElement, T> getter, out T? value)
+        {
+            //Check null
+            ArgumentNullException.ThrowIfNull(config, nameof(config));
+            ArgumentNullException.ThrowIfNull(property, nameof(property));
+            ArgumentNullException.ThrowIfNull(getter, nameof(getter));
+
+            //Get the property
+            if (config.TryGetValue(property, out JsonElement el))
+            {
+                //Safe to invoke callback function on the element and set the return value
+                value = getter(el);
+                return true;
+            }
+            value = default;
+            return false;
+        }
+
+        /// <summary>
         /// Gets the configuration property name for the type
         /// </summary>
         /// <param name="type">The type to get the configuration name for</param>

@@ -432,6 +432,41 @@ namespace VNLib.Plugins.Extensions.Loading
             return (T)CreateService(plugin, exported, null);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="plugin"></param>
+        /// <param name="instance">The service instance to pass the host</param>
+        /// <param name="flags">Optional export flags to pass to the host</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        public static void ExportService<T>(this PluginBase plugin, T instance, ExportFlags flags = ExportFlags.None)
+            where T : class => ExportService(plugin, typeof(T), instance, flags);
+
+        /// <summary>
+        /// Exports a service of the desired type to the host application. Once the plugin
+        /// is done loading, the host will be able to access the service instance.
+        /// <para>
+        /// You should avoid mutating the service instance after the plugin has been 
+        /// loaded, especially if you are using factory methods to create the service.
+        /// </para>
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <param name="type">The service type to export</param>
+        /// <param name="instance">The service instance to pass the host</param>
+        /// <param name="flags">Optional export flags to pass to the host</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        public static void ExportService(this PluginBase plugin, Type type, object instance, ExportFlags flags = ExportFlags.None)
+        {
+            ArgumentNullException.ThrowIfNull(plugin, nameof(plugin));
+            plugin.ThrowIfUnloaded();
+            
+            //Init new service wrapper
+            ServiceExport export = new(type, instance, flags);
+            plugin.Services.Add(export);
+        }
 
         /// <summary>
         /// <para>

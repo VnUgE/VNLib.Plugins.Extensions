@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -28,6 +28,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
+using VNLib.Plugins.Essentials.Runtime;
 using VNLib.Plugins.Extensions.Loading.Events;
 
 namespace VNLib.Plugins.Extensions.Loading.Routing
@@ -39,7 +40,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
     public static class RoutingExtensions
     {
         private static readonly ConditionalWeakTable<IEndpoint, PluginBase?> _pluginRefs = new();
-     
+        private static readonly ConditionalWeakTable<PluginBase, EndpointCollection> _pluginEndpoints = new();      
 
         /// <summary>
         /// Constructs and routes the specific endpoint type for the current plugin
@@ -147,6 +148,32 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
         }
 
         /// <summary>
+        /// Routes a single endpoint for the current plugin and exports the collection to the 
+        /// service pool
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <param name="endpoint">The endpoint to add to the collection</param>
+        public static void Route(this PluginBase plugin, IEndpoint endpoint)
+        {
+            /*
+             * Export the new collection to the service pool in the constructor
+             * function to ensure it's only export once per plugin
+             */
+            static EndpointCollection OnCreate(PluginBase plugin)
+            {
+                EndpointCollection collection = new();
+                plugin.ExportService<IVirtualEndpointDefinition>(collection);
+                return collection;
+            }
+
+            //Get the endpoint collection for the current plugin
+            EndpointCollection endpoints = _pluginEndpoints.GetValue(plugin, OnCreate);
+            
+            //Add the endpoint to the collection
+            endpoints.Endpoints.Add(endpoint);
+        }
+
+        /// <summary>
         /// Gets the plugin that loaded the current endpoint
         /// </summary>
         /// <param name="ep"></param>
@@ -200,6 +227,13 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
                 plugin.ScheduleInterval(interval.Item2, interval.Item1.Interval);
             }
         }
-      
+
+        private sealed class EndpointCollection : IVirtualEndpointDefinition
+        {
+            public List<IEndpoint> Endpoints { get; } = new();
+
+            ///<inheritdoc/>
+            IEnumerable<IEndpoint> IVirtualEndpointDefinition.GetEndpoints() => Endpoints;            
+        }
     }
 }

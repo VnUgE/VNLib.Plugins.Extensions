@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>VNLib.Plugins.Extensions.Data</RootNamespace>
     <AssemblyName>VNLib.Plugins.Extensions.Data</AssemblyName>
     <Nullable>enable</Nullable>
@@ -17,7 +17,7 @@
     <Product>VNLib.Plugins.Extensions.Data</Product>
     <PackageId>VNLib.Plugins.Extensions.Data</PackageId>
     <Description>An Essentials framework extension library that provides data structures for abstractions between data and databases, using the EntityFrameworkCore library and design patterns.</Description>
-    <Copyright>Copyright © 2023 Vaughn Nugent</Copyright>
+    <Copyright>Copyright © 2024 Vaughn Nugent</Copyright>
     <PackageProjectUrl>https://www.vaughnnugent.com/resources/software/modules/VNLib.Plugins.Extensions</PackageProjectUrl>
     <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/VNLib.Plugins.Extensions.Data</RepositoryUrl>
   </PropertyGroup>
@@ -47,7 +47,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.25" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

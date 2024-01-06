@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -23,7 +23,7 @@
 */
 
 using System;
-using System.Runtime.Serialization;
+
 
 namespace VNLib.Plugins.Extensions.Data.Storage
 {
@@ -38,8 +38,6 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         public UndefinedBlobStateException(string message) : base(message)
         {}
         public UndefinedBlobStateException(string message, Exception innerException) : base(message, innerException)
-        {}
-        protected UndefinedBlobStateException(SerializationInfo info, StreamingContext context) : base(info, context)
         {}
     }
 }

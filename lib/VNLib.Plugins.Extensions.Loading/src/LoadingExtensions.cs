@@ -373,21 +373,6 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// Adds a service to the <see cref="IServiceContainer"/> using generics syntax
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="container"></param>
-        /// <param name="service">The service instance to add to the container</param>
-        /// <exception cref="ArgumentNullException"></exception>
-        public static void AddService<T>(this IServiceContainer container, T service)
-        {
-            _ = container ?? throw new ArgumentNullException(nameof(container));
-            _ = service ?? throw new ArgumentNullException(nameof(service));
-
-            container.AddService(typeof(T), service);
-        }
-
-        /// <summary>
         /// Creates a new instance of the desired service type from an external assembly and 
         /// caches the loaded assembly so it's never loaded more than once. Managed assembly 
         /// life cycles are managed by the plugin. Instances are treated as services and 
@@ -433,7 +418,12 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// 
+        /// Exports a service of the desired type to the host application. Once the plugin
+        /// is done loading, the host will be able to access the service instance.
+        /// <para>
+        /// You should avoid mutating the service instance after the plugin has been 
+        /// loaded, especially if you are using factory methods to create the service.
+        /// </para>
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="plugin"></param>

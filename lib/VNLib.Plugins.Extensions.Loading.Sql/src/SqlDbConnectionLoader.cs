@@ -164,7 +164,8 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
                     IntegratedSecurity = sqlConf["ms_security"].GetBoolean(),
                     Pooling = true,
                     MinPoolSize = sqlConf["min_pool_size"].GetInt32(),
-                    Replication = true
+                    Replication = true,
+                    TrustServerCertificate = sqlConf["trust_cert"].GetBoolean(),
                 };
 
                 string connectionString = sqlBuilder.ToString();

@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -33,18 +33,25 @@ namespace VNLib.Plugins.Extensions.Loading.Events
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class ConfigurableAsyncIntervalAttribute : Attribute
     {
-        internal readonly string IntervalPropertyName;
-        internal readonly IntervalResultionType Resolution;
+        /// <summary>
+        /// The configuration property name for the event interval
+        /// </summary>
+        public string IntervalPropertyName { get; }
+
+        /// <summary>
+        /// The time resoltion for the event interval
+        /// </summary>
+        public IntervalResultionType Resolution { get; }
 
         /// <summary>
         /// Initializes a <see cref="ConfigurableAsyncIntervalAttribute"/> with the specified
         /// interval property name
         /// </summary>
-        /// <param name="configPropName">The configuration property name for the event interval</param>
+        /// <param name="intervalPropertyName">The configuration property name for the event interval</param>
         /// <param name="resolution">The time resoltion for the event interval</param>
-        public ConfigurableAsyncIntervalAttribute(string configPropName, IntervalResultionType resolution)
+        public ConfigurableAsyncIntervalAttribute(string intervalPropertyName, IntervalResultionType resolution)
         {
-            IntervalPropertyName = configPropName;
+            IntervalPropertyName = intervalPropertyName;
             Resolution = resolution;
         }
     }

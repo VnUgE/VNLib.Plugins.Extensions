@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>VNLib.Plugins.Extensions.Loading.Sql</RootNamespace>
     <AssemblyName>VNLib.Plugins.Extensions.Loading.Sql</AssemblyName>
     <Nullable>enable</Nullable>
@@ -16,7 +16,7 @@
     <Product>VNLib.Plugins.Extensions.Loading.Sql</Product>
     <PackageId>VNLib.Plugins.Extensions.Loading.Sql</PackageId>
     <Description>An Essentials framework extension library for configuring database connections using the EntityFrameworkCore patterns and abstractions. Supports MSSql, MySql and SqlLite database connections via plugin configuration.</Description>
-    <Copyright>Copyright © 2023 Vaughn Nugent</Copyright>
+    <Copyright>Copyright © 2024 Vaughn Nugent</Copyright>
     <PackageProjectUrl>https://www.vaughnnugent.com/resources/software/modules/VNLib.Plugins.Extensions</PackageProjectUrl>
     <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/VNLib.Plugins.Extensions.Loading.Sql</RepositoryUrl>
   </PropertyGroup>
@@ -38,10 +38,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.25" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.25" />
-    <PackageReference Include="MySqlConnector" Version="2.3.1" />
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
+    <PackageReference Include="MySqlConnector" Version="2.3.3" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>

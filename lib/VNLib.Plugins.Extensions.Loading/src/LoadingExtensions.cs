@@ -663,7 +663,7 @@ namespace VNLib.Plugins.Extensions.Loading
                     }
 
                     //Get the constructor for required or available config
-                    constructor = serviceType.GetConstructor(new Type[] { typeof(PluginBase), typeof(IConfigScope) });
+                    constructor = serviceType.GetConstructor([typeof(PluginBase), typeof(IConfigScope)]);
 
                     //Make sure the constructor exists
                     _ = constructor ?? throw new MissingMemberException($"No constructor found for {serviceType.Name}");
@@ -671,13 +671,13 @@ namespace VNLib.Plugins.Extensions.Loading
                     //Call constructore
                     service = constructor.Invoke(new object[2] { plugin, config });
                 }
-                else if((constructor = serviceType.GetConstructor(new Type[] { typeof(PluginBase) })) != null)
+                else if((constructor = serviceType.GetConstructor([typeof(PluginBase)])) != null)
                 {
                     //Call constructor
                     service = constructor.Invoke(new object[1] { plugin });
                 }
                 //try to get empty constructor
-                else if ((constructor = serviceType.GetConstructor(Array.Empty<Type>())) != null)
+                else if ((constructor = serviceType.GetConstructor([])) != null)
                 {
                     //Invoked empty constructor
                     service = constructor.Invoke(null);

@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -43,7 +43,8 @@ namespace VNLib.Plugins.Extensions.Loading.Events
     /// Provides event schedueling extensions for plugins
     /// </summary>
     public static class EventManagment
-    {
+    {      
+
         /// <summary>
         /// Schedules an asynchronous event interval for the current plugin, that is active until canceled or until the plugin unloads
         /// </summary>

@@ -30,6 +30,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
     /// When added to a method schedules it as a callback on a specified interval when 
     /// the plugin is loaded, and stops when unloaded
     /// </summary>
+    [Obsolete("Depricated in favor of more verbose IIntervaleSchedulable apis")]
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class ConfigurableAsyncIntervalAttribute : Attribute
     {

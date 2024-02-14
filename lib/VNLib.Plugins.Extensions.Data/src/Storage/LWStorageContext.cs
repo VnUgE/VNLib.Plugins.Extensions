@@ -29,7 +29,7 @@ using Microsoft.EntityFrameworkCore;
 namespace VNLib.Plugins.Extensions.Data.Storage
 {
 #nullable disable
-    internal sealed class LWStorageContext : TransactionalDbContext
+    internal sealed class LWStorageContext : DBContextBase
     {
         private readonly string TableName;
         public DbSet<LWStorageEntry> Descriptors { get; set; }

@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -37,7 +37,7 @@ namespace VNLib.Plugins.Extensions.Data.Abstractions
         string GetNewRecordId();
 
         /// <summary>
-        /// Gets a new <see cref="TransactionalDbContext"/> ready for use
+        /// Gets a new <see cref="IDbContextHandle"/> ready for use
         /// </summary>
         /// <returns></returns>
         IDbContextHandle GetNewContext();

@@ -1,11 +1,11 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
-* File: DbStore.cs 
+* File: DbStoreExtensions.cs 
 *
-* DbStore.cs is part of VNLib.Plugins.Extensions.Data which is part of the larger 
+* DbStoreExtensions.cs is part of VNLib.Plugins.Extensions.Data which is part of the larger 
 * VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Data is free software: you can redistribute it and/or modify 
@@ -23,9 +23,9 @@
 */
 
 using System;
+using System.Data;
 using System.Linq;
 using System.Threading;
-using System.Transactions;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
@@ -51,8 +51,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         public static async Task<ERRNO> AddOrUpdateAsync<T>(this IDataStore<T> store, T record, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
+            ArgumentNullException.ThrowIfNull(store);
+
             //Open new db context
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.ReadCommitted, cancellation);
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             IQueryable<T> query;
 
@@ -73,7 +75,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
             T? entry = await query.SingleOrDefaultAsync(cancellation);
 
             //Check if creted
-            if (entry == null)
+            if (entry is null)
             {
                 //Create a new template id
                 record.Id = store.GetNewRecordId();
@@ -100,8 +102,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         public static async Task<ERRNO> UpdateAsync<T>(this IDataStore<T> store, T record, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
+            ArgumentNullException.ThrowIfNull(store);
+
             //Open new db context
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.Serializable, cancellation);
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             //Get the application
             IQueryable<T> query = store.QueryTable.UpdateQueryBuilder(ctx, record);
@@ -130,8 +134,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         public static async Task<ERRNO> CreateAsync<T>(this IDataStore<T> store, T record, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
+            ArgumentNullException.ThrowIfNull(store);
+
             //Open new db context
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.ReadUncommitted, cancellation);
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             //Create a new template id
             record.Id = store.GetNewRecordId();
@@ -155,8 +161,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         public static async Task<long> GetCountAsync<T>(this IDataStore<T> store, CancellationToken cancellation = default)
             where T : class, IDbModel
         {
-            //Open db connection
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.ReadUncommitted, cancellation);
+            ArgumentNullException.ThrowIfNull(store);
+
+            //Open new db context
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             //Async get the number of records of the given entity type
             long count = await ctx.Set<T>().LongCountAsync(cancellation);
@@ -177,7 +185,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         public static async Task<long> GetCountAsync<T>(this IDataStore<T> store, string specifier, CancellationToken cancellation = default)
             where T : class, IDbModel
         {
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.ReadUncommitted, cancellation);
+            ArgumentNullException.ThrowIfNull(store);
+
+            //Open new db context
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             //Async get the number of records of the given entity type
             long count = await store.QueryTable.GetCountQueryBuilder(ctx, specifier).LongCountAsync(cancellation);
@@ -199,8 +210,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         public static async Task<T?> GetSingleAsync<T>(this IDataStore<T> store, string key, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
-            //Open db connection
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.ReadUncommitted, cancellation);
+            ArgumentNullException.ThrowIfNull(store);
+
+            //Open new db context
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             //Get the single template by its id
             T? record = await (from entry in ctx.Set<T>()
@@ -223,8 +236,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         public static async Task<T?> GetSingleAsync<T>(this IDataStore<T> store, params string[] specifiers)
               where T : class, IDbModel
         {
-            //Open db connection
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.ReadUncommitted);
+            ArgumentNullException.ThrowIfNull(store);
+
+            //Open new db context
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             //Get the single item by specifiers
             T? record = await store.QueryTable.GetSingleQueryBuilder(ctx, specifiers).SingleOrDefaultAsync();
@@ -245,8 +260,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         public static async Task<T?> GetSingleAsync<T>(this IDataStore<T> store, T record, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
-            //Open db connection
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.ReadUncommitted, cancellation);
+            ArgumentNullException.ThrowIfNull(store);
+
+            //Open new db context
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             //Get the single template by its id
             T? entry = await store.QueryTable.GetSingleQueryBuilder(ctx, record).SingleOrDefaultAsync(cancellation);
@@ -272,8 +289,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         {
             int previous = collection.Count;
 
+            ArgumentNullException.ThrowIfNull(store);
+
             //Open new db context
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.ReadUncommitted, cancellation);
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             //Get the single template by its id
             await store.QueryTable.GetCollectionQueryBuilder(ctx, specifier)
@@ -303,8 +322,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         {
             int previous = collection.Count;
 
+            ArgumentNullException.ThrowIfNull(store);
+
             //Open new db context
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.ReadUncommitted);
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             //Get the single template by its id
             await store.QueryTable.GetCollectionQueryBuilder(ctx, args)
@@ -331,8 +352,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         public static async Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, T record, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
+            ArgumentNullException.ThrowIfNull(store);
+
             //Open new db context
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.RepeatableRead, cancellation);
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             //Get a query for a a single item
             IQueryable<T> query = store.QueryTable.GetSingleQueryBuilder(ctx, record);
@@ -340,7 +363,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
             //Get the entry if it exists
             T? entry = await query.SingleOrDefaultAsync(cancellation);
 
-            if (entry == null)
+            if (entry is null)
             {
                 await ctx.SaveAndCloseAsync(false, cancellation);
                 return false;
@@ -364,7 +387,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
               where T : class, IDbModel
         {
             //Open new db context
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.RepeatableRead, cancellation);
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             //Get a query for a a single item
             IQueryable<T> query = store.QueryTable.GetSingleQueryBuilder(ctx, key);
@@ -372,14 +395,14 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
             //Get the entry if it exists
             T? entry = await query.SingleOrDefaultAsync(cancellation);
 
-            if (entry == null)
+            if (entry is null)
             {
                 await ctx.SaveAndCloseAsync(false, cancellation);
                 return false;
             }
             else
             {
-                //Remove the entry
+                //Remove the entry then exit
                 ctx.Remove(entry);
                 return await ctx.SaveAndCloseAsync(true, cancellation);
             }
@@ -394,15 +417,17 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         public static async Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, params string[] specifiers)
               where T : class, IDbModel
         {
+            ArgumentNullException.ThrowIfNull(store);
+
             //Open new db context
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.RepeatableRead);
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             //Get the template by its id
             IQueryable<T> query = store.QueryTable.DeleteQueryBuilder(ctx, specifiers);
 
             T? entry = await query.SingleOrDefaultAsync();
 
-            if (entry == null)
+            if (entry is null)
             {
                 return false;
             }
@@ -429,8 +454,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
             //Store preivous count
             int previous = collection.Count;
 
-            //Open db connection
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.ReadUncommitted, cancellation);
+            ArgumentNullException.ThrowIfNull(store);
+
+            //Open new db context
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             //Get a page offset and a limit for the 
             await ctx.Set<T>()
@@ -459,11 +486,14 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         public static async Task<int> GetPageAsync<T>(this IDataStore<T> store, ICollection<T> collection, int page, int limit, params string[] constraints)
             where T : class, IDbModel
         {
+            ArgumentNullException.ThrowIfNull(store);
+            ArgumentNullException.ThrowIfNull(collection);
+
             //Store preivous count
             int previous = collection.Count;
 
             //Open new db context
-            await using IDbContextHandle ctx = await store.OpenAsync(IsolationLevel.ReadUncommitted);
+            await using IDbContextHandle ctx = store.GetNewContext();
 
             //Get a page of records constrained by the given arguments
             await store.QueryTable.GetPageQueryBuilder(ctx, constraints)
@@ -480,50 +510,102 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
             return collection.Count - previous;
         }
 
-
-        public static Task<ERRNO> AddBulkAsync<T>(this IDataStore<T> store, IEnumerable<T> records, string userId, bool overwriteTime = true, CancellationToken cancellation = default)
-          where T : class, IDbModel, IUserEntity
+        /// <summary>
+        /// Specifies the user-id for each record in collection of user entities
+        /// during enumeration.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="current"></param>
+        /// <param name="userId">The user-id to specify</param>
+        /// <returns>A new enumeration instance that will add the new user-id to each record upon enumerating</returns>
+        public static IEnumerable<T> WithUserId<T>(this IEnumerable<T> current, string? userId)
+             where T : IUserEntity
         {
-            //Assign user-id when numerated
-            IEnumerable<T> withUserId = records.Select(p =>
+            return current.Select(p =>
             {
                 p.UserId = userId;
                 return p;
             });
-
-            return store.AddBulkAsync(withUserId, overwriteTime, cancellation);
         }
 
-        public static async Task<ERRNO> AddBulkAsync<T>(this IDataStore<T> store, IEnumerable<T> records, bool overwriteTime = true, CancellationToken cancellation = default)
+        /// <summary>
+        /// Updates the created and last modified times for each record in the collection
+        /// with the current time in UTC.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="current"></param>
+        /// <param name="overwriteTime">A value that indicates if the record's created time should be overwritten or ignored</param>
+        /// <returns>A new enumeration that will updated record times upon enumerating</returns>
+        public static IEnumerable<T> WithCurrentUtcTime<T>(this IEnumerable<T> current, bool overwriteTime) where T : IDbModel
+        {
+            return WithTime(current, DateTime.UtcNow, overwriteTime);
+        }
+
+        /// <summary>
+        /// Updates the created and last modified times for each record in the collection
+        /// with the current system local time.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="current"></param>
+        /// <param name="overwriteTime">A value that indicates if the record's created time should be overwritten or ignored</param>
+        /// <returns>A new enumeration that will updated record times upon enumerating</returns>
+        public static IEnumerable<T> WithCurrentLocalTime<T>(this IEnumerable<T> current, bool overwriteTime) where T : IDbModel
+        {
+            return WithTime(current, DateTime.Now, overwriteTime);
+        }
+
+        /// <summary>
+        /// Updates the created and last modified times for each record in the collection
+        /// with the specified time.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="current"></param>
+        /// <param name="now">A structure to the time to set seach record's last modifed, and optionally created time</param>
+        /// <param name="overwriteTime">A value that indicates if the record's created time should be overwritten or ignored</param>
+        /// <returns>A new enumeration that will updated record times upon enumerating</returns>
+        public static IEnumerable<T> WithTime<T>(this IEnumerable<T> current, DateTime now, bool overwriteTime)
+            where T : IDbModel
+        {
+            return current.Select(p =>
+            {
+                //Only overwrite the created time if it is the default value or the overwrite flag is set
+                if (overwriteTime || p.Created == default)
+                {
+                    p.Created = now;
+                }
+
+                //Always update the last modified time
+                p.LastModified = now;
+                return p;
+            });
+        }
+
+        /// <summary>
+        /// Adds a collection of records directly to the store without any additional processing
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="store"></param>
+        /// <param name="records">The collection of records to add</param>
+        /// <param name="cancellation">A token to cancel the operation</param>
+        /// <returns>A task the complets with the number of records update</returns>
+        public static async Task<ERRNO> AddBulkAsync<T>(this IDataStore<T> store, IEnumerable<T> records, CancellationToken cancellation = default)
           where T : class, IDbModel
         {
-            DateTime now = DateTime.UtcNow;
+            ArgumentNullException.ThrowIfNull(store);
+            ArgumentNullException.ThrowIfNull(records);
 
-            //Open context and transaction
-            await using IDbContextHandle database = await store.OpenAsync(IsolationLevel.ReadCommitted, cancellation);
-
-            //Get the entity set
-            IQueryable<T> set = database.Set<T>();
+            //Open new db context
+            await using IDbContextHandle database = store.GetNewContext();
 
             //Generate random ids for the feeds and set user-id
             foreach (T entity in records)
             {
                 entity.Id = store.GetNewRecordId();
-
-                //If the entity has the default created time, update it, otherwise leave it as is
-                if (overwriteTime || entity.Created == default)
-                {
-                    entity.Created = now;
-                }
-
-                //Update last-modified time
-                entity.LastModified = now;
             }
 
             //Add bulk items to database
             database.AddRange(records);
             return await database.SaveAndCloseAsync(true, cancellation);
         }
-
     }
 }

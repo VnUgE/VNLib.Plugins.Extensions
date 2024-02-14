@@ -99,9 +99,9 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         }
 
         ///<inheritdoc/>
-        public Task<IUser?> GetUserFromEmailAsync(string emailAddress, CancellationToken cancellationToken = default)
+        public Task<IUser?> GetUserFromUsernameAsync(string emailAddress, CancellationToken cancellationToken = default)
         {
-            return _dynamicLoader.GetUserFromEmailAsync(emailAddress, cancellationToken);
+            return _dynamicLoader.GetUserFromUsernameAsync(emailAddress, cancellationToken);
         }
 
         ///<inheritdoc/>

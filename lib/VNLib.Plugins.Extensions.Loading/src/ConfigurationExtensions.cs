@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -198,12 +198,12 @@ namespace VNLib.Plugins.Extensions.Loading
         public static T GetRequiredProperty<T>(this IConfigScope config, string property, Func<JsonElement, T> getter)
         {
             //Check null
-            _ = config ?? throw new ArgumentNullException(nameof(config));
-            _ = property ?? throw new ArgumentNullException(nameof(property));
-            _ = getter ?? throw new ArgumentNullException(nameof(getter));
+            ArgumentNullException.ThrowIfNull(config);
+            ArgumentNullException.ThrowIfNull(property);
+            ArgumentNullException.ThrowIfNull(getter);
 
             //Get the property
-            if(!config.TryGetValue(property, out JsonElement el))
+            if (!config.TryGetValue(property, out JsonElement el))
             {
                 throw new KeyNotFoundException($"Missing required configuration property '{property}' in config {config.ScopeName}");
             }
@@ -223,12 +223,13 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <param name="getter">The function used to set the desired value from the config element</param>
         /// <param name="value">The output value to set</param>
         /// <returns>A value that indicates if the property was found</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public static bool TryGetProperty<T>(this IConfigScope config, string property, Func<JsonElement, T> getter, out T? value)
         {
             //Check null
-            ArgumentNullException.ThrowIfNull(config, nameof(config));
-            ArgumentNullException.ThrowIfNull(property, nameof(property));
-            ArgumentNullException.ThrowIfNull(getter, nameof(getter));
+            ArgumentNullException.ThrowIfNull(config);
+            ArgumentNullException.ThrowIfNull(property);
+            ArgumentNullException.ThrowIfNull(getter);
 
             //Get the property
             if (config.TryGetValue(property, out JsonElement el))
@@ -239,6 +240,24 @@ namespace VNLib.Plugins.Extensions.Loading
             }
             value = default;
             return false;
+        }
+
+        /// <summary>
+        /// Gets a configuration property from the specified configuration scope
+        /// and invokes your callback function on the element if found to transform the
+        /// output value, or returns the default value if the property is not found.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the configuration element to get</param>
+        /// <param name="getter">The function used to set the desired value from the config element</param>
+        /// <param name="defaultValue">The default value to return</param>
+        /// <returns>The property value returned from your getter callback, or the default value if not found</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        [return:NotNullIfNotNull(nameof(defaultValue))]
+        public static T? GetValueOrDefault<T>(this IConfigScope config, string property, Func<JsonElement, T> getter, T defaultValue)
+        {
+            return TryGetProperty(config, property, getter, out T? value) ? value : defaultValue;
         }
 
         /// <summary>

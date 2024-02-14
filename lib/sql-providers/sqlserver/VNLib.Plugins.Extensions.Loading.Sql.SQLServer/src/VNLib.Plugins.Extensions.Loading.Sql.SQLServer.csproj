@@ -2,32 +2,30 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>VNLib.Plugins.Extensions.Data</RootNamespace>
-    <AssemblyName>VNLib.Plugins.Extensions.Data</AssemblyName>
+    <AssemblyName>VNLib.Plugins.Extensions.Sql.SqlServer</AssemblyName>
+    <RootNamespace>VNLib.Plugins.Extensions.Sql</RootNamespace>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <AnalysisLevel>latest-all</AnalysisLevel>
-    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <!--Enable dynamic loading-->
+    <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
-
-
+  
   <PropertyGroup>
+    <PackageId>VNLib.Plugins.Extensions.Sql.SqlServer</PackageId>
     <Authors>Vaughn Nugent</Authors>
     <Company>Vaughn Nugent</Company>
-    <Product>VNLib.Plugins.Extensions.Data</Product>
-    <PackageId>VNLib.Plugins.Extensions.Data</PackageId>
-    <Description>An Essentials framework extension library that provides data structures for abstractions between data and databases, using the EntityFrameworkCore library and design patterns.</Description>
+    <Product>VNLib.Plugins.Extensions.Sql.SqlServer</Product>
     <Copyright>Copyright © 2024 Vaughn Nugent</Copyright>
     <PackageProjectUrl>https://www.vaughnnugent.com/resources/software/modules/VNLib.Plugins.Extensions</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/VNLib.Plugins.Extensions.Data</RepositoryUrl>
-  </PropertyGroup>
-
-  <PropertyGroup>
+    <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/sql-providers/VNLib.Plugins.Extensions.Sql.SqlServer</RepositoryUrl>
+    <Description>A runtime asset library that provides SqlServer interfaces for ADO and EFCore SQL server clients</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
+
   <ItemGroup>
-    <None Include="..\..\..\LICENSE">
+    <None Include="../../../../../LICENSE">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -47,11 +45,15 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\core\lib\Utils\src\VNLib.Utils.csproj" />
+  <ItemGroup>    
+    <ProjectReference Include="..\..\..\..\VNLib.Plugins.Extensions.Loading\src\VNLib.Plugins.Extensions.Loading.csproj" />
   </ItemGroup>
 
+  <Target Condition="'$(BuildingInsideVisualStudio)' == true" Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="start xcopy &quot;$(TargetDir)&quot; &quot;$(SolutionDir)devplugins\RuntimeAssets\$(TargetName)&quot; /E /Y /R" />
+  </Target>
+  
 </Project>

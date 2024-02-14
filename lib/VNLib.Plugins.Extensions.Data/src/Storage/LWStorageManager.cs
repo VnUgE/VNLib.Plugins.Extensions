@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -32,8 +32,6 @@ using Microsoft.EntityFrameworkCore;
 
 using VNLib.Utils;
 using VNLib.Utils.Async;
-using VNLib.Plugins.Extensions.Data.Extensions;
-
 
 namespace VNLib.Plugins.Extensions.Data.Storage
 {
@@ -78,10 +76,7 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         /// <exception cref="LWDescriptorCreationException"></exception>
         public async Task<LWStorageDescriptor> CreateDescriptorAsync(string userId, string? descriptorIdOverride = null, CancellationToken cancellation = default)
         {
-            if (string.IsNullOrWhiteSpace(userId))
-            {
-                throw new ArgumentNullException(nameof(userId));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(userId);
             
             //If no override id was specified, generate a new one
             descriptorIdOverride ??= NewDescriptorIdGenerator();
@@ -89,7 +84,6 @@ namespace VNLib.Plugins.Extensions.Data.Storage
             DateTime createdOrModifedTime = DateTime.UtcNow;
 
             await using LWStorageContext ctx = GetContext();
-            await ctx.OpenTransactionAsync(cancellation);
 
             //Make sure the descriptor doesnt exist only by its descriptor id
             if (await ctx.Descriptors.AnyAsync(d => d.Id == descriptorIdOverride, cancellation))
@@ -129,16 +123,11 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         /// <exception cref="ArgumentNullException"></exception>
         public async Task<LWStorageDescriptor?> GetDescriptorFromUIDAsync(string userid, CancellationToken cancellation = default)
         {
-            //Allow null/empty entrys to just return null
-            if (string.IsNullOrWhiteSpace(userid))
-            {
-                throw new ArgumentNullException(nameof(userid));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(userid);
 
             //Init db
-            await using LWStorageContext db = GetContext();
-            //Begin transaction
-            await db.OpenTransactionAsync(cancellation);
+            await using LWStorageContext db = GetContext();           
+            
             //Get entry
             LWStorageEntry? entry = await (from s in db.Descriptors
                                            where s.UserId == userid
@@ -161,16 +150,11 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         /// <exception cref="ArgumentNullException"></exception>
         public async Task<LWStorageDescriptor?> GetDescriptorFromIDAsync(string descriptorId, CancellationToken cancellation = default)
         {
-            //Allow null/empty entrys to just return null
-            if (string.IsNullOrWhiteSpace(descriptorId))
-            {
-                throw new ArgumentNullException(nameof(descriptorId));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(descriptorId);
            
             //Init db
-            await using LWStorageContext db = GetContext();
-            //Begin transaction
-            await db.OpenTransactionAsync(cancellation);
+            await using LWStorageContext db = GetContext();           
+            
             //Get entry
             LWStorageEntry? entry = await (from s in db.Descriptors
                                            where s.Id == descriptorId
@@ -201,8 +185,6 @@ namespace VNLib.Plugins.Extensions.Data.Storage
         {
             //Init db
             await using LWStorageContext db = GetContext();
-            //Begin transaction
-            await db.OpenTransactionAsync(cancellation);
 
             //Get all expired entires
             LWStorageEntry[] expired = await (from s in db.Descriptors
@@ -224,7 +206,6 @@ namespace VNLib.Plugins.Extensions.Data.Storage
             try
             {
                 await using LWStorageContext ctx = GetContext();
-                await ctx.OpenTransactionAsync(System.Transactions.IsolationLevel.RepeatableRead, cancellation);
 
                 //Begin tracking
                 ctx.Descriptors.Attach(entry);
@@ -254,8 +235,6 @@ namespace VNLib.Plugins.Extensions.Data.Storage
             {
                 //Init db
                 await using LWStorageContext db = GetContext();
-                //Begin transaction
-                await db.OpenTransactionAsync(cancellation);
 
                 //Delete the user from the database
                 db.Descriptors.Remove(descriptor);

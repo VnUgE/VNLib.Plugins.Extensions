@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql
@@ -25,15 +25,12 @@
 using System;
 using System.Linq;
 using System.Data;
+using System.Text;
 using System.Data.Common;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-using MySqlConnector;
-
-using Microsoft.Data.Sqlite;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 using VNLib.Utils.Logging;
@@ -52,12 +49,10 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
     {
         public const string SQL_CONFIG_KEY = "sql";
         public const string DB_PASSWORD_KEY = "db_password";
-        public const string EXTERN_SQL_LIB_KEY = "custom_assembly";
-
-        public const string EXTERN_LIB_GET_CONN_FUNC_NAME = "GetDbConnections";
+        public const string SQL_PROVIDER_DLL_KEY = "provider";     
 
         private const string MAX_LEN_BYPASS_KEY = "MaxLen";
-        private const string TIMESTAMP_BYPASS = "TimeStamp";        
+        private const string TIMESTAMP_BYPASS = "TimeStamp";
   
 
         /// <summary>
@@ -87,90 +82,30 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <exception cref="ObjectDisposedException"></exception>
         public static IAsyncLazy<Func<DbConnection>> GetConnectionFactoryAsync(this PluginBase plugin)
         {
-            static IAsyncLazy<Func<DbConnection>> FactoryLoader(PluginBase plugin)
-            {
-                return Task.Run(() => GetFactoryLoaderAsync(plugin)).AsLazy();
-            }
-
             plugin.ThrowIfUnloaded();
 
-            //Get or load
-            return LoadingExtensions.GetOrCreateSingleton(plugin, FactoryLoader);
+            //Get the provider singleton
+            DbProvider provider = LoadingExtensions.GetOrCreateSingleton(plugin, GetDbPovider);
+
+            return provider.ConnectionFactory.Value.AsLazy();
         }
 
-        private async static Task<Func<DbConnection>> GetFactoryLoaderAsync(PluginBase plugin)
+        private static DbProvider GetDbPovider(PluginBase plugin)
         {
+            //Get the sql configuration scope
             IConfigScope sqlConf = plugin.GetConfig(SQL_CONFIG_KEY);
+         
+            //Get the provider dll path
+            string dllPath = sqlConf.GetRequiredProperty(SQL_PROVIDER_DLL_KEY, k => k.GetString()!);
+           
+            /*
+             * I am loading a bare object here and dynamically resolbing the required methods
+             * insead of forcing a shared interface. This allows the external library to be
+             * more flexible and slimmer.
+             */
+            object instance = plugin.CreateServiceExternal<object>(dllPath);
 
-            //See if the user wants to use a custom assembly
-            if (sqlConf.ContainsKey(EXTERN_SQL_LIB_KEY))
-            {
-                string dllPath = sqlConf.GetRequiredProperty(EXTERN_SQL_LIB_KEY, k => k.GetString()!);
-
-                //Load the library and get instance
-                object dbProvider = plugin.CreateServiceExternal<object>(dllPath);
-
-                return ManagedLibrary.GetMethod<Func<DbConnection>>(dbProvider, EXTERN_LIB_GET_CONN_FUNC_NAME);
-            }
-            
-            //Get the db-type
-            string? type = sqlConf.GetPropString("db_type");
-
-            //Try to get the password and always dispose the secret value
-            using ISecretResult? password = await plugin.TryGetSecretAsync(DB_PASSWORD_KEY);
-
-            DbConnectionStringBuilder sqlBuilder;
-
-            if ("sqlite".Equals(type, StringComparison.OrdinalIgnoreCase))
-            {
-                //Use connection builder
-                sqlBuilder = new SqliteConnectionStringBuilder()
-                {
-                    DataSource = sqlConf["source"].GetString(),
-                    Password = password?.Result.ToString(),
-                    Pooling = true,
-                    Mode = SqliteOpenMode.ReadWriteCreate
-                };
-
-                string connectionString = sqlBuilder.ToString();
-                return () => new SqliteConnection(connectionString);
-            }
-            else if("mysql".Equals(type, StringComparison.OrdinalIgnoreCase))
-            {
-                sqlBuilder = new MySqlConnectionStringBuilder()
-                {
-                    Server = sqlConf["hostname"].GetString(),
-                    Database = sqlConf["catalog"].GetString(),
-                    UserID = sqlConf["username"].GetString(),
-                    Password = password?.Result.ToString(),
-                    Pooling = true,
-                    LoadBalance = MySqlLoadBalance.LeastConnections,
-                    MinimumPoolSize = sqlConf["min_pool_size"].GetUInt32(),
-                };
-
-                string connectionString = sqlBuilder.ToString();
-                return () => new MySqlConnection(connectionString);
-            }
-            //Default to mssql
-            else
-            {
-                //Use connection builder
-                sqlBuilder = new SqlConnectionStringBuilder()
-                {
-                    DataSource = sqlConf["hostname"].GetString(),
-                    UserID = sqlConf["username"].GetString(),
-                    Password = password?.Result.ToString(),
-                    InitialCatalog = sqlConf["catalog"].GetString(),
-                    IntegratedSecurity = sqlConf["ms_security"].GetBoolean(),
-                    Pooling = true,
-                    MinPoolSize = sqlConf["min_pool_size"].GetInt32(),
-                    Replication = true,
-                    TrustServerCertificate = sqlConf["trust_cert"].GetBoolean(),
-                };
-
-                string connectionString = sqlBuilder.ToString();
-                return () => new SqlConnection(connectionString);
-            }
+            return new(instance, sqlConf);
         }
 
         /// <summary>
@@ -202,59 +137,12 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <remarks>If plugin is in debug mode, writes log data to the default log</remarks>
         public static IAsyncLazy<DbContextOptions> GetContextOptionsAsync(this PluginBase plugin)
         {
-            static IAsyncLazy<DbContextOptions> LoadOptions(PluginBase plugin)
-            {
-                //Wrap in a lazy options
-                return GetDbOptionsAsync(plugin).AsLazy();
-            }
-
             plugin.ThrowIfUnloaded();
-            return LoadingExtensions.GetOrCreateSingleton(plugin, LoadOptions);
-        }
 
-        private async static Task<DbContextOptions> GetDbOptionsAsync(PluginBase plugin)
-        {
-            try
-            {
-                //Get a db connection object, we must wait synchronously tho
-                await using DbConnection connection = (await plugin.GetConnectionFactoryAsync()).Invoke();
+            //Get the provider singleton
+            DbProvider provider = LoadingExtensions.GetOrCreateSingleton(plugin, GetDbPovider);
 
-                DbContextOptionsBuilder builder = new();
-
-                //Determine connection type
-                if (connection is SqlConnection sql)
-                {
-                    //Use sql server from connection 
-                    builder.UseSqlServer(sql.ConnectionString);
-                }
-                else if (connection is SqliteConnection slc)
-                {
-                    builder.UseSqlite(slc.ConnectionString);
-                }
-                else if (connection is MySqlConnection msconn)
-                {
-                    //Detect version
-                    ServerVersion version = ServerVersion.AutoDetect(msconn);
-
-                    builder.UseMySql(msconn.ConnectionString, version);
-                }
-
-                //Enable logging
-                if (plugin.IsDebug())
-                {
-                    builder.LogTo(plugin.Log.Debug);
-                }
-
-                //Get context and freez it before returning
-                DbContextOptions options = builder.Options;
-                options.Freeze();
-                return options;
-            }
-            catch(Exception ex)
-            {
-                plugin.Log.Error(ex, "DBContext options load error");
-                throw;
-            }
+            return provider.OptionsFactory.Value.AsLazy();
         }
 
         /// <summary>
@@ -282,19 +170,22 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <returns>A task that resolves when the tables have been created</returns>
         public static async Task EnsureDbCreatedAsync<T>(this PluginBase plugin, T dbCreator, object? state) where T : IDbTableDefinition
         {
+            ArgumentNullException.ThrowIfNull(plugin);
+            ArgumentNullException.ThrowIfNull(dbCreator);
+
             DbBuilder builder = new();
 
             //Invoke ontbCreating to setup the dbBuilder
             dbCreator.OnDatabaseCreating(builder, state);
+
+            //Get the abstract database from the connection type
+            IDBCommandGenerator cb = GetCmdGenerator(plugin);
 
             //Wait for the connection factory to load
             Func<DbConnection> dbConFactory = await GetConnectionFactoryAsync(plugin);
 
             //Create a new db connection
             await using DbConnection connection = dbConFactory();
-
-            //Get the abstract database from the connection type
-            IDBCommandGenerator cb = connection.GetCmGenerator();
 
             //Compile the db command as a text Sql command
             string[] createComamnds = builder.BuildCreateCommand(cb);
@@ -452,21 +343,27 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
 
         #endregion
 
-        private static IDBCommandGenerator GetCmGenerator(this IDbConnection connection)
+        private static IDBCommandGenerator GetCmdGenerator(PluginBase plugin)
         {
-            //Determine connection type
-            if (connection is SqlConnection)
+            //Get the provider singleton
+            DbProvider provider = LoadingExtensions.GetOrCreateSingleton(plugin, GetDbPovider);
+
+            //See if the provider has a command builder function, otherwise try to use known defaults
+            if (provider.HasCommandBuilder)
             {
-                //Return the abstract db from the db command type
+                return provider.CommandGenerator;
+            }
+            else if (string.Equals(provider.ProviderName, "sqlserver", StringComparison.OrdinalIgnoreCase))
+            {
                 return new MsSqlDb();
             }
-            else if (connection is SqliteConnection)
-            {
-                return new SqlLiteDb();
-            }
-            else if (connection is MySqlConnection)
+            else if (string.Equals(provider.ProviderName, "mysql", StringComparison.OrdinalIgnoreCase))
             {
                 return new MySqlDb();
+            }
+            else if (string.Equals(provider.ProviderName, "sqlite", StringComparison.OrdinalIgnoreCase))
+            {
+                return new SqlLiteDb();
             }
             else
             {
@@ -515,6 +412,108 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
 
             //Update the table primary keys now that this col has been added
             col.Table.PrimaryKey = cols.Distinct().ToArray();
+        }
+
+        internal sealed class DbProvider(object instance, IConfigScope sqlConfig)
+        {
+            public delegate Task<Func<DbConnection>> AsynConBuilderDelegate(IConfigScope sqlConf);
+            public delegate Func<DbConnection> SyncConBuilderDelegate(IConfigScope sqlConf);
+            public delegate DbContextOptions SyncOptBuilderDelegate(IConfigScope sqlConf);
+            public delegate Task<DbContextOptions> AsynOptBuilderDelegate(IConfigScope sqlConf);
+            public delegate void BuildTableStringDelegate(StringBuilder builder, DataTable table);
+            public delegate string ProviderNameDelegate();
+            
+
+            public object Provider { get; } = instance;
+
+            public IConfigScope SqlConfig { get; } = sqlConfig;
+
+            /// <summary>
+            /// A lazy async connection factory. When called, may cause invocation in the external library, 
+            /// but only once.
+            /// </summary>
+            public readonly Lazy<Task<Func<DbConnection>>> ConnectionFactory = new(() => GetConnections(instance, sqlConfig));
+
+            /// <summary>
+            /// A lazy async options factory. When called, may cause invocation in the external library,
+            /// but only once.
+            /// </summary>
+            public readonly Lazy<Task<DbContextOptions>> OptionsFactory = new(() => GetOptions(instance, sqlConfig));
+
+            /// <summary>
+            /// Gets the extern command generator for the external library
+            /// </summary>
+            public readonly IDBCommandGenerator CommandGenerator = new ExternCommandGenerator(instance);
+
+            /// <summary>
+            /// Gets the provider name from the external library
+            /// </summary>
+            public readonly ProviderNameDelegate ProviderNameFunc = ManagedLibrary.GetMethod<ProviderNameDelegate>(instance, "GetProviderName");
+
+            /// <summary>
+            /// Gets a value indicating if the external library has a command builder
+            /// </summary>
+            public bool HasCommandBuilder => (CommandGenerator as ExternCommandGenerator)!.BuildTableString is not null;
+
+            /// <summary>
+            /// Gets the provider name from the external library
+            /// </summary>
+            public string ProviderName => ProviderNameFunc.Invoke();
+
+            /*
+             * Methods below are designed to be called within a lazy/defered context and possible awaited
+             * by mutliple threads. This causes data to be only loaded once, and then cached for future calls.
+             */
+
+            private static Task<Func<DbConnection>> GetConnections(object instance, IConfigScope sqlConfig)
+            {
+                //Connection builder functions
+                SyncConBuilderDelegate? SyncBuilder = ManagedLibrary.TryGetMethod<SyncConBuilderDelegate>(instance, "GetDbConnection");
+
+                //try sync first
+                if (SyncBuilder is not null)
+                {
+                    return Task.FromResult(SyncBuilder.Invoke(sqlConfig));
+                }
+
+                //If no sync function force call async, but try to schedule it on a new thread
+                AsynConBuilderDelegate? AsynConnectionBuilder = ManagedLibrary.GetMethod<AsynConBuilderDelegate>(instance, "GetDbConnectionAsync");
+                return Task.Run(() => AsynConnectionBuilder.Invoke(sqlConfig));
+            }
+
+            private static Task<DbContextOptions> GetOptions(object instance, IConfigScope sqlConfig)
+            {
+                //Options builder functions
+                SyncOptBuilderDelegate? SyncBuilder = ManagedLibrary.TryGetMethod<SyncOptBuilderDelegate>(instance, "GetDbOptions");
+
+                //try sync first
+                if (SyncBuilder is not null)
+                {
+                    return Task.FromResult(SyncBuilder.Invoke(sqlConfig));
+                }
+
+                //If no sync function force call async, but try to schedule it on a new thread
+                AsynOptBuilderDelegate? AsynOptionsBuilder = ManagedLibrary.GetMethod<AsynOptBuilderDelegate>(instance, "GetDbOptionsAsync");
+                return Task.Run(() => AsynOptionsBuilder.Invoke(sqlConfig));
+            }
+
+            private sealed class ExternCommandGenerator(object instance) : IDBCommandGenerator
+            {
+                public BuildTableStringDelegate? BuildTableString = ManagedLibrary.TryGetMethod<BuildTableStringDelegate>(instance, "BuildCreateStatment");
+                
+
+                public void BuildCreateStatment(StringBuilder builder, DataTable table)
+                {
+                    if(BuildTableString is not null)
+                    {
+                        BuildTableString.Invoke(builder, table);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException("The external library does not support table creation");
+                    }
+                }
+            }
         }
     }
 }

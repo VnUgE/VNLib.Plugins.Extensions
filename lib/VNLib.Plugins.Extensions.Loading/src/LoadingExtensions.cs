@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -30,7 +30,6 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -74,19 +73,9 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The cached or newly created singleton</returns>
         public static object GetOrCreateSingleton(PluginBase plugin, Type serviceType, Func<PluginBase, object> serviceFactory)
         {
-            Lazy<object>? service;
             //Get local cache
             PluginLocalCache pc = _localCache.GetValue(plugin, PluginLocalCache.Create);
-            //Hold lock while get/set the singleton
-            lock (pc.SyncRoot)
-            {
-                //Check if service already exists
-                service = pc.GetService(serviceType);
-                //publish the service if it isnt loaded yet
-                service ??= pc.AddService(serviceType, serviceFactory);
-            }
-            //Deferred load of the service
-            return service.Value;
+            return pc.GetOrCreateService(serviceType, serviceFactory);
         }
 
         /// <summary>
@@ -113,7 +102,7 @@ namespace VNLib.Plugins.Extensions.Loading
         public static string? GetAssetFilePath(this PluginBase plugin, string assemblyName, SearchOption searchOption)
         {
             plugin.ThrowIfUnloaded();
-            _ = assemblyName ?? throw new ArgumentNullException(nameof(assemblyName));
+            ArgumentNullException.ThrowIfNull(assemblyName);
 
             /*
              * Allow an assets directory to limit the scope of the search for the desired
@@ -127,7 +116,7 @@ namespace VNLib.Plugins.Extensions.Loading
              * This should never happen since this method can only be called from a
              * plugin context, which means this path was used to load the current plugin
              */
-            _ = assetDir ?? throw new ArgumentNullException(ConfigurationExtensions.PLUGIN_ASSET_KEY, "No plugin path is defined for the current host configuration, this is likely a bug");
+            ArgumentNullException.ThrowIfNull(assetDir, "No plugin asset directory is defined for the current host configuration, this is likely a bug");
 
             //Get the first file that matches the search file
             return Directory.EnumerateFiles(assetDir, assemblyName, searchOption).FirstOrDefault();
@@ -274,10 +263,7 @@ namespace VNLib.Plugins.Extensions.Loading
         public static void ThrowIfUnloaded(this PluginBase plugin)
         {
             //See if the plugin was unlaoded
-            if (plugin.UnloadToken.IsCancellationRequested)
-            {
-                throw new ObjectDisposedException("The plugin has been unloaded");
-            }
+            ObjectDisposedException.ThrowIf(plugin.UnloadToken.IsCancellationRequested, plugin);
         }
 
         /// <summary>
@@ -356,7 +342,7 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             //Test status
             plugin.ThrowIfUnloaded();
-            _ = callback ?? throw new ArgumentNullException(nameof(callback));
+            ArgumentNullException.ThrowIfNull(callback);
 
             //Wait method
             static async Task WaitForUnload(PluginBase pb, Action callback)
@@ -637,8 +623,8 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ConcreteTypeAmbiguousMatchException"></exception>
         public static object CreateService(this PluginBase plugin, Type serviceType, IConfigScope? config)
         {
-            _ = plugin ?? throw new ArgumentNullException(nameof(plugin));
-            _ = serviceType ?? throw new ArgumentNullException(nameof(serviceType));
+            ArgumentNullException.ThrowIfNull(plugin);
+            ArgumentNullException.ThrowIfNull(serviceType);
 
             plugin.ThrowIfUnloaded();
 
@@ -752,10 +738,7 @@ namespace VNLib.Plugins.Extensions.Loading
         private sealed class PluginLocalCache
         {
             private readonly PluginBase _plugin;
-
             private readonly Dictionary<Type, Lazy<object>> _store;
-
-            public object SyncRoot { get; } = new();
 
             private PluginLocalCache(PluginBase plugin)
             {
@@ -767,23 +750,34 @@ namespace VNLib.Plugins.Extensions.Loading
 
             public static PluginLocalCache Create(PluginBase plugin) => new(plugin);
 
+            /*
+             * Service code should not be executed in multiple threads, so no need to lock
+             * 
+             * However if a service is added because it does not exist, the second call to 
+             * get service, will invoke the creation callback. Which may be "recursive" 
+             * as child dependencies required more services.
+             */
 
-            public Lazy<object>? GetService(Type serviceType)
+            public object GetOrCreateService(Type serviceType, Func<PluginBase, object> ctor)
             {
-                Lazy<object>? t = _store.Where(t => t.Key.IsAssignableTo(serviceType))
-                    .Select(static tk => tk.Value)
-                    .FirstOrDefault();
-                return t;
-            }
+                Lazy<object>? lazyService;
 
-            public Lazy<object> AddService(Type serviceType, Func<PluginBase, object> factory)
-            {
-                //Get lazy loader to invoke factory outside of cache lock
-                Lazy<object> lazyFactory = new(() => factory(_plugin), true);
-                //Store lazy factory
-                _store.Add(serviceType, lazyFactory);
-                //Pass the lazy factory back
-                return lazyFactory;
+                lock (_store)
+                {
+                    lazyService = _store.Where(t => t.Key.IsAssignableTo(serviceType))
+                        .Select(static tk => tk.Value)
+                        .FirstOrDefault();
+
+                    if (lazyService is null)
+                    {
+                        lazyService = new Lazy<object>(() => ctor(_plugin));
+                        //add to pool
+                        _store.Add(serviceType, lazyService);
+                    }
+                }
+
+                //Return the service instance
+                return lazyService.Value;
             }
         }
     }

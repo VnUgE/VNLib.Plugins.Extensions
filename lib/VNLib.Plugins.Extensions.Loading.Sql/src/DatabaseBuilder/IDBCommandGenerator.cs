@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql
@@ -31,7 +31,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql.DatabaseBuilder
     /// <summary>
     /// Generates specialized statments used to modify a database 
     /// </summary>
-    interface IDBCommandGenerator
+    public interface IDBCommandGenerator
     {
         /// <summary>
         /// Compiles a valid database table creation statment from the <see cref="DataTable"/>

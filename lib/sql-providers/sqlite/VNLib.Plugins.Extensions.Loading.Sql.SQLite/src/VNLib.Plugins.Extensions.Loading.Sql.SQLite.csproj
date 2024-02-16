@@ -48,8 +48,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.1" />
   </ItemGroup>
 
-  <ItemGroup>    
-    <ProjectReference Include="..\..\..\..\VNLib.Plugins.Extensions.Loading\src\VNLib.Plugins.Extensions.Loading.csproj" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\VNLib.Plugins.Extensions.Loading.Sql\src\VNLib.Plugins.Extensions.Loading.Sql.csproj" />
   </ItemGroup>
 
   <Target Condition="'$(BuildingInsideVisualStudio)' == true" Name="PostBuild" AfterTargets="PostBuildEvent">

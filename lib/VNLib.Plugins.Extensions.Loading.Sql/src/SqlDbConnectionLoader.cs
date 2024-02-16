@@ -23,21 +23,16 @@
 */
 
 using System;
-using System.Linq;
 using System.Data;
 using System.Text;
 using System.Data.Common;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 
 using Microsoft.EntityFrameworkCore;
 
 using VNLib.Utils.Logging;
-using VNLib.Utils.Resources;
-using VNLib.Utils.Extensions;
 using VNLib.Plugins.Extensions.Loading.Sql.DatabaseBuilder;
-using VNLib.Plugins.Extensions.Loading.Sql.DatabaseBuilder.Helpers;
 
 namespace VNLib.Plugins.Extensions.Loading.Sql
 {
@@ -49,10 +44,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
     {
         public const string SQL_CONFIG_KEY = "sql";
         public const string DB_PASSWORD_KEY = "db_password";
-        public const string SQL_PROVIDER_DLL_KEY = "provider";     
-
-        private const string MAX_LEN_BYPASS_KEY = "MaxLen";
-        private const string TIMESTAMP_BYPASS = "TimeStamp";
+        public const string SQL_PROVIDER_DLL_KEY = "provider";
   
 
         /// <summary>
@@ -82,15 +74,17 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <exception cref="ObjectDisposedException"></exception>
         public static IAsyncLazy<Func<DbConnection>> GetConnectionFactoryAsync(this PluginBase plugin)
         {
-            plugin.ThrowIfUnloaded();
-
-            //Get the provider singleton
-            DbProvider provider = LoadingExtensions.GetOrCreateSingleton(plugin, GetDbPovider);
-
-            return provider.ConnectionFactory.Value.AsLazy();
+            IRuntimeDbProvider provider = plugin.GetDbProvider();
+            return provider.GetDbConnectionAsync().AsLazy();
         }
 
-        private static DbProvider GetDbPovider(PluginBase plugin)
+        private static IRuntimeDbProvider GetDbProvider(this PluginBase plugin)
+        {
+            plugin.ThrowIfUnloaded();
+            return LoadingExtensions.GetOrCreateSingleton(plugin, LoadDbProvider);
+        }
+
+        private static IRuntimeDbProvider LoadDbProvider(PluginBase plugin)
         {
             //Get the sql configuration scope
             IConfigScope sqlConf = plugin.GetConfig(SQL_CONFIG_KEY);
@@ -103,9 +97,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
              * insead of forcing a shared interface. This allows the external library to be
              * more flexible and slimmer.
              */
-            object instance = plugin.CreateServiceExternal<object>(dllPath);
-
-            return new(instance, sqlConf);
+            return plugin.CreateServiceExternal<IRuntimeDbProvider>(dllPath);
         }
 
         /// <summary>
@@ -137,12 +129,8 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <remarks>If plugin is in debug mode, writes log data to the default log</remarks>
         public static IAsyncLazy<DbContextOptions> GetContextOptionsAsync(this PluginBase plugin)
         {
-            plugin.ThrowIfUnloaded();
-
-            //Get the provider singleton
-            DbProvider provider = LoadingExtensions.GetOrCreateSingleton(plugin, GetDbPovider);
-
-            return provider.OptionsFactory.Value.AsLazy();
+            IRuntimeDbProvider provider = plugin.GetDbProvider();
+            return provider.GetDbOptionsAsync().AsLazy();
         }
 
         /// <summary>
@@ -179,10 +167,11 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
             dbCreator.OnDatabaseCreating(builder, state);
 
             //Get the abstract database from the connection type
-            IDBCommandGenerator cb = GetCmdGenerator(plugin);
+            IRuntimeDbProvider dbp = plugin.GetDbProvider();
+            IDBCommandGenerator cb = dbp.GetCommandGenerator();
 
             //Wait for the connection factory to load
-            Func<DbConnection> dbConFactory = await GetConnectionFactoryAsync(plugin);
+            Func<DbConnection> dbConFactory = await dbp.GetDbConnectionAsync();
 
             //Create a new db connection
             await using DbConnection connection = dbConFactory();
@@ -220,300 +209,6 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
 
             //All done!
             plugin.Log.Debug("Successfully created tables for {type}", typeof(T).Name);
-        }
-      
-        #region ColumnExtensions
-
-        /// <summary>
-        /// Sets the column as a PrimaryKey in the table. You may also set the 
-        /// <see cref="KeyAttribute"/> on the property.
-        /// </summary>
-        /// <typeparam name="T">The entity type</typeparam>
-        /// <param name="builder"></param>
-        /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
-        public static IDbColumnBuilder<T> SetIsKey<T>(this IDbColumnBuilder<T> builder)
-        {
-            //Add ourself to the primary keys list
-            builder.ConfigureColumn(static col => col.AddToPrimaryKeys());
-            return builder;
-        }
-
-        /// <summary>
-        /// Sets the column ordinal index, or column position, within the table.
-        /// </summary>
-        /// <typeparam name="T">The entity type</typeparam>
-        /// <param name="builder"></param>
-        /// <param name="columOridinalIndex">The column's ordinal postion with the database</param>
-        /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
-        public static IDbColumnBuilder<T> SetPosition<T>(this IDbColumnBuilder<T> builder, int columOridinalIndex)
-        {
-            //Add ourself to the primary keys list
-            builder.ConfigureColumn(col => col.SetOrdinal(columOridinalIndex));
-            return builder;
-        }
-
-        /// <summary>
-        /// Sets the auto-increment property on the column, this is just a short-cut to 
-        /// setting the properties yourself on the column.
-        /// </summary>
-        /// <param name="seed">The starting (seed) of the increment parameter</param>
-        /// <param name="increment">The increment/step parameter</param>
-        /// <param name="builder"></param>
-        /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
-        public static IDbColumnBuilder<T> AutoIncrement<T>(this IDbColumnBuilder<T> builder, int seed = 1, int increment = 1)
-        {
-            //Set the auto-increment features
-            builder.ConfigureColumn(col =>
-            {
-                col.AutoIncrement = true;
-                col.AutoIncrementSeed = seed;
-                col.AutoIncrementStep = increment;
-            });
-            return builder;
-        }
-
-        /// <summary>
-        /// Sets the <see cref="DataColumn.MaxLength"/> property to the desired value. This value is set 
-        /// via a <see cref="MaxLengthAttribute"/> if defined on the property, this method will override
-        /// that value.
-        /// </summary>
-        /// <param name="maxLength">Override the maxium length property on the column</param>
-        /// <param name="builder"></param>
-        /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
-        public static IDbColumnBuilder<T> MaxLength<T>(this IDbColumnBuilder<T> builder, int maxLength)
-        {
-            //Set the max-length
-            builder.ConfigureColumn(col => col.MaxLength(maxLength));
-            return builder;
-        }
-
-        /// <summary>
-        /// Override the <see cref="DataColumn.AllowDBNull"/>
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
-        /// <param name="value">A value that indicate if you allow null in the column</param>
-        /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
-        public static IDbColumnBuilder<T> AllowNull<T>(this IDbColumnBuilder<T> builder, bool value)
-        {
-            builder.ConfigureColumn(col => col.AllowDBNull = value);
-            return builder;
-        }
-
-        /// <summary>
-        /// Sets the <see cref="DataColumn.Unique"/> property to true
-        /// </summary>
-        /// <typeparam name="T">The entity type</typeparam>
-        /// <param name="builder"></param>
-        /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
-        public static IDbColumnBuilder<T> Unique<T>(this IDbColumnBuilder<T> builder)
-        {
-            builder.ConfigureColumn(static col => col.Unique = true);
-            return builder;
-        }
-
-        /// <summary>
-        /// Sets the default value for the column
-        /// </summary>
-        /// <typeparam name="T">The entity type</typeparam>
-        /// <param name="builder"></param>
-        /// <param name="defaultValue">The column default value</param>
-        /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
-        public static IDbColumnBuilder<T> WithDefault<T>(this IDbColumnBuilder<T> builder, object defaultValue)
-        {
-            builder.ConfigureColumn(col => col.DefaultValue = defaultValue);
-            return builder;
-        }
-
-        /// <summary>
-        /// Specifies this column is a RowVersion/TimeStamp for optimistic concurrency for some 
-        /// databases.
-        /// <para>
-        /// This vaule is set by default if the entity property specifies a <see cref="TimestampAttribute"/>
-        /// </para>
-        /// </summary>
-        /// <typeparam name="T">The entity type</typeparam>
-        /// <param name="builder"></param>
-        /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
-        public static IDbColumnBuilder<T> TimeStamp<T>(this IDbColumnBuilder<T> builder)
-        {
-            builder.ConfigureColumn(static col => col.SetTimeStamp());
-            return builder;
-        }
-
-        #endregion
-
-        private static IDBCommandGenerator GetCmdGenerator(PluginBase plugin)
-        {
-            //Get the provider singleton
-            DbProvider provider = LoadingExtensions.GetOrCreateSingleton(plugin, GetDbPovider);
-
-            //See if the provider has a command builder function, otherwise try to use known defaults
-            if (provider.HasCommandBuilder)
-            {
-                return provider.CommandGenerator;
-            }
-            else if (string.Equals(provider.ProviderName, "sqlserver", StringComparison.OrdinalIgnoreCase))
-            {
-                return new MsSqlDb();
-            }
-            else if (string.Equals(provider.ProviderName, "mysql", StringComparison.OrdinalIgnoreCase))
-            {
-                return new MySqlDb();
-            }
-            else if (string.Equals(provider.ProviderName, "sqlite", StringComparison.OrdinalIgnoreCase))
-            {
-                return new SqlLiteDb();
-            }
-            else
-            {
-                throw new NotSupportedException("This library does not support the abstract databse backend");
-            }
-        }
-
-        internal static bool IsPrimaryKey(this DataColumn col) => col.Table!.PrimaryKey.Contains(col);
-
-        /*
-         * I am bypassing the DataColumn.MaxLength property because it does more validation
-         * than we need against the type and can cause unecessary issues, so im just bypassing it 
-         * for now
-         */
-
-        internal static void MaxLength(this DataColumn column, int length) 
-        {
-            column.ExtendedProperties[MAX_LEN_BYPASS_KEY] = length;
-        }
-
-        internal static int MaxLength(this DataColumn column)
-        {
-            return column.ExtendedProperties.ContainsKey(MAX_LEN_BYPASS_KEY)
-                ? (int)column.ExtendedProperties[MAX_LEN_BYPASS_KEY]
-                : column.MaxLength;
-        }
-
-        internal static void SetTimeStamp(this DataColumn column)
-        {
-            //We just need to set the key
-            column.ExtendedProperties[TIMESTAMP_BYPASS] = null;
-        }
-
-        internal static bool IsTimeStamp(this DataColumn column)
-        {
-            return column.ExtendedProperties.ContainsKey(TIMESTAMP_BYPASS);
-        }
-
-        internal static void AddToPrimaryKeys(this DataColumn col)
-        {
-            //Add the column to the table's primary key array
-            List<DataColumn> cols = new(col.Table!.PrimaryKey)
-            {
-                col
-            };
-
-            //Update the table primary keys now that this col has been added
-            col.Table.PrimaryKey = cols.Distinct().ToArray();
-        }
-
-        internal sealed class DbProvider(object instance, IConfigScope sqlConfig)
-        {
-            public delegate Task<Func<DbConnection>> AsynConBuilderDelegate(IConfigScope sqlConf);
-            public delegate Func<DbConnection> SyncConBuilderDelegate(IConfigScope sqlConf);
-            public delegate DbContextOptions SyncOptBuilderDelegate(IConfigScope sqlConf);
-            public delegate Task<DbContextOptions> AsynOptBuilderDelegate(IConfigScope sqlConf);
-            public delegate void BuildTableStringDelegate(StringBuilder builder, DataTable table);
-            public delegate string ProviderNameDelegate();
-            
-
-            public object Provider { get; } = instance;
-
-            public IConfigScope SqlConfig { get; } = sqlConfig;
-
-            /// <summary>
-            /// A lazy async connection factory. When called, may cause invocation in the external library, 
-            /// but only once.
-            /// </summary>
-            public readonly Lazy<Task<Func<DbConnection>>> ConnectionFactory = new(() => GetConnections(instance, sqlConfig));
-
-            /// <summary>
-            /// A lazy async options factory. When called, may cause invocation in the external library,
-            /// but only once.
-            /// </summary>
-            public readonly Lazy<Task<DbContextOptions>> OptionsFactory = new(() => GetOptions(instance, sqlConfig));
-
-            /// <summary>
-            /// Gets the extern command generator for the external library
-            /// </summary>
-            public readonly IDBCommandGenerator CommandGenerator = new ExternCommandGenerator(instance);
-
-            /// <summary>
-            /// Gets the provider name from the external library
-            /// </summary>
-            public readonly ProviderNameDelegate ProviderNameFunc = ManagedLibrary.GetMethod<ProviderNameDelegate>(instance, "GetProviderName");
-
-            /// <summary>
-            /// Gets a value indicating if the external library has a command builder
-            /// </summary>
-            public bool HasCommandBuilder => (CommandGenerator as ExternCommandGenerator)!.BuildTableString is not null;
-
-            /// <summary>
-            /// Gets the provider name from the external library
-            /// </summary>
-            public string ProviderName => ProviderNameFunc.Invoke();
-
-            /*
-             * Methods below are designed to be called within a lazy/defered context and possible awaited
-             * by mutliple threads. This causes data to be only loaded once, and then cached for future calls.
-             */
-
-            private static Task<Func<DbConnection>> GetConnections(object instance, IConfigScope sqlConfig)
-            {
-                //Connection builder functions
-                SyncConBuilderDelegate? SyncBuilder = ManagedLibrary.TryGetMethod<SyncConBuilderDelegate>(instance, "GetDbConnection");
-
-                //try sync first
-                if (SyncBuilder is not null)
-                {
-                    return Task.FromResult(SyncBuilder.Invoke(sqlConfig));
-                }
-
-                //If no sync function force call async, but try to schedule it on a new thread
-                AsynConBuilderDelegate? AsynConnectionBuilder = ManagedLibrary.GetMethod<AsynConBuilderDelegate>(instance, "GetDbConnectionAsync");
-                return Task.Run(() => AsynConnectionBuilder.Invoke(sqlConfig));
-            }
-
-            private static Task<DbContextOptions> GetOptions(object instance, IConfigScope sqlConfig)
-            {
-                //Options builder functions
-                SyncOptBuilderDelegate? SyncBuilder = ManagedLibrary.TryGetMethod<SyncOptBuilderDelegate>(instance, "GetDbOptions");
-
-                //try sync first
-                if (SyncBuilder is not null)
-                {
-                    return Task.FromResult(SyncBuilder.Invoke(sqlConfig));
-                }
-
-                //If no sync function force call async, but try to schedule it on a new thread
-                AsynOptBuilderDelegate? AsynOptionsBuilder = ManagedLibrary.GetMethod<AsynOptBuilderDelegate>(instance, "GetDbOptionsAsync");
-                return Task.Run(() => AsynOptionsBuilder.Invoke(sqlConfig));
-            }
-
-            private sealed class ExternCommandGenerator(object instance) : IDBCommandGenerator
-            {
-                public BuildTableStringDelegate? BuildTableString = ManagedLibrary.TryGetMethod<BuildTableStringDelegate>(instance, "BuildCreateStatment");
-                
-
-                public void BuildCreateStatment(StringBuilder builder, DataTable table)
-                {
-                    if(BuildTableString is not null)
-                    {
-                        BuildTableString.Invoke(builder, table);
-                    }
-                    else
-                    {
-                        throw new NotSupportedException("The external library does not support table creation");
-                    }
-                }
-            }
         }
     }
 }

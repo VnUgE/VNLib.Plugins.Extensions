@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <AssemblyName>VNLib.Plugins.Extensions.Sql.MySql</AssemblyName>
+    <AssemblyName>VNLib.Plugins.Extensions.Sql.MySQL</AssemblyName>
     <RootNamespace>VNLib.Plugins.Extensions.Sql</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -12,14 +12,14 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <PackageId>VNLib.Plugins.Extensions.Sql.MySql</PackageId>
+    <PackageId>VNLib.Plugins.Extensions.Sql.MySQL</PackageId>
     <Authors>Vaughn Nugent</Authors>
     <Company>Vaughn Nugent</Company>
-    <Product>VNLib.Plugins.Extensions.Sql.MySql</Product>
+    <Product>VNLib.Plugins.Extensions.Sql.MySQL</Product>
     <Copyright>Copyright © 2024 Vaughn Nugent</Copyright>
     <PackageProjectUrl>https://www.vaughnnugent.com/resources/software/modules/VNLib.Plugins.Extensions</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/sql-providers/VNLib.Plugins.Extensions.Sql.MySql</RepositoryUrl>
-    <Description>A runtime asset library that provides MySql interfaces for ADO and EFCore SQL server clients</Description>
+    <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/sql-providers/VNLib.Plugins.Extensions.Sql.MySQL</RepositoryUrl>
+    <Description>A runtime asset library that provides MySQL interfaces for ADO and EFCore SQL server clients</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
@@ -45,11 +45,11 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="MySql.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>    
-    <ProjectReference Include="..\..\..\..\VNLib.Plugins.Extensions.Loading\src\VNLib.Plugins.Extensions.Loading.csproj" />
+    <ProjectReference Include="..\..\..\..\VNLib.Plugins.Extensions.Loading.Sql\src\VNLib.Plugins.Extensions.Loading.Sql.csproj" />    
   </ItemGroup>
 
   <Target Condition="'$(BuildingInsideVisualStudio)' == true" Name="PostBuild" AfterTargets="PostBuildEvent">

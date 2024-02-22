@@ -163,7 +163,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
 
             DbBuilder builder = new();
 
-            //Invoke ontbCreating to setup the dbBuilder
+            //Invoke onDbCreating to setup the dbBuilder and table's for the context
             dbCreator.OnDatabaseCreating(builder, state);
 
             //Get the abstract database from the connection type

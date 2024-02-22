@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql
@@ -84,7 +84,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
             return tableCommands.ToArray();
         }
 
-        private record class TableBuilder<T>(DataTable Table, Type RuntimeType) : IDbTable, IDbTableBuilder<T>
+        private class TableBuilder<T>(DataTable Table, Type RuntimeType) : IDbTable, IDbTableBuilder<T>
         {
             ///<inheritdoc/>
             public IDbColumnBuilder<T> WithColumn<TCol>(Expression<Func<T, TCol>> selector)
@@ -132,15 +132,13 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
                 Table.Columns.Add(col);
 
                 //See if key is found, then add the colum to the primary key table
-                bool? isKey = GetPropertyIsKey(selectorData.Key);
-                if (isKey.HasValue && isKey.Value)
+                if (GetPropertyIsKey(selectorData.Key))
                 {
                     col.AddToPrimaryKeys();
                 }
 
                 //Set the colum as timestamp
-                bool? isRowVersion = GetPropertyIsRowVersion(selectorData.Key);
-                if (isRowVersion.HasValue && isRowVersion.Value)
+                if (GetPropertyIsRowVersion(selectorData.Key))
                 {
                     col.SetTimeStamp();
                 }
@@ -153,52 +151,29 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
             public void WriteCommand(StringBuilder sb, IDBCommandGenerator commandBuilder) => commandBuilder.BuildCreateStatment(sb, Table);
 
 
-            private int? GetPropertyMaxLen(string propertyName)
+            private int? GetPropertyMaxLen(string propertyName) 
+                => GetAttributePropertyName<MaxLengthAttribute>(propertyName)?.Length;
+
+            private string? GetPropertyColumnName(string propertyName) 
+                => GetAttributePropertyName<ColumnAttribute>(propertyName)?.Name;
+
+            private bool GetPropertyIsKey(string propertyName) 
+                => GetAttributePropertyName<KeyAttribute>(propertyName) is not null;
+
+            //Get the properties' timestamp attribute
+            private bool GetPropertyIsRowVersion(string propertyName) 
+                => GetAttributePropertyName<TimestampAttribute>(propertyName) is not null;
+
+            private TA? GetAttributePropertyName<TA>(string propertyName) where TA : Attribute
             {
                 PropertyInfo? property = RuntimeType.GetProperties()
                                                 .Where(p => propertyName.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
                                                 .FirstOrDefault();
 
-                //Get the max-length attribute
-                MaxLengthAttribute? mla = property?.GetCustomAttribute<MaxLengthAttribute>();
-
-                return mla?.Length;
-            }
-            private string? GetPropertyColumnName(string propertyName)
-            {
-                PropertyInfo? property = RuntimeType.GetProperties()
-                                                .Where(p => propertyName.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
-                                                .FirstOrDefault();
-
-                ColumnAttribute? mla = property?.GetCustomAttribute<ColumnAttribute>();
-
-                return mla?.Name;
-            }
-            private bool? GetPropertyIsKey(string propertyName)
-            {
-                PropertyInfo? property = RuntimeType.GetProperties()
-                                                .Where(p => propertyName.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
-                                                .FirstOrDefault();
-
-                //Get the propertie's key attribute
-                KeyAttribute? ka = property?.GetCustomAttribute<KeyAttribute>();
-
-                return ka == null ? null : true;
+                return property?.GetCustomAttribute<TA>();
             }
 
-            private bool? GetPropertyIsRowVersion(string propertyName)
-            {
-                PropertyInfo? property = RuntimeType.GetProperties()
-                                                .Where(p => propertyName.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
-                                                .FirstOrDefault();
-
-                //Get the properties' timestamp attribute
-                TimestampAttribute? ts = property?.GetCustomAttribute<TimestampAttribute>();
-
-                return ts == null ? null : true;
-            }
-
-            private record class ColumnBuilder(DataColumn Column, IDbTableBuilder<T> Table) : IDbColumnBuilder<T>
+            private class ColumnBuilder(DataColumn Column, IDbTableBuilder<T> Table) : IDbColumnBuilder<T>
             {
                 public IDbTableBuilder<T> Next() => Table;
 

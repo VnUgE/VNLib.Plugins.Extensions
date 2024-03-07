@@ -376,7 +376,7 @@ namespace VNLib.Plugins.Extensions.Loading
             string assemblyDllName, 
             SearchOption search = SearchOption.AllDirectories, 
             AssemblyLoadContext? defaultCtx = null
-        )
+        ) where T : class
         {
             /*
              * Get or create the library for the assembly path, but only load it once
@@ -636,42 +636,16 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             object service;
-            ConstructorInfo? constructor;
 
             try
             {
-                //Determin configuration requirments
-                if (ConfigurationExtensions.ConfigurationRequired(serviceType) || config != null)
+                //Determine configuration requirments
+                if (ConfigurationExtensions.ConfigurationRequired(serviceType) && config == null)
                 {
-                    if (config == null)
-                    {
-                        ConfigurationExtensions.ThrowConfigNotFoundForType(serviceType);
-                    }
+                    ConfigurationExtensions.ThrowConfigNotFoundForType(serviceType);
+                }
 
-                    //Get the constructor for required or available config
-                    constructor = serviceType.GetConstructor([typeof(PluginBase), typeof(IConfigScope)]);
-
-                    //Make sure the constructor exists
-                    _ = constructor ?? throw new MissingMemberException($"No constructor found for {serviceType.Name}");
-
-                    //Call constructore
-                    service = constructor.Invoke(new object[2] { plugin, config });
-                }
-                else if((constructor = serviceType.GetConstructor([typeof(PluginBase)])) != null)
-                {
-                    //Call constructor
-                    service = constructor.Invoke(new object[1] { plugin });
-                }
-                //try to get empty constructor
-                else if ((constructor = serviceType.GetConstructor([])) != null)
-                {
-                    //Invoked empty constructor
-                    service = constructor.Invoke(null);
-                }
-                else
-                {
-                    throw new MissingMemberException($"No constructor found for {serviceType.Name}");
-                }
+                service = InvokeServiceConstructor(serviceType, plugin, config);
             }
             catch(TargetInvocationException te) when (te.InnerException != null) 
             {
@@ -718,6 +692,45 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             return service;
+        }
+
+        /*
+         * Attempts to find the most appropriate constructor for the service type
+         * if found, then invokes it to create the service instance
+         */
+
+        private static object InvokeServiceConstructor(Type serviceSType, PluginBase plugin, IConfigScope? config)
+        {            
+            ConstructorInfo? constructor;
+
+            /*
+             * First try to load a constructor with the plugin and config scope
+             */
+            if (config != null)
+            {
+                constructor = serviceSType.GetConstructor([typeof(PluginBase), typeof(IConfigScope)]);
+                
+                if(constructor is not null)
+                {
+                    return constructor.Invoke([plugin, config]);
+                }
+            }
+
+            //Try to get plugin only constructor
+            constructor = serviceSType.GetConstructor([typeof(PluginBase)]);
+            if (constructor is not null)
+            {
+                return constructor.Invoke([plugin]);
+            }
+
+            //Finally fall back to the empty constructor
+            constructor = serviceSType.GetConstructor([]);
+            if (constructor is not null)
+            {
+                return constructor.Invoke(null);
+            }
+
+            throw new MissingMemberException($"No constructor found for {serviceSType.Name}");
         }
 
         [DoesNotReturn]

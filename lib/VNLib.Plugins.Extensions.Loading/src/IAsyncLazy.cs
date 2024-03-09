@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -77,8 +77,8 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>A new <see cref="IAsyncLazy{T}"/> that returns the transformed type</returns>
         public static IAsyncLazy<TResult> Transform<T, TResult>(this IAsyncLazy<T> lazy, Func<T, TResult> handler)
         {
-            _ = lazy ?? throw new ArgumentNullException(nameof(lazy));
-            _ = handler ?? throw new ArgumentNullException(nameof(handler));
+            ArgumentNullException.ThrowIfNull(lazy);
+            ArgumentNullException.ThrowIfNull(handler);
 
             //Await the lazy task, then pass the result to the handler
             static async Task<TResult> OnResult(IAsyncLazy<T> lazy, Func<T, TResult> cb)

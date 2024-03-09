@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -25,7 +25,6 @@
 using System;
 
 using VNLib.Utils;
-using VNLib.Utils.Extensions;
 using VNLib.Utils.Memory;
 
 namespace VNLib.Plugins.Extensions.Loading
@@ -41,28 +40,40 @@ namespace VNLib.Plugins.Extensions.Loading
         ///<inheritdoc/>
         public ReadOnlySpan<char> Result => _secretChars;
 
-
-        internal SecretResult(ReadOnlySpan<char> value) : this(value.ToArray())
-        { }
-
-        private SecretResult(char[] secretChars)
-        {
-            _secretChars = secretChars;
-        }
-
+        private SecretResult(char[] secretChars) => _secretChars = secretChars;
 
         ///<inheritdoc/>
-        protected override void Free()
-        {
-            MemoryUtil.InitializeBlock(_secretChars);
-        }
+        protected override void Free() => MemoryUtil.InitializeBlock(_secretChars);
 
+        /// <summary>
+        /// Copies the data from the provided string into a new secret result
+        /// then erases the original string
+        /// </summary>
+        /// <param name="result">The secret string to read</param>
+        /// <returns>The <see cref="SecretResult"/> wrapper</returns>
         internal static SecretResult ToSecret(string? result)
         {
-            SecretResult res = new(result.AsSpan());
-            MemoryUtil.UnsafeZeroMemory<char>(result);
+            if (result == null)
+            {
+                return new SecretResult([]);
+            }
+
+            //Copy string data into a new char array
+            SecretResult res = new(result.ToCharArray());
+            
+            //PrivateStringManager will safely erase the original string if it is able to
+            PrivateStringManager.EraseString(result);
+           
             return res;
         }
+
+        /// <summary>
+        /// Copies the data from the provided span into a new secret result
+        /// by allocating a new array internally
+        /// </summary>
+        /// <param name="secretChars">The array of characters to copy</param>
+        /// <returns>The wrapped secret</returns>
+        internal static SecretResult ToSecret(ReadOnlySpan<char> secretChars) => new(secretChars.ToArray());
 
         internal static SecretResult ToSecret(char[] result) => new(result);
     }

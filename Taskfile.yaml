@@ -12,7 +12,6 @@ version: '3'
 vars:
   TARGET: '{{.USER_WORKING_DIR}}/bin'
   RELEASE_DIR: "./bin/release/{{.TARGET_FRAMEWORK}}/publish"
-  SOURCE_OUT: "{{.USER_WORKING_DIR}}/bin/source"
 
 tasks:
   
@@ -37,8 +36,7 @@ tasks:
 
   postbuild_failed:
     dir: '{{.USER_WORKING_DIR}}'
-    cmds:
-     - echo "postbuild failed {{.PROJECT_NAME}}"
+    cmds: []
 
 
   postbuild:
@@ -66,8 +64,7 @@ tasks:
 #Remove the output dirs on clean
   clean:
     dir: '{{.USER_WORKING_DIR}}'
+    ignore_error: true
     cmds:
-     - cmd: powershell Remove-Item -Recurse './bin'
-       ignore_error: true
-     - cmd: powershell Remove-Item -Recurse './obj'
-       ignore_error: true
+     - for: ['bin/', 'obj/']
+       cmd: powershell Remove-Item -Recurse '{{.ITEM}}'

@@ -49,10 +49,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\core\lib\Utils\src\VNLib.Utils.csproj" />
-    <ProjectReference Include="..\..\..\..\..\core\lib\Plugins\src\VNLib.Plugins.csproj" />
-    <ProjectReference Include="..\..\..\..\..\core\lib\Plugins.Essentials\src\VNLib.Plugins.Essentials.csproj" />
-    <ProjectReference Include="..\..\..\..\..\core\lib\Plugins.PluginBase\src\VNLib.Plugins.PluginBase.csproj" />
+    <ProjectReference Include="..\..\..\..\core\lib\Utils\src\VNLib.Utils.csproj" />
+    <ProjectReference Include="..\..\..\..\core\lib\Plugins\src\VNLib.Plugins.csproj" />
+    <ProjectReference Include="..\..\..\..\core\lib\Plugins.Essentials\src\VNLib.Plugins.Essentials.csproj" />
+    <ProjectReference Include="..\..\..\..\core\lib\Plugins.PluginBase\src\VNLib.Plugins.PluginBase.csproj" />
   </ItemGroup>
 
 </Project>

@@ -50,7 +50,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\core\lib\Plugins\src\VNLib.Plugins.csproj" />
+    <ProjectReference Include="..\..\..\..\core\lib\Plugins\src\VNLib.Plugins.csproj" />
   </ItemGroup>
 
 </Project>

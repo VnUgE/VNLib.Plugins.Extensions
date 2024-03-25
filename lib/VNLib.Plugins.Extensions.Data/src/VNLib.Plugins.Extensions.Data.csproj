@@ -51,7 +51,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\core\lib\Utils\src\VNLib.Utils.csproj" />
+    <ProjectReference Include="..\..\..\..\core\lib\Utils\src\VNLib.Utils.csproj" />
   </ItemGroup>
 
 </Project>

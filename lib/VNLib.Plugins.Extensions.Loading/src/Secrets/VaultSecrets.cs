@@ -214,7 +214,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ArgumentNullException"></exception>
         public static PrivateKey GetPrivateKey(this ISecretResult secret)
         {
-            _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            ArgumentNullException.ThrowIfNull(secret);
             return new PrivateKey(secret);
         }
 
@@ -228,15 +228,15 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ArgumentNullException"></exception>
         public static ReadOnlyJsonWebKey GetJsonWebKey(this ISecretResult secret)
         {
-            _ = secret ?? throw new ArgumentNullException(nameof(secret));
-            
+            ArgumentNullException.ThrowIfNull(secret);
+
             //Alloc buffer, utf8 so 1 byte per char
             using IMemoryHandle<byte> buffer = MemoryUtil.SafeAlloc<byte>(secret.Result.Length);
             
             //Get utf8 bytes
             int count = Encoding.UTF8.GetBytes(secret.Result, buffer.Span);
 
-            return new ReadOnlyJsonWebKey(buffer.Span[..count]);
+            return ReadOnlyJsonWebKey.FromUtf8Bytes(buffer.Span[..count]);
         }
 
 #nullable disable

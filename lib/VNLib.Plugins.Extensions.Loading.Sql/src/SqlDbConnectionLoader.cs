@@ -210,5 +210,40 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
             //All done!
             plugin.Log.Debug("Successfully created tables for {type}", typeof(T).Name);
         }
+
+        /// <summary>
+        /// A helper method to define a table for a <see cref="IDbContextBuilder"/>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="builder"></param>
+        /// <param name="tableName">The optional name of the table to create</param>
+        /// <param name="callback">The table creation callback function</param>
+        /// <returns>The original context builder instance</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static IDbContextBuilder DefineTable<T>(this IDbContextBuilder builder, string tableName, Action<IDbTableBuilder<T>> callback)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(callback);
+
+            callback(builder.DefineTable<T>(tableName));
+            return builder;
+        }
+
+        /// <summary>
+        /// A helper method to define a table for a <see cref="IDbContextBuilder"/>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="builder"></param>
+        /// <param name="callback">The table creation callback function</param>
+        /// <returns>The original context builder instance</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static IDbContextBuilder DefineTable<T>(this IDbContextBuilder builder, Action<IDbTableBuilder<T>> callback)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(callback);
+
+            callback(builder.DefineTable<T>());
+            return builder;
+        }
     }
 }

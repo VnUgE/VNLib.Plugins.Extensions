@@ -260,7 +260,7 @@ namespace VNLib.Plugins.Extensions.Sql
                     DbType.Boolean => "BOOL",
                     DbType.Currency => "MONEY",
                     DbType.Date => "DATE",
-                    DbType.DateTime => "DATETIME",
+                    DbType.DateTime => "DATETIME2",
                     DbType.Decimal => "DECIMAL",
                     DbType.Double => "DOUBLE",
                     DbType.Guid => "VARCHAR(@size)",

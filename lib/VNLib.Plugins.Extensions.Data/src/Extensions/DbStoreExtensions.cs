@@ -48,10 +48,12 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="record">The record to add to the store</param>
         /// <param name="cancellation">A cancellation token to cancel the operation</param>
         /// <returns>A task the resolves the result of the operation</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public static async Task<ERRNO> AddOrUpdateAsync<T>(this IDataStore<T> store, T record, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
             ArgumentNullException.ThrowIfNull(store);
+            ArgumentNullException.ThrowIfNull(record);
 
             //Open new db context
             await using IDbContextHandle ctx = store.GetNewContext();
@@ -287,9 +289,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         public static async Task<ERRNO> GetCollectionAsync<T>(this IDataStore<T> store, ICollection<T> collection, string specifier, int limit, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
-            int previous = collection.Count;
-
             ArgumentNullException.ThrowIfNull(store);
+            ArgumentNullException.ThrowIfNull(collection);
+
+            int previous = collection.Count;
 
             //Open new db context
             await using IDbContextHandle ctx = store.GetNewContext();
@@ -315,27 +318,51 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="store"></param>
         /// <param name="collection">The collection to add entires to</param>
         /// <param name="limit">The maximum number of elements to retrieve</param>
-        /// <param name="args"></param>
+        /// <param name="constraints">An array of string contraints to pass to the query builder</param>
         /// <returns>A Task the resolves to the number of items added to the collection</returns>
-        public static async Task<ERRNO> GetCollectionAsync<T>(this IDataStore<T> store, ICollection<T> collection, int limit, params string[] args)
+        /// <exception cref="ArgumentNullException"></exception>
+        public static Task<ERRNO> GetCollectionAsync<T>(this IDataStore<T> store, ICollection<T> collection, int limit, params string[] constraints)
               where T : class, IDbModel
         {
-            int previous = collection.Count;
+            return GetCollectionAsync(store, collection, limit, constraints, CancellationToken.None);
+        }
 
+        /// <summary>
+        /// Fills a collection with enires retireved from the store using a variable length specifier
+        /// parameter
+        /// </summary>
+        /// <param name="store"></param>
+        /// <param name="collection">The collection to add entires to</param>
+        /// <param name="limit">The maximum number of elements to retrieve</param>
+        /// <param name="constraints">An array of string contraints to pass to the query builder</param>
+        /// <param name="cancellation">A token to cancel the operation</param>
+        /// <returns>A Task the resolves to the number of items added to the collection</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static async Task<ERRNO> GetCollectionAsync<T>(
+            this IDataStore<T> store, 
+            ICollection<T> collection, 
+            int limit, 
+            string[] constraints, 
+            CancellationToken cancellation
+        ) where T : class, IDbModel
+        {
             ArgumentNullException.ThrowIfNull(store);
+            ArgumentNullException.ThrowIfNull(collection);
+
+            int previous = collection.Count;          
 
             //Open new db context
             await using IDbContextHandle ctx = store.GetNewContext();
 
             //Get the single template by its id
-            await store.QueryTable.GetCollectionQueryBuilder(ctx, args)
+            await store.QueryTable.GetCollectionQueryBuilder(ctx, constraints)
                 .Take(limit)
                 .Select(static e => e)
                 .AsNoTracking()
-                .ForEachAsync(collection.Add);
+                .ForEachAsync(collection.Add, cancellation);
 
             //close db and transaction
-            _ = await ctx.SaveAndCloseAsync(true);
+            _ = await ctx.SaveAndCloseAsync(true, cancellation);
 
             //Return the number of elements add to the collection
             return collection.Count - previous;
@@ -386,6 +413,8 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         public static async Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, string key, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
+            ArgumentNullException.ThrowIfNull(store);
+
             //Open new db context
             await using IDbContextHandle ctx = store.GetNewContext();
 
@@ -414,7 +443,22 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="store"></param>
         /// <param name="specifiers">A variable length array of specifiers used to delete one or more entires</param>
         /// <returns>A task the resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
-        public static async Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, params string[] specifiers)
+        public static Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, params string[] specifiers)
+              where T : class, IDbModel
+        {
+           
+            return DeleteAsync(store, specifiers, CancellationToken.None);
+        }
+
+
+        /// <summary>
+        /// Deletes one or more entires from the store matching the supplied specifiers
+        /// </summary>
+        /// <param name="store"></param>
+        /// <param name="specifiers">A variable length array of specifiers used to delete one or more entires</param>
+        /// <param name="cancellation">A cancellation token to cancel the operation</param>
+        /// <returns>A task the resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
+        public static async Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, string[] specifiers, CancellationToken cancellation)
               where T : class, IDbModel
         {
             ArgumentNullException.ThrowIfNull(store);
@@ -425,7 +469,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
             //Get the template by its id
             IQueryable<T> query = store.QueryTable.DeleteQueryBuilder(ctx, specifiers);
 
-            T? entry = await query.SingleOrDefaultAsync();
+            T? entry = await query.SingleOrDefaultAsync(cancellation);
 
             if (entry is null)
             {
@@ -435,7 +479,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
             //Add the new application
             ctx.Remove(entry);
 
-            return await ctx.SaveAndCloseAsync(true);
+            return await ctx.SaveAndCloseAsync(true, cancellation);
         }
 
 
@@ -451,10 +495,11 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         public static async Task<int> GetPageAsync<T>(this IDataStore<T> store, ICollection<T> collection, int page, int limit, CancellationToken cancellation = default)
             where T : class, IDbModel
         {
+            ArgumentNullException.ThrowIfNull(store);
+            ArgumentNullException.ThrowIfNull(collection);
+
             //Store preivous count
             int previous = collection.Count;
-
-            ArgumentNullException.ThrowIfNull(store);
 
             //Open new db context
             await using IDbContextHandle ctx = store.GetNewContext();
@@ -483,8 +528,31 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="limit">The maximum number of items to retrieve from the store</param>
         /// <param name="constraints">A params array of strings to constrain the result set from the db</param>
         /// <returns>A task that resolves the number of items added to the collection</returns>
-        public static async Task<int> GetPageAsync<T>(this IDataStore<T> store, ICollection<T> collection, int page, int limit, params string[] constraints)
+        public static Task<int> GetPageAsync<T>(this IDataStore<T> store, ICollection<T> collection, int page, int limit, params string[] constraints)
             where T : class, IDbModel
+        {
+            return GetPageAsync(store, collection, page, limit, constraints, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Gets a collection of records using a pagination style query with constraint arguments, and adds the records to the collecion
+        /// </summary>
+        /// <param name="store"></param>
+        /// <param name="collection">The collection to add records to</param>
+        /// <param name="page">Pagination page to get records from</param>
+        /// <param name="limit">The maximum number of items to retrieve from the store</param>
+        /// <param name="constraints">A params array of strings to constrain the result set from the db</param>
+        /// <param name="cancellation">A token to cancel the operation</param>
+        /// <returns>A task that resolves the number of items added to the collection</returns>
+        public static async Task<int> GetPageAsync<T>(
+            this IDataStore<T> store, 
+            ICollection<T> collection, 
+            int page, 
+            int limit, 
+            string[] constraints, 
+            CancellationToken cancellation
+        )
+           where T : class, IDbModel
         {
             ArgumentNullException.ThrowIfNull(store);
             ArgumentNullException.ThrowIfNull(collection);
@@ -501,10 +569,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
                 .Take(limit)
                 .Select(static e => e)
                 .AsNoTracking()
-                .ForEachAsync(collection.Add);
+                .ForEachAsync(collection.Add, cancellation);
 
             //close db and transaction
-            await ctx.SaveAndCloseAsync(true);
+            await ctx.SaveAndCloseAsync(true, cancellation);
 
             //Return the number of records added
             return collection.Count - previous;

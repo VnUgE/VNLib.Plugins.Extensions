@@ -125,7 +125,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
 
                 if (maxLen.HasValue)
                 {
-                    col.MaxLength = maxLen.Value;
+                    col.MaxLength(maxLen.Value);
                 }
 
                 //Store the column

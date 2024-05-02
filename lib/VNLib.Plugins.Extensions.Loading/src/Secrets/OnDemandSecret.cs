@@ -40,7 +40,7 @@ using static VNLib.Plugins.Extensions.Loading.PluginSecretConstants;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
-    internal sealed class OnDemandSecret(PluginBase plugin, string secretName, IHCVaultClient? vault) : IOnDemandSecret
+    internal sealed class OnDemandSecret(PluginBase plugin, string secretName, IKvVaultClient? vault) : IOnDemandSecret
     {
         public string SecretName { get; } = secretName ?? throw new ArgumentNullException(nameof(secretName));
 

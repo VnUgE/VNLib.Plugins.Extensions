@@ -3,9 +3,9 @@
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: IHCVaultClient.cs 
+* File: ISecretVaultClient.cs 
 *
-* IHCVaultClient.cs is part of VNLib.Plugins.Extensions.Loading which is
+* ISecretVaultClient.cs is part of VNLib.Plugins.Extensions.Loading which is
 * part of the larger VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
@@ -29,9 +29,9 @@ using System.Threading.Tasks;
 namespace VNLib.Plugins.Extensions.Loading
 {
     /// <summary>
-    /// A Hashicorp Vault client for reading secrets from a vault server
+    /// A secret client interace for reading secrets from a vault server
     /// </summary>
-    public interface IHCVaultClient
+    public interface IKvVaultClient
     {
         /// <summary>
         /// Reads a single KeyValue secret from the vault server asyncrhonously and returns the result

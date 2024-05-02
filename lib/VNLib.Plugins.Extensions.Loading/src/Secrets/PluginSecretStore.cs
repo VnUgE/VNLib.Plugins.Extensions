@@ -49,7 +49,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The ambient <see cref="IVaultClient"/> if loaded, null otherwise</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
-        public IHCVaultClient? GetVaultClient() => LoadingExtensions.GetOrCreateSingleton(_plugin, TryGetVaultLoader);
+        public IKvVaultClient? GetVaultClient() => LoadingExtensions.GetOrCreateSingleton(_plugin, TryGetVaultLoader);
 
         private static HCVaultClient? TryGetVaultLoader(PluginBase pbase)
         {

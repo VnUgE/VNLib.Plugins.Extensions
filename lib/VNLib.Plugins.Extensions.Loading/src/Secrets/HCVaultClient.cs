@@ -30,7 +30,6 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Net.Security;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
@@ -50,7 +49,12 @@ using VNLib.Utils.Extensions;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
-    internal sealed class HCVaultClient : VnDisposeable, IHCVaultClient
+
+    /// <summary>
+    /// A concret implementation of a Hashicorp Vault client instance used to 
+    /// retrieve key-value secrets from a server
+    /// </summary>
+    public sealed class HCVaultClient : VnDisposeable, IKvVaultClient
     {
         const string VaultTokenHeaderName = "X-Vault-Token";
         const long MaxErrResponseContentLength = 8192;
@@ -62,7 +66,7 @@ namespace VNLib.Plugins.Extensions.Loading
         private readonly int _kvVersion;
         private readonly IUnmangedHeap _bufferHeap;
 
-        HCVaultClient(string serverAddress, string hcToken, int kvVersion, bool trustCert, IUnmangedHeap heap)
+        private HCVaultClient(string serverAddress, string hcToken, int kvVersion, bool trustCert, IUnmangedHeap heap)
         {
 #pragma warning disable CA2000 // Dispose objects before losing scope
             HttpClientHandler handler = new()
@@ -99,17 +103,17 @@ namespace VNLib.Plugins.Extensions.Loading
         /// Creates a new Hashicorp vault client with the given server address, token, and KV storage version
         /// </summary>
         /// <param name="serverAddress">The vault server address</param>
-        /// <param name="hcToken">The vault token used to connect to the vault server</param>
+        /// <param name="token">The vault token used to connect to the vault server</param>
         /// <param name="kvVersion">The hc vault Key value store version (must be 1 or 2)</param>
         /// <param name="trustCert">A value that tells the HTTP client to trust the Vault server's certificate even if it's not valid</param>
         /// <param name="heap">Heap instance to allocate internal buffers from</param>
         /// <returns>The new client instance</returns>
         /// <exception cref="ArgumentException"></exception>
         /// <exception cref="ArgumentNullException"></exception>
-        public static HCVaultClient Create(string serverAddress, string hcToken, int kvVersion, bool trustCert, IUnmangedHeap heap)
+        public static HCVaultClient Create(string serverAddress, string token, int kvVersion, bool trustCert, IUnmangedHeap heap)
         {
             ArgumentException.ThrowIfNullOrEmpty(serverAddress);
-            ArgumentException.ThrowIfNullOrEmpty(hcToken);
+            ArgumentException.ThrowIfNullOrEmpty(token);
             ArgumentNullException.ThrowIfNull(heap);
 
             if(kvVersion != 1 && kvVersion != 2)
@@ -117,7 +121,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 throw new ArgumentException($"Unsupported vault KV storage version {kvVersion}, must be either 1 or 2");
             }
 
-            return new HCVaultClient(serverAddress, hcToken, kvVersion, trustCert, heap);
+            return new HCVaultClient(serverAddress, token, kvVersion, trustCert, heap);
         }
 
         ///<inheritdoc/>
@@ -137,10 +141,10 @@ namespace VNLib.Plugins.Extensions.Loading
                 using HttpResponseMessage response = await _client.SendAsync(ms, HttpCompletionOption.ResponseHeadersRead);
 
                 //Check if an error occured in the response 
-                await ProcessVaultErrorResponseAsync(response, true);
+                await ProcessVaultErrorResponseAsync(response);
 
                 //Read the response async
-                using SecretResponse res = await ReadSecretResponse(response.Content, true);
+                using SecretResponse res = await ReadSecretResponse(response.Content);
 
                 return FromResponse(res, secretName);
             }
@@ -162,88 +166,36 @@ namespace VNLib.Plugins.Extensions.Loading
         ///<inheritdoc/>
         public ISecretResult? ReadSecret(string path, string mountPoint, string secretName)
         {
-            string secretPath = GetSecretPathForKvVersion(_kvVersion, path, mountPoint);
-            using HttpRequestMessage ms = GetRequestMessageForPath(secretPath);
+            /*
+             * Since this method will syncrhonously block the calling thread, a new 
+             * task must be created to ignore the current async context and run the 
+             * funciton in an new context to block safely without causing a deadlock.
+             */
 
-            try
-            {
-                //Exec the response synchronously
-                using HttpResponseMessage response = _client.Send(ms, HttpCompletionOption.ResponseHeadersRead);
+            Task<ISecretResult?> asAsync = Task.Run(() => ReadSecretAsync(path, mountPoint, secretName));
+           
+            asAsync.Wait(ClientDefaultTimeout);
 
-                /*
-                 * It is safe to await the error result here because its 
-                 * already completed when the async flag is false
-                 */
-                ValueTask errTask = ProcessVaultErrorResponseAsync(response, false);
-                Debug.Assert(errTask.IsCompleted);
-                errTask.GetAwaiter().GetResult();
-
-                //Did not throw, handle a secret response
-
-                ValueTask<SecretResponse> resTask = ReadSecretResponse(response.Content, false);
-                Debug.Assert(resTask.IsCompleted);
-
-                //Always wrap response in using to clean memory
-                using SecretResponse res = resTask.GetAwaiter().GetResult();
-
-                return FromResponse(res, secretName);
-            }
-            catch (HttpRequestException he) when (he.InnerException is SocketException se)
-            {
-                throw se.SocketErrorCode switch
-                {
-                    SocketError.HostNotFound => new HCVaultException("Failed to connect to Hashicorp Vault server, because it's DNS hostname could not be resolved"),
-                    SocketError.ConnectionRefused => new HCVaultException("Failed to establish a TCP connection to the vault server, the server refused the connection"),
-                    _ => new HCVaultException("Failed to establish a TCP connection to the vault server, see inner exception", se),
-                };
-            }
-            catch (Exception ex)
-            {
-                throw new HCVaultException("Failed to retreive secret from Hashicorp Vault server, see inner exception", ex);
-            }
+            return asAsync.Result;
         }
 
-        private ValueTask<SecretResponse> ReadSecretResponse(HttpContent content, bool async)
+        private async Task<SecretResponse> ReadSecretResponse(HttpContent content)
         {
-            SecretResponse res = new(DefaultBufferSize, _bufferHeap);
+            SecretResponse response = new(DefaultBufferSize, _bufferHeap);
+
             try
             {
-                if (async)
-                {
-                    return ReadStreamAsync(content, res);
-                }
-                else
-                {
-                    //Read into a memory stream
-                    content.CopyTo(res.StreamData, null, default);
-                    res.ResetStream();
+                await content.CopyToAsync(response.StreamData);
 
-                    return ValueTask.FromResult(res);
-                }
+                response.ResetStream();
+
+                return response;
             }
             catch
             {
-                res.Dispose();
+                response.Dispose();
                 throw;
             }
-
-            async static ValueTask<SecretResponse> ReadStreamAsync(HttpContent content, SecretResponse response)
-            {
-                try
-                {
-                    await content.CopyToAsync(response.StreamData);
-                    
-                    response.ResetStream();
-
-                    return response;
-                }
-                catch
-                {
-                    response.Dispose();
-                    throw;
-                }
-            }
-
         }
 
         private static string GetSecretPathForKvVersion(int version, string path, string mount)
@@ -288,7 +240,7 @@ namespace VNLib.Plugins.Extensions.Loading
             return null;
         }
 
-        private static ValueTask ProcessVaultErrorResponseAsync(HttpResponseMessage response, bool async)
+        private static ValueTask ProcessVaultErrorResponseAsync(HttpResponseMessage response)
         {
             if (response.IsSuccessStatusCode)
             {
@@ -322,12 +274,12 @@ namespace VNLib.Plugins.Extensions.Loading
                 );
             }
 
-            return async ? ExceptionsFromContentAsync(response) : ExceptionsFromContent(response);
+            return ExceptionsFromContentAsync(response);
            
             static ValueTask ExceptionFromVaultErrors(HttpStatusCode code, VaultErrorMessage? errs)
             {
                 //If the error message is null, raise an exception
-                if (errs == null || errs.Errors == null || errs.Errors.Length == 0)
+                if (errs?.Errors is null || errs.Errors.Length == 0)
                 {
                     return ValueTask.FromException(
                         new HttpRequestException($"Failed to fetch secret from vault with error code {code}")
@@ -351,19 +303,6 @@ namespace VNLib.Plugins.Extensions.Loading
                 VaultErrorMessage? errs = await JsonSerializer.DeserializeAsync<VaultErrorMessage>(stream);
 
                 await ExceptionFromVaultErrors(response.StatusCode, errs);
-            }
-
-            static ValueTask ExceptionsFromContent(HttpResponseMessage response)
-            {
-#pragma warning disable CA1849 // Call async methods when in an async method
-
-                //Read the error content stream and deserialize
-                using Stream stream = response.Content.ReadAsStream();
-                VaultErrorMessage? errs = JsonSerializer.Deserialize<VaultErrorMessage>(stream);
-
-#pragma warning restore CA1849 // Call async methods when in an async method
-
-                return ExceptionFromVaultErrors(response.StatusCode, errs);
             }
         }
 

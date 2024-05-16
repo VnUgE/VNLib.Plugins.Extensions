@@ -46,7 +46,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// Gets the ambient vault client for the current plugin
         /// if the configuration is loaded, null otherwise
         /// </summary>
-        /// <returns>The ambient <see cref="IVaultClient"/> if loaded, null otherwise</returns>
+        /// <returns>The ambient <see cref="IKvVaultClient"/> if loaded, null otherwise</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
         public IKvVaultClient? GetVaultClient() => LoadingExtensions.GetOrCreateSingleton(_plugin, TryGetVaultLoader);
@@ -114,7 +114,7 @@ namespace VNLib.Plugins.Extensions.Loading
         public IOnDemandSecret GetOnDemandSecret(string secretName)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(secretName);
-            return new OnDemandSecret(_plugin, secretName, GetVaultClient());
+            return new OnDemandSecret(_plugin, secretName, GetVaultClient);
         }
 
         ///<inheritdoc/>

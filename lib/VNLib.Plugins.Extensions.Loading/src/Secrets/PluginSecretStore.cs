@@ -40,16 +40,18 @@ namespace VNLib.Plugins.Extensions.Loading
     /// <param name="plugin">The plugin instance to get secrets from</param>
     public readonly struct PluginSecretStore(PluginBase plugin) : IEquatable<PluginSecretStore>
     {
+        const int HCVaultDefaultKvVersion = 2;
+
         private readonly PluginBase _plugin = plugin;
 
         /// <summary>
         /// Gets the ambient vault client for the current plugin
         /// if the configuration is loaded, null otherwise
         /// </summary>
-        /// <returns>The ambient <see cref="IVaultClient"/> if loaded, null otherwise</returns>
+        /// <returns>The ambient <see cref="IKvVaultClient"/> if loaded, null otherwise</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
-        public IHCVaultClient? GetVaultClient() => LoadingExtensions.GetOrCreateSingleton(_plugin, TryGetVaultLoader);
+        public IKvVaultClient? GetVaultClient() => LoadingExtensions.GetOrCreateSingleton(_plugin, TryGetVaultLoader);
 
         private static HCVaultClient? TryGetVaultLoader(PluginBase pbase)
         {
@@ -63,21 +65,19 @@ namespace VNLib.Plugins.Extensions.Loading
 
             //try get server address creds from config
             string serverAddress = conf.GetRequiredProperty(VAULT_URL_KEY, p => p.GetString()!);
-            bool trustCert = conf.TryGetValue(VAULT_TRUST_CERT_KEY, out JsonElement trustCertEl) && trustCertEl.GetBoolean();
+            bool trustCert = conf.GetValueOrDefault(VAULT_TRUST_CERT_KEY, el => el.GetBoolean(), false);
 
-            int version = 2;    //Default to version 2 now
             string? authToken;
-
-            //Get authentication method from config
+            
             if (conf.TryGetValue(VAULT_TOKEN_KEY, out JsonElement tokenEl))
             {
                 //Init token
                 authToken = tokenEl.GetString();
             }
             //Try to get the token as an environment variable
-            else if (Environment.GetEnvironmentVariable(VAULT_TOKNE_ENV_NAME) != null)
+            else if (Environment.GetEnvironmentVariable(VAULT_TOKEN_ENV_NAME) != null)
             {
-                authToken = Environment.GetEnvironmentVariable(VAULT_TOKNE_ENV_NAME)!;
+                authToken = Environment.GetEnvironmentVariable(VAULT_TOKEN_ENV_NAME)!;
             }
             else
             {
@@ -87,10 +87,7 @@ namespace VNLib.Plugins.Extensions.Loading
             _ = authToken ?? throw new KeyNotFoundException($"Failed to load the vault authentication method from {VAULT_OBJECT_NAME}");
 
             //Check for vault kv version, otherwise use the default
-            if (conf.TryGetValue(VAULT_KV_VERSION_KEY, out JsonElement kvVersionEl))
-            {
-                version = kvVersionEl.GetInt32();
-            }
+            int version = conf.GetValueOrDefault(VAULT_KV_VERSION_KEY, el => el.GetInt32(), HCVaultDefaultKvVersion);
 
             //create vault client, invalid or nulls will raise exceptions here
             return HCVaultClient.Create(serverAddress, authToken, version, trustCert, MemoryUtil.Shared);
@@ -114,7 +111,7 @@ namespace VNLib.Plugins.Extensions.Loading
         public IOnDemandSecret GetOnDemandSecret(string secretName)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(secretName);
-            return new OnDemandSecret(_plugin, secretName, GetVaultClient());
+            return new OnDemandSecret(_plugin, secretName, GetVaultClient);
         }
 
         ///<inheritdoc/>

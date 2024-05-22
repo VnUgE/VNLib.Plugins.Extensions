@@ -35,13 +35,20 @@ using System.Collections.Generic;
 using VNLib.Utils.Memory;
 using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;
+using VNLib.Utils.Resources;
 
 using static VNLib.Plugins.Extensions.Loading.PluginSecretConstants;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
-    internal sealed class OnDemandSecret(PluginBase plugin, string secretName, IHCVaultClient? vault) : IOnDemandSecret
+    internal sealed class OnDemandSecret(PluginBase plugin, string secretName, Func<IKvVaultClient?> vaultCb) : IOnDemandSecret
     {
+        /*
+         * Defer loading vault until needed by a vault secret. This avoids loading the vault client
+         * if no secrets are needed from the vault.
+         */
+        private readonly LazyInitializer<IKvVaultClient?> vault = new(vaultCb);
+
         public string SecretName { get; } = secretName ?? throw new ArgumentNullException(nameof(secretName));
 
         ///<inheritdoc/>
@@ -175,16 +182,16 @@ namespace VNLib.Plugins.Extensions.Loading
             string secret = path[(lastSep + 1)..].ToString();
 
             //Try load client
-            _ = vault ?? throw new KeyNotFoundException("Vault client not found");
+            _ = vault.Instance ?? throw new KeyNotFoundException("Vault client not found");
 
             if (async)
             {
-                Task<ISecretResult?> asTask = Task.Run(() => vault.ReadSecretAsync(secret, mount, secretTableKey));
+                Task<ISecretResult?> asTask = Task.Run(() => vault.Instance.ReadSecretAsync(secret, mount, secretTableKey));
                 return new ValueTask<ISecretResult?>(asTask);
             }
             else
             {
-                ISecretResult? result = vault.ReadSecret(secret, mount, secretTableKey);
+                ISecretResult? result = vault.Instance.ReadSecret(secret, mount, secretTableKey);
                 return new ValueTask<ISecretResult?>(result);
             }
         }

@@ -52,6 +52,12 @@ namespace VNLib.Plugins.Extensions.Loading
         /// If the operation has not completed, throws an exception.
         /// </summary>
         T Value { get; }
+
+        /// <summary>
+        /// Gets or allocates a task that represents the async result
+        /// </summary>
+        /// <returns>A task that represents the asynchronous lazy result that completes with the resulting value</returns>
+        Task<T> AsTask();
     }
 
     /// <summary>
@@ -141,6 +147,9 @@ namespace VNLib.Plugins.Extensions.Loading
 
             ///<inheritdoc/>
             public TaskAwaiter<T> GetAwaiter() => _task.GetAwaiter();
+
+            ///<inheritdoc/>
+            public Task<T> AsTask() => _task;
         }
 #nullable enable
 

@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -25,11 +25,13 @@
 using System;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 
 using VNLib.Hashing;
 using VNLib.Utils;
 using VNLib.Utils.Memory;
+using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;
 using VNLib.Plugins.Essentials.Accounts;
 
@@ -123,7 +125,11 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 if(config.TryGetValue("lib_path", out JsonElement manualLibPath))
                 {
-                    SafeArgon2Library lib = VnArgon2.LoadCustomLibrary(manualLibPath.GetString()!, System.Runtime.InteropServices.DllImportSearchPath.SafeDirectories);
+                    SafeArgon2Library lib = VnArgon2.LoadCustomLibrary(
+                        manualLibPath.GetString()!, 
+                        System.Runtime.InteropServices.DllImportSearchPath.SafeDirectories
+                    );
+                    
                     _ = plugin.RegisterForUnload(lib.Dispose);
                     safeLib = lib;
                 }
@@ -154,6 +160,15 @@ namespace VNLib.Plugins.Extensions.Loading
                 //Get the pepper from secret storage
                 _pepper = plugin.GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
                     .ToLazy(static sr => sr.GetFromBase64());
+
+                _ = _pepper.AsTask()
+                    .ContinueWith(secT => {
+                            plugin.Log.Error("Failed to load password pepper: {reason}", secT.Exception?.Message);
+                        }, 
+                        default, 
+                        TaskContinuationOptions.OnlyOnFaulted,  //Only run if an exception occured to notify the user during startup
+                        TaskScheduler.Default
+                    );
             }
 
             public SecretProvider(PluginBase plugin)
@@ -163,7 +178,8 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 //Get the pepper from secret storage
                 _pepper = plugin.GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
-                    .ToLazy(static sr => sr.GetFromBase64());
+                    .ToBase64Bytes()
+                    .AsLazy();
             }
 
             ///<inheritdoc/>
@@ -193,9 +209,10 @@ namespace VNLib.Plugins.Extensions.Loading
 
             protected override void Free()
             {
-                if (_pepper.Completed)
-                {
-                    //Clear the pepper if set
+                Task pepperTask = _pepper.AsTask();
+                //Only zero pepper value if the pepper was retrieved successfully
+                if (pepperTask.IsCompletedSuccessfully)
+                {                   
                     MemoryUtil.InitializeBlock(_pepper.Value.AsSpan());
                 }
             }

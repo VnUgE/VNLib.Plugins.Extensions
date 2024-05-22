@@ -33,7 +33,7 @@ namespace VNLib.Plugins.Extensions.Loading
         public const string VAULT_TOKEN_KEY = "token";
         public const string VAULT_ROLE_KEY = "role";
         public const string VAULT_SECRET_KEY = "secret";
-        public const string VAULT_TOKNE_ENV_NAME = "VNLIB_PLUGINS_VAULT_TOKEN";
+        public const string VAULT_TOKEN_ENV_NAME = "VAULT_TOKEN";
         public const string VAULT_KV_VERSION_KEY = "kv_version";
 
         public const string VAULT_URL_KEY = "url";

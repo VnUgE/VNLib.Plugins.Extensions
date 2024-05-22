@@ -3,9 +3,9 @@
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: ISecretVaultClient.cs 
+* File: IKvVaultClient.cs 
 *
-* ISecretVaultClient.cs is part of VNLib.Plugins.Extensions.Loading which is
+* IKvVaultClient.cs is part of VNLib.Plugins.Extensions.Loading which is
 * part of the larger VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 

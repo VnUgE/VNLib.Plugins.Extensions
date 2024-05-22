@@ -124,6 +124,28 @@ namespace VNLib.Plugins.Extensions.Loading
             return new HCVaultClient(serverAddress, token, kvVersion, trustCert, heap);
         }
 
+        /// <summary>
+        /// Creates a new Hashicorp vault client from the default Vault environment 
+        /// variables VAULT_ADDR and VAULT_TOKEN. From client documentation
+        /// </summary>
+        /// <param name="kvVersion">The hc vault Key value store version (must be 1 or 2)</param>
+        /// <param name="trustCert">A value that tells the HTTP client to trust the Vault server's certificate even if it's not valid</param>
+        /// <param name="heap">Heap instance to allocate internal buffers from</param>
+        /// <returns>The new client instance</returns>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="KeyNotFoundException"></exception>
+        public static HCVaultClient CreateFromEnv(int kvVersion, bool trustCert, IUnmangedHeap heap)
+        {
+            string address = Environment.GetEnvironmentVariable("VAULT_ADDR")
+                ?? throw new KeyNotFoundException("VAULT_ADDR environment variable not found");
+
+            string token = Environment.GetEnvironmentVariable("VAULT_TOKEN") 
+                ?? throw new KeyNotFoundException("VAULT_TOKEN environment variable not found");
+
+            return Create(address, token, kvVersion, trustCert, heap);        
+        }
+
         ///<inheritdoc/>
         protected override void Free()
         {
@@ -164,6 +186,7 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         ///<inheritdoc/>
+        ///<exception cref="TimeoutException"></exception>
         public ISecretResult? ReadSecret(string path, string mountPoint, string secretName)
         {
             /*
@@ -174,7 +197,10 @@ namespace VNLib.Plugins.Extensions.Loading
 
             Task<ISecretResult?> asAsync = Task.Run(() => ReadSecretAsync(path, mountPoint, secretName));
            
-            asAsync.Wait(ClientDefaultTimeout);
+            if(!asAsync.Wait(ClientDefaultTimeout))
+            {
+                throw new TimeoutException("Failed to retreive the secret from the vault in the configured timeout period");
+            }
 
             return asAsync.Result;
         }

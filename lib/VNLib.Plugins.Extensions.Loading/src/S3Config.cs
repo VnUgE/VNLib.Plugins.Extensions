@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -26,7 +26,12 @@ using System.Text.Json.Serialization;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
-    public sealed class S3Config
+
+    /// <summary>
+    /// A common json-serializable configuration for S3 storage
+    /// in an attempt to unify S3 configuration.
+    /// </summary>
+    public class S3Config
     {
         [JsonPropertyName("server_address")]
         public string? ServerAddress { get; init; }

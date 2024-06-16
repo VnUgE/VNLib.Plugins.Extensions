@@ -24,6 +24,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Reflection;
 using System.Collections.Generic;
@@ -71,7 +72,7 @@ namespace VNLib.Plugins.Extensions.Loading
         public const string S3_SECRET_KEY = "s3_secret";
         public const string PLUGIN_ASSET_KEY = "assets";
         public const string PLUGINS_HOST_KEY = "plugins";
-        public const string PLUGIN_PATH_KEY = "path";
+        public const string PLUGIN_PATHS_KEY = "paths";
 
         /// <summary>
         /// Retrieves a top level configuration dictionary of elements for the specified type.
@@ -492,16 +493,16 @@ namespace VNLib.Plugins.Extensions.Loading
         /// </summary>
         /// <param name="plugin"></param>
         /// <returns>The absolute path to the directory containing all plugins</returns>
-        public static string GetPluginsPath(this PluginBase plugin)
+        public static string[] GetPluginSearchDirs(this PluginBase plugin)
         {
             //Get global plugin config element
             IConfigScope config = plugin.GetConfig(PLUGINS_HOST_KEY);
 
             //Get the plugins path or throw because it should ALWAYS be defined if this method is called
-            string pluginsPath = config[PLUGIN_PATH_KEY].GetString()!;
-
-            //Get absolute path
-            return Path.GetFullPath(pluginsPath);
+            return config[PLUGIN_PATHS_KEY].EnumerateArray()
+                .Select(static p => p.GetString()!)
+                .Select(Path.GetFullPath)   //Get absolute file paths
+                .ToArray();
         }
     }
 }

@@ -24,10 +24,18 @@
 
 using System;
 using System.Reflection;
+using System.Threading.Tasks;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
+using VNLib.Net.Http;
+using VNLib.Utils.Logging;
 using VNLib.Plugins.Essentials.Runtime;
+using VNLib.Plugins.Essentials;
+using VNLib.Plugins.Essentials.Endpoints;
+using VNLib.Plugins.Extensions.Loading.Routing.Mvc;
+
 
 namespace VNLib.Plugins.Extensions.Loading.Routing
 {
@@ -97,7 +105,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
             _ = _pluginRefs.TryGetValue(ep, out PluginBase? pBase);
             return pBase ?? throw new InvalidOperationException("Endpoint was not dynamically routed");
         }      
-      
+
 
         private sealed class EndpointCollection : IVirtualEndpointDefinition
         {
@@ -105,6 +113,42 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
 
             ///<inheritdoc/>
             IEnumerable<IEndpoint> IVirtualEndpointDefinition.GetEndpoints() => Endpoints;            
+        }
+
+        private delegate ValueTask<VfReturnType> EndpointWorkFunc(HttpEntity entity);
+
+        sealed record class HttpControllerEndpoint(MethodInfo MethodInfo, HttpEndpointAttribute Attr)
+        {
+            public string Path => Attr.Path;
+
+            public HttpMethod Method => Attr.Method;
+
+            public EndpointWorkFunc Func { get; } = MethodInfo.CreateDelegate<EndpointWorkFunc>();
+        }
+
+        private sealed class EndpointWrapper 
+            : ResourceEndpointBase
+        {
+
+            private readonly FrozenDictionary<HttpMethod, EndpointWorkFunc> _wrappers;
+
+            public EndpointWrapper(FrozenDictionary<HttpMethod, EndpointWorkFunc> table, string path, ILogProvider log)
+            {
+                _wrappers = table;
+                InitPathAndLog(path, log);
+            }
+
+            protected override ValueTask<VfReturnType> OnProcessAsync(HttpEntity entity)
+            {
+                ref readonly EndpointWorkFunc func = ref _wrappers.GetValueRefOrNullRef(entity.Server.Method);
+
+                if (Unsafe.IsNullRef(in func))
+                {
+                    return ValueTask.FromResult(VfReturnType.ProcessAsFile);
+                }
+
+                return func(entity);
+            }
         }
     }
 }

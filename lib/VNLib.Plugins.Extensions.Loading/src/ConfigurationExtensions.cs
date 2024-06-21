@@ -38,22 +38,17 @@ namespace VNLib.Plugins.Extensions.Loading
     /// Specifies a configuration variable name in the plugin's configuration 
     /// containing data specific to the type
     /// </summary>
+    /// <remarks>
+    /// Initializes a new <see cref="ConfigurationNameAttribute"/>
+    /// </remarks>
+    /// <param name="configVarName">The name of the configuration variable for the class</param>
     [AttributeUsage(AttributeTargets.Class)]
-    public sealed class ConfigurationNameAttribute : Attribute
+    public sealed class ConfigurationNameAttribute(string configVarName) : Attribute
     {
         /// <summary>
         /// 
         /// </summary>
-        public string ConfigVarName { get; }
-
-        /// <summary>
-        /// Initializes a new <see cref="ConfigurationNameAttribute"/>
-        /// </summary>
-        /// <param name="configVarName">The name of the configuration variable for the class</param>
-        public ConfigurationNameAttribute(string configVarName)
-        {
-            ConfigVarName = configVarName;
-        }
+        public string ConfigVarName { get; } = configVarName;
 
         /// <summary>
         /// When true or not configured, signals that the type requires a configuration scope
@@ -81,7 +76,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <typeparam name="T">The type to get the configuration of</typeparam>
         /// <param name="plugin"></param>
         /// <returns>A <see cref="Dictionary{TKey, TValue}"/> of top level configuration elements for the type</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ConfigurationException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
         public static IConfigScope GetConfigForType<T>(this PluginBase plugin)
         {
@@ -98,7 +93,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <param name="plugin"></param>
         /// <param name="propName">The config property name to retrieve</param>
         /// <returns>A <see cref="IConfigScope"/> of top level configuration elements for the type</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ConfigurationException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
         public static IConfigScope GetConfig(this PluginBase plugin, string propName)
         {
@@ -116,7 +111,7 @@ namespace VNLib.Plugins.Extensions.Loading
             }
             catch (KeyNotFoundException)
             {
-                throw new KeyNotFoundException($"Missing required top level configuration object '{propName}', in host/plugin configuration files");
+                throw new ConfigurationException($"Missing required top level configuration object '{propName}', in host/plugin configuration files");
             }
         }
 
@@ -155,7 +150,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ObjectDisposedException"></exception>
         public static IConfigScope GetConfigForType(this PluginBase plugin, Type type)
         {
-            _ = type ?? throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             string? configName = GetConfigNameForType(type);
 
@@ -179,11 +174,12 @@ namespace VNLib.Plugins.Extensions.Loading
         public static T? GetProperty<T>(this IConfigScope config, string property, Func<JsonElement, T> getter)
         {
             //Check null
-            _ = config ?? throw new ArgumentNullException(nameof(config));
-            _ = property ?? throw new ArgumentNullException(nameof(property));
-            _ = getter ?? throw new ArgumentNullException(nameof(getter));
-
-            return !config.TryGetValue(property, out JsonElement el) ? default : getter(el);
+            ArgumentNullException.ThrowIfNull(config);
+            ArgumentNullException.ThrowIfNull(getter);
+            ArgumentException.ThrowIfNullOrWhiteSpace(property);
+            return !config.TryGetValue(property, out JsonElement el) 
+                ? default 
+                : getter(el);
         }
 
         /// <summary>
@@ -195,7 +191,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <param name="getter">A function to get the value from the json type</param>
         /// <returns>The property value</returns>
         /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ConfigurationException"></exception>
         public static T GetRequiredProperty<T>(this IConfigScope config, string property, Func<JsonElement, T> getter)
         {
             //Check null
@@ -206,11 +202,11 @@ namespace VNLib.Plugins.Extensions.Loading
             //Get the property
             if (!config.TryGetValue(property, out JsonElement el))
             {
-                throw new KeyNotFoundException($"Missing required configuration property '{property}' in config {config.ScopeName}");
+                throw new ConfigurationException($"Missing required configuration property '{property}' in config {config.ScopeName}");
             }
 
             //Even if the getter returns null, throw
-            return getter(el) ?? throw new KeyNotFoundException($"Missing required configuration property '{property}' in config {config.ScopeName}");
+            return getter(el) ?? throw new ConfigurationException($"Missing required configuration property '{property}' in config {config.ScopeName}");
         }
 
         /// <summary>
@@ -290,7 +286,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// for missing configuration for a given type
         /// </summary>
         /// <param name="type">The type to raise exception for</param>
-        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ConfigurationException"></exception>
         [DoesNotReturn]
         public static void ThrowConfigNotFoundForType(Type type)
         {
@@ -298,11 +294,11 @@ namespace VNLib.Plugins.Extensions.Loading
             string? configName = GetConfigNameForType(type);
             if (configName != null)
             {
-                throw new KeyNotFoundException($"Missing required configuration key '{configName}' for type {type.Name}");
+                throw new ConfigurationException($"Missing required configuration key '{configName}' for type {type.Name}");
             }
             else
             {
-                throw new KeyNotFoundException($"Missing required configuration key for type {type.Name}");
+                throw new ConfigurationException($"Missing required configuration key for type {type.Name}");
             }
         }
 
@@ -322,7 +318,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
         /// <summary>
         /// Deserialzes the configuration to the desired object and calls its
-        /// <see cref="IOnConfigValidation.Validate"/> method. Validation exceptions 
+        /// <see cref="IOnConfigValidation.OnValidate"/> method. Validation exceptions 
         /// are wrapped in a <see cref="ConfigurationValidationException"/>
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -332,14 +328,9 @@ namespace VNLib.Plugins.Extensions.Loading
         public static T DeserialzeAndValidate<T>(this IConfigScope scope) where T : IOnConfigValidation
         {
             T conf = scope.Deserialze<T>();
-            try
-            {
-                conf.Validate();
-            }
-            catch(Exception ex)
-            {
-                throw new ConfigurationValidationException($"Configuration validation failed for type {typeof(T).Name}", ex);
-            }
+            
+            TryValidateConfig(conf);
+
             return conf;
         }
 
@@ -374,7 +365,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// Gets a given configuration element from the global configuration scope
         /// and deserializes it into the desired type. 
         /// <para>
-        /// If the type inherits <see cref="IOnConfigValidation"/> the <see cref="IOnConfigValidation.Validate"/>
+        /// If the type inherits <see cref="IOnConfigValidation"/> the <see cref="IOnConfigValidation.OnValidate"/>
         /// method is invoked, and exceptions are warpped in <see cref="ConfigurationValidationException"/>
         /// </para>
         /// <para>
@@ -391,21 +382,10 @@ namespace VNLib.Plugins.Extensions.Loading
             //Deserialze the element
             TConfig config = plugin.GetConfigForType<TConfig>().Deserialze<TConfig>();
 
-            //If the type is validatable, validate it
-            if(config is IOnConfigValidation conf)
-            {
-                try
-                {
-                    conf.Validate();
-                }
-                catch (Exception ex)
-                {
-                    throw new ConfigurationValidationException($"Configuration validation failed for type {typeof(TConfig).Name}", ex);
-                }
-            }
+            TryValidateConfig(config);
 
             //If async config, load async
-            if(config is IAsyncConfigurable ac)
+            if (config is IAsyncConfigurable ac)
             {
                 _ = plugin.ConfigureServiceAsync(ac);
             }
@@ -417,7 +397,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// Gets a given configuration element from the global configuration scope
         /// and deserializes it into the desired type. 
         /// <para>
-        /// If the type inherits <see cref="IOnConfigValidation"/> the <see cref="IOnConfigValidation.Validate"/>
+        /// If the type inherits <see cref="IOnConfigValidation"/> the <see cref="IOnConfigValidation.OnValidate"/>
         /// method is invoked, and exceptions are warpped in <see cref="ConfigurationValidationException"/>
         /// </para>
         /// <para>
@@ -435,18 +415,7 @@ namespace VNLib.Plugins.Extensions.Loading
             //Deserialze the element
             TConfig config = plugin.GetConfig(elementName).Deserialze<TConfig>();
 
-            //If the type is validatable, validate it
-            if (config is IOnConfigValidation conf)
-            {
-                try
-                {
-                    conf.Validate();
-                }
-                catch (Exception ex)
-                {
-                    throw new ConfigurationValidationException($"Configuration validation failed for type {typeof(TConfig).Name}", ex);
-                }
-            }
+            TryValidateConfig(config);
 
             //If async config, load async
             if (config is IAsyncConfigurable ac)
@@ -455,6 +424,22 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             return config;
+        }
+
+        private static void TryValidateConfig<TConfig>(TConfig config)
+        {
+            //If the type is validatable, validate it
+            if (config is IOnConfigValidation conf)
+            {
+                try
+                {
+                    conf.OnValidate();
+                }
+                catch (Exception ex)
+                {
+                    throw new ConfigurationValidationException($"Configuration validation failed for type {typeof(TConfig).Name}", ex);
+                }
+            }
         }
 
 

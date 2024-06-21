@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -26,17 +26,18 @@ using System;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
+
     /// <summary>
     /// An exception raised when a configuration validation exception has occured
     /// </summary>
-    public class ConfigurationValidationException : Exception
+    public class ConfigurationValidationException : ConfigurationException
     {
         public ConfigurationValidationException(string message) : base(message)
-        {}
+        { }
 
         public ConfigurationValidationException(string message, Exception innerException) : base(message, innerException)
-        {}
+        { }
         public ConfigurationValidationException()
-        {}
+        { }
     }
 }

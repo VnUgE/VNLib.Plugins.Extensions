@@ -657,7 +657,13 @@ namespace VNLib.Plugins.Extensions.Loading
             }
             catch(TargetInvocationException te) when (te.InnerException != null) 
             {
+                FindNestedConfigurationException(te);
                 FindAndThrowInnerException(te);
+                throw;
+            }
+            catch(Exception ex)
+            {
+                FindNestedConfigurationException(ex);
                 throw;
             }
 
@@ -755,6 +761,21 @@ namespace VNLib.Plugins.Extensions.Loading
             }
         }
 
+        internal static void FindNestedConfigurationException(Exception ex)
+        {
+            if(ex is ConfigurationException ce)
+            {
+                ExceptionDispatchInfo.Throw(ce);
+            }
+
+            //Recurse
+            if(ex.InnerException is not null)
+            {
+                FindNestedConfigurationException(ex.InnerException);
+            }
+
+            //No more exceptions
+        }
 
         private sealed class PluginLocalCache
         {

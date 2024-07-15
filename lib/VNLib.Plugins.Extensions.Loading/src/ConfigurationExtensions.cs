@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 using VNLib.Utils.Extensions;
+using VNLib.Plugins.Extensions.Loading.Configuration;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
@@ -67,7 +68,6 @@ namespace VNLib.Plugins.Extensions.Loading
         public const string S3_SECRET_KEY = "s3_secret";
         public const string PLUGIN_ASSET_KEY = "assets";
         public const string PLUGINS_HOST_KEY = "plugins";
-        public const string PLUGIN_PATHS_KEY = "paths";
 
         /// <summary>
         /// Retrieves a top level configuration dictionary of elements for the specified type.
@@ -200,13 +200,28 @@ namespace VNLib.Plugins.Extensions.Loading
             ArgumentNullException.ThrowIfNull(getter);
 
             //Get the property
-            if (!config.TryGetValue(property, out JsonElement el))
-            {
-                throw new ConfigurationException($"Missing required configuration property '{property}' in config {config.ScopeName}");
-            }
+            bool hasValue = config.TryGetValue(property, out JsonElement el);
+            Validate.Assert(hasValue, $"Missing required configuration property '{property}' in config {config.ScopeName}");
 
-            //Even if the getter returns null, throw
-            return getter(el) ?? throw new ConfigurationException($"Missing required configuration property '{property}' in config {config.ScopeName}");
+            T? value = getter(el);
+            Validate.Assert(value is not null, $"Missing required configuration property '{property}' in config {config.ScopeName}");
+
+            return value;
+        }
+
+
+        /// <summary>
+        /// Gets a required configuration property from the specified configuration scope
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the property to get</param>
+        /// <returns>The property value</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ConfigurationException"></exception>
+        public static T GetRequiredProperty<T>(this IConfigScope config, string property)
+        {
+            return GetRequiredProperty(config, property, static p => p.Deserialize<T>()!);
         }
 
         /// <summary>
@@ -255,6 +270,28 @@ namespace VNLib.Plugins.Extensions.Loading
         public static T? GetValueOrDefault<T>(this IConfigScope config, string property, Func<JsonElement, T> getter, T defaultValue)
         {
             return TryGetProperty(config, property, getter, out T? value) ? value : defaultValue;
+        }
+
+        /// <summary>
+        /// Gets a configuration property from the specified configuration scope
+        /// and invokes your callback function on the element if found to transform the
+        /// output value, or returns the default value if the property is not found.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the configuration element to get</param>
+        /// <param name="defaultValue">The default value to return</param>
+        /// <returns>The property value returned from your getter callback, or the default value if not found</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        [return: NotNullIfNotNull(nameof(defaultValue))]
+        public static T? GetValueOrDefault<T>(this IConfigScope config, string property, T defaultValue)
+        {
+            return GetValueOrDefault(
+                config, 
+                property, 
+                static p => p.Deserialize<T>(), 
+                defaultValue
+            );
         }
 
         /// <summary>
@@ -442,7 +479,6 @@ namespace VNLib.Plugins.Extensions.Loading
             }
         }
 
-
         /// <summary>
         /// Attempts to load the basic S3 configuration variables required
         /// for S3 client access
@@ -483,11 +519,34 @@ namespace VNLib.Plugins.Extensions.Loading
             //Get global plugin config element
             IConfigScope config = plugin.GetConfig(PLUGINS_HOST_KEY);
 
-            //Get the plugins path or throw because it should ALWAYS be defined if this method is called
-            return config[PLUGIN_PATHS_KEY].EnumerateArray()
-                .Select(static p => p.GetString()!)
-                .Select(Path.GetFullPath)   //Get absolute file paths
-                .ToArray();
+            /*
+             * Hosts are allowed to define mutliple plugin loading paths. A
+             * single path is supported for compat. Multi path takes precidence 
+             * of course so attempt to load a string array first
+             */
+
+            if (!config.TryGetValue("paths", out JsonElement searchPaths)
+                && !config.TryGetValue("path", out searchPaths))
+            {
+                return [];
+            }
+
+            if (searchPaths.ValueKind == JsonValueKind.Array)
+            {
+                //Get the plugins path or throw because it should ALWAYS be defined if this method is called
+                return searchPaths.EnumerateArray()
+                    .Select(static p => p.GetString()!)
+                    .Select(Path.GetFullPath)   //Get absolute file paths
+                    .ToArray();
+            }
+            else if (searchPaths.ValueKind == JsonValueKind.String)
+            {
+                return [Path.GetFullPath(searchPaths.GetString()!)];
+            }
+            else
+            {
+                return [];
+            }
         }
     }
 }

@@ -123,7 +123,7 @@ namespace VNLib.Plugins.Extensions.Loading
             */
             if (searchDirs.Length == 0)
             {
-                throw new ArgumentException("No plugin asset directory is defined for the current host configuration, this is likely a bug");
+                throw new ConfigurationException("No plugin asset directory is defined for the current host configuration, this is likely a bug");
             }
 
             //Get the first file that matches the search file
@@ -268,9 +268,10 @@ namespace VNLib.Plugins.Extensions.Loading
         /// </summary>
         /// <param name="plugin"></param>
         /// <exception cref="ObjectDisposedException"></exception>
-        public static void ThrowIfUnloaded(this PluginBase plugin)
+        public static void ThrowIfUnloaded(this PluginBase? plugin)
         {
             //See if the plugin was unlaoded
+            ArgumentNullException.ThrowIfNull(plugin);
             ObjectDisposedException.ThrowIf(plugin.UnloadToken.IsCancellationRequested, plugin);
         }
 

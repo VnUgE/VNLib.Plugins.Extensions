@@ -26,6 +26,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Threading.Tasks;
@@ -303,6 +304,12 @@ namespace VNLib.Plugins.Extensions.Loading
             //Optional delay
             await Task.Delay(delayMs);
 
+            //If plugin unloads during delay, bail
+            if (plugin.UnloadToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             //Run on ts
             Task deferred = Task.Run(asyncTask);
 
@@ -357,7 +364,7 @@ namespace VNLib.Plugins.Extensions.Loading
             static async Task WaitForUnload(PluginBase pb, Action callback)
             {
                 //Wait for unload as a task on the threadpool to avoid deadlocks
-                await pb.UnloadToken.WaitHandle.WaitAsync()
+                await pb.UnloadToken.WaitHandle.NoSpinWaitAsync(Timeout.Infinite)
                     .ConfigureAwait(false);
                 
                 callback();

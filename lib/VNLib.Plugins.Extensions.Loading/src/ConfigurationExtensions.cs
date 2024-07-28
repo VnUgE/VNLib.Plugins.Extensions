@@ -96,23 +96,9 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ConfigurationException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
         public static IConfigScope GetConfig(this PluginBase plugin, string propName)
-        {
-            plugin.ThrowIfUnloaded();
-            try
-            {
-                //Try to get the element from the plugin config first
-                if (!plugin.PluginConfig.TryGetProperty(propName, out JsonElement el))
-                {
-                    //Fallback to the host config
-                    el = plugin.HostConfig.GetProperty(propName);
-                }
-                //Get the top level config as a dictionary
-                return new ConfigScope(el, propName);
-            }
-            catch (KeyNotFoundException)
-            {
-                throw new ConfigurationException($"Missing required top level configuration object '{propName}', in host/plugin configuration files");
-            }
+        {      
+            return TryGetConfig(plugin, propName) 
+                ?? throw new ConfigurationException($"Missing required top level configuration object '{propName}', in host/plugin configuration files");
         }
 
         /// <summary>
@@ -206,17 +192,21 @@ namespace VNLib.Plugins.Extensions.Loading
             T? value = getter(el);
             Validate.Assert(value is not null, $"Missing required configuration property '{property}' in config {config.ScopeName}");
 
+            //Attempt to validate if the configuration inherits the interface
+            TryValidateConfig(value);
+
             return value;
         }
 
 
         /// <summary>
         /// Gets a required configuration property from the specified configuration scope
+        /// and deserializes the json type.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="config"></param>
         /// <param name="property">The name of the property to get</param>
-        /// <returns>The property value</returns>
+        /// <returns>The property value deserialzied into the desired object</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ConfigurationException"></exception>
         public static T GetRequiredProperty<T>(this IConfigScope config, string property)
@@ -380,7 +370,6 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>True if the plugin config contains the require configuration property</returns>
         public static bool HasConfigForType<T>(this PluginBase plugin) => HasConfigForType(plugin, typeof(T));
 
-
         /// <summary>
         /// Determines if the current plugin configuration contains the require properties to initialize 
         /// the type
@@ -417,7 +406,8 @@ namespace VNLib.Plugins.Extensions.Loading
         public static TConfig GetConfigElement<TConfig>(this PluginBase plugin)
         {
             //Deserialze the element
-            TConfig config = plugin.GetConfigForType<TConfig>().Deserialze<TConfig>();
+            TConfig config = plugin.GetConfigForType<TConfig>()
+                .Deserialze<TConfig>();
 
             TryValidateConfig(config);
 
@@ -450,7 +440,8 @@ namespace VNLib.Plugins.Extensions.Loading
         public static TConfig GetConfigElement<TConfig>(this PluginBase plugin, string elementName)
         {
             //Deserialze the element
-            TConfig config = plugin.GetConfig(elementName).Deserialze<TConfig>();
+            TConfig config = plugin.GetConfig(elementName)
+                .Deserialze<TConfig>();
 
             TryValidateConfig(config);
 

@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -29,13 +29,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
+using VNLib.Utils.Resources;
+
 
 namespace VNLib.Plugins.Extensions.Loading
 {
     internal sealed class ConfigScope: IConfigScope
     {
 
-        private readonly Lazy<IReadOnlyDictionary<string, JsonElement>> _config;
+        private readonly LazyInitializer<IReadOnlyDictionary<string, JsonElement>> _config;
 
         private readonly JsonElement _element;
 
@@ -48,36 +50,40 @@ namespace VNLib.Plugins.Extensions.Loading
 
         private IReadOnlyDictionary<string, JsonElement> LoadTable()
         {
-            return _element.EnumerateObject().ToDictionary(static k => k.Name, static k => k.Value);
+            return _element.EnumerateObject()
+                .ToDictionary(
+                    static k => k.Name, 
+                    static k => k.Value
+                );
         }
 
         ///<inheritdoc/>
-        public JsonElement this[string key] => _config.Value[key];
+        public JsonElement this[string key] => _config.Instance[key];
 
         ///<inheritdoc/>
-        public IEnumerable<string> Keys => _config.Value.Keys;
+        public IEnumerable<string> Keys => _config.Instance.Keys;
 
         ///<inheritdoc/>
-        public IEnumerable<JsonElement> Values => _config.Value.Values;
+        public IEnumerable<JsonElement> Values => _config.Instance.Values;
 
         ///<inheritdoc/>
-        public int Count => _config.Value.Count;
+        public int Count => _config.Instance.Count;
 
         ///<inheritdoc/>
         public string ScopeName { get; }
 
         ///<inheritdoc/>
-        public bool ContainsKey(string key) => _config.Value.ContainsKey(key);
+        public bool ContainsKey(string key) => _config.Instance.ContainsKey(key);
 
         ///<inheritdoc/>
         public T Deserialze<T>() => _element.Deserialize<T>()!;
 
         ///<inheritdoc/>
-        public IEnumerator<KeyValuePair<string, JsonElement>> GetEnumerator() => _config.Value.GetEnumerator();
+        public IEnumerator<KeyValuePair<string, JsonElement>> GetEnumerator() => _config.Instance.GetEnumerator();
 
         ///<inheritdoc/>
-        public bool TryGetValue(string key, [MaybeNullWhen(false)] out JsonElement value) => _config.Value.TryGetValue(key, out value);
+        public bool TryGetValue(string key, [MaybeNullWhen(false)] out JsonElement value) => _config.Instance.TryGetValue(key, out value);
 
-        IEnumerator IEnumerable.GetEnumerator() => _config.Value.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => _config.Instance.GetEnumerator();
     }
 }

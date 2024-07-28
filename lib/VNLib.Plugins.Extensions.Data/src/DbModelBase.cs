@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -38,12 +38,15 @@ namespace VNLib.Plugins.Extensions.Data
     {
         ///<inheritdoc/>
         public abstract string Id { get; set; }
+
         ///<inheritdoc/>
         [Timestamp]
         [JsonIgnore]
         public virtual byte[]? Version { get; set; }
+
         ///<inheritdoc/>
         public abstract DateTime Created { get; set; }
+
         ///<inheritdoc/>
         public abstract DateTime LastModified { get; set; }
     }

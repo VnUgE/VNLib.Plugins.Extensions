@@ -26,6 +26,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Threading.Tasks;
@@ -104,22 +105,30 @@ namespace VNLib.Plugins.Extensions.Loading
             plugin.ThrowIfUnloaded();
             ArgumentNullException.ThrowIfNull(assemblyName);
 
+            string[] searchDirs;
+
             /*
              * Allow an assets directory to limit the scope of the search for the desired
              * assembly, otherwise search all plugins directories
              */
 
             string? assetDir = plugin.GetAssetsPath();
-            assetDir ??= plugin.GetPluginsPath();
+          
+            searchDirs = assetDir is null 
+                ? plugin.GetPluginSearchDirs() 
+                : ([assetDir]);
 
             /*
-             * This should never happen since this method can only be called from a
-             * plugin context, which means this path was used to load the current plugin
-             */
-            ArgumentNullException.ThrowIfNull(assetDir, "No plugin asset directory is defined for the current host configuration, this is likely a bug");
+            * This should never happen since this method can only be called from a
+            * plugin context, which means this path was used to load the current plugin
+            */
+            if (searchDirs.Length == 0)
+            {
+                throw new ConfigurationException("No plugin asset directory is defined for the current host configuration, this is likely a bug");
+            }
 
             //Get the first file that matches the search file
-            return Directory.EnumerateFiles(assetDir, assemblyName, searchOption).FirstOrDefault();
+            return searchDirs.SelectMany(d => Directory.EnumerateFiles(d, assemblyName, searchOption)).FirstOrDefault();
         }
 
         /// <summary>
@@ -260,9 +269,10 @@ namespace VNLib.Plugins.Extensions.Loading
         /// </summary>
         /// <param name="plugin"></param>
         /// <exception cref="ObjectDisposedException"></exception>
-        public static void ThrowIfUnloaded(this PluginBase plugin)
+        public static void ThrowIfUnloaded(this PluginBase? plugin)
         {
             //See if the plugin was unlaoded
+            ArgumentNullException.ThrowIfNull(plugin);
             ObjectDisposedException.ThrowIf(plugin.UnloadToken.IsCancellationRequested, plugin);
         }
 
@@ -293,6 +303,12 @@ namespace VNLib.Plugins.Extensions.Loading
 
             //Optional delay
             await Task.Delay(delayMs);
+
+            //If plugin unloads during delay, bail
+            if (plugin.UnloadToken.IsCancellationRequested)
+            {
+                return;
+            }
 
             //Run on ts
             Task deferred = Task.Run(asyncTask);
@@ -348,7 +364,7 @@ namespace VNLib.Plugins.Extensions.Loading
             static async Task WaitForUnload(PluginBase pb, Action callback)
             {
                 //Wait for unload as a task on the threadpool to avoid deadlocks
-                await pb.UnloadToken.WaitHandle.WaitAsync()
+                await pb.UnloadToken.WaitHandle.NoSpinWaitAsync(Timeout.Infinite)
                     .ConfigureAwait(false);
                 
                 callback();
@@ -649,7 +665,13 @@ namespace VNLib.Plugins.Extensions.Loading
             }
             catch(TargetInvocationException te) when (te.InnerException != null) 
             {
+                FindNestedConfigurationException(te);
                 FindAndThrowInnerException(te);
+                throw;
+            }
+            catch(Exception ex)
+            {
+                FindNestedConfigurationException(ex);
                 throw;
             }
 
@@ -747,6 +769,21 @@ namespace VNLib.Plugins.Extensions.Loading
             }
         }
 
+        internal static void FindNestedConfigurationException(Exception ex)
+        {
+            if(ex is ConfigurationException ce)
+            {
+                ExceptionDispatchInfo.Throw(ce);
+            }
+
+            //Recurse
+            if(ex.InnerException is not null)
+            {
+                FindNestedConfigurationException(ex.InnerException);
+            }
+
+            //No more exceptions
+        }
 
         private sealed class PluginLocalCache
         {

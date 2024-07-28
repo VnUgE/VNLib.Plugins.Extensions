@@ -163,7 +163,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 using HttpResponseMessage response = await _client.SendAsync(ms, HttpCompletionOption.ResponseHeadersRead);
 
                 //Check if an error occured in the response 
-                await ProcessVaultErrorResponseAsync(response);
+                await ProcessVaultErrorResponseAsync(secretName, response);
 
                 //Read the response async
                 using SecretResponse res = await ReadSecretResponse(response.Content);
@@ -266,7 +266,7 @@ namespace VNLib.Plugins.Extensions.Loading
             return null;
         }
 
-        private static ValueTask ProcessVaultErrorResponseAsync(HttpResponseMessage response)
+        private static ValueTask ProcessVaultErrorResponseAsync(string secretName, HttpResponseMessage response)
         {
             if (response.IsSuccessStatusCode)
             {
@@ -278,7 +278,7 @@ namespace VNLib.Plugins.Extensions.Loading
             if(!ctLen.HasValue || ctLen.Value == 0)
             {
                 return ValueTask.FromException(
-                    new HttpRequestException($"Failed to fetch secret from vault with error code {response.StatusCode}")
+                    new HttpRequestException($"Failed to fetch secret '{secretName}' from vault with error code {response.StatusCode}")
                 );
             }
 
@@ -300,15 +300,15 @@ namespace VNLib.Plugins.Extensions.Loading
                 );
             }
 
-            return ExceptionsFromContentAsync(response);
+            return ExceptionsFromContentAsync(secretName, response);
            
-            static ValueTask ExceptionFromVaultErrors(HttpStatusCode code, VaultErrorMessage? errs)
+            static ValueTask ExceptionFromVaultErrors(string secretName, HttpStatusCode code, VaultErrorMessage? errs)
             {
                 //If the error message is null, raise an exception
                 if (errs?.Errors is null || errs.Errors.Length == 0)
                 {
                     return ValueTask.FromException(
-                        new HttpRequestException($"Failed to fetch secret from vault with error code {code}")
+                        new HttpRequestException($"Failed to fetch secret '{secretName}' from vault with error code {code}")
                     );
                 }
 
@@ -318,17 +318,17 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 //Finally raise the exception with all the returned errors
                 return ValueTask.FromException(
-                    new HttpRequestException($"Failed to fetch secre from vault with {code}, errors:\n {errStr}")
+                    new HttpRequestException($"Failed to fetch secret `{secretName}` from vault with {code}, errors:\n {errStr}")
                 );
             }
 
-            static async ValueTask ExceptionsFromContentAsync(HttpResponseMessage response)
+            static async ValueTask ExceptionsFromContentAsync(string secretName, HttpResponseMessage response)
             {
                 //Read stream async and deserialize async
                 using Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
                 VaultErrorMessage? errs = await JsonSerializer.DeserializeAsync<VaultErrorMessage>(stream);
 
-                await ExceptionFromVaultErrors(response.StatusCode, errs);
+                await ExceptionFromVaultErrors(secretName, response.StatusCode, errs);
             }
         }
 

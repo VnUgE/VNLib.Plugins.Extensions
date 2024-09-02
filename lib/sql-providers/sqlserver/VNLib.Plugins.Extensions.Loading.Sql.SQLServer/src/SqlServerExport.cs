@@ -47,17 +47,19 @@ namespace VNLib.Plugins.Extensions.Sql
     {
         private async Task<string> BuildConnStringAsync()
         {
+            IOnDemandSecret pwd = plugin.Secrets().GetOnDemandSecret("db_password");
+
             SqlConnectionStringBuilder sb;
 
             //See if the user suggested a raw connection string
-            if (config.TryGetProperty("connection_string", ps => ps.GetString(), out string? conString))
+            if (config.TryGetProperty("connection_string", out string? conString))
             {
                 sb = new(conString);
 
                 //If the user did not provide a password, try to get it from secret storage
                 if (string.IsNullOrWhiteSpace(sb.Password))
                 {
-                    using ISecretResult? password = await plugin.TryGetSecretAsync("db_password");
+                    using ISecretResult? password = await pwd.FetchSecretAsync();
                     sb.Password = password?.Result.ToString();
                 }
             }
@@ -74,41 +76,40 @@ namespace VNLib.Plugins.Extensions.Sql
                 sb = value.Deserialize<SqlConnectionStringBuilder>(opt)!;
 
                 //Get the password from the secret manager
-                using ISecretResult? secret = await plugin.TryGetSecretAsync("db_password");
+                using ISecretResult? secret = await pwd.FetchSecretAsync();
                 sb.Password = secret?.Result.ToString();
             }
             else
             {
-                //Get the password from the secret manager
-                using ISecretResult? secret = await plugin.TryGetSecretAsync("db_password");
+                using ISecretResult? secret = await pwd.FetchSecretAsync();
 
                 // Build connection string
                 sb = new()
                 {
-                    DataSource = config["hostname"].GetString(),
-                    InitialCatalog = config["catalog"].GetString(),
-                    UserID = config["username"].GetString(),
-                    Pooling = true,
+                    DataSource      = config.GetRequiredProperty<string>("hostname"),
+                    InitialCatalog  = config.GetRequiredProperty<string>("catalog"),
+                    UserID          = config.GetRequiredProperty<string>("username"),
 
-
-                    ApplicationName = config.GetValueOrDefault("application_name", p => p.GetString(), string.Empty),
-                    HostNameInCertificate = config.GetValueOrDefault("hostname_in_certificate", p => p.GetString(), string.Empty),
-                    PacketSize = config.GetValueOrDefault("packet_size", p => p.GetInt32(), 8000),
-                    Encrypt = config.GetValueOrDefault("encrypted", p => p.GetBoolean(), false),
-                    IntegratedSecurity = config.GetValueOrDefault("integrated_security", p => p.GetBoolean(), false),
-                    MultipleActiveResultSets = config.GetValueOrDefault("multiple_active_result_sets", p => p.GetBoolean(), false),
-                    ConnectTimeout = config.GetValueOrDefault("connect_timeout", p => p.GetInt32(), 15),
-                    LoadBalanceTimeout = config.GetValueOrDefault("load_balance_timeout", p => p.GetInt32(), 0),
-                    MaxPoolSize = config.GetValueOrDefault("max_pool_size", p => p.GetInt32(), 100),
-                    MinPoolSize = config.GetValueOrDefault("min_pool_size", p => p.GetInt32(), 0),
-                    TransactionBinding = config.GetValueOrDefault("transaction_binding", p => p.GetString(), "Implicit Unbind"),
-                    TypeSystemVersion = config.GetValueOrDefault("type_system_version", p => p.GetString(), "Latest"),
-                    WorkstationID = config.GetValueOrDefault("workstation_id", p => p.GetString(), string.Empty),
-                    CurrentLanguage = config.GetValueOrDefault("current_language", p => p.GetString(), "us_english"),
-                    PersistSecurityInfo = config.GetValueOrDefault("persist_security_info", p => p.GetBoolean(), false),
-                    Replication = config.GetValueOrDefault("replication", p => p.GetBoolean(), false),
-                    TrustServerCertificate = config.GetValueOrDefault("trust_server_certificate", p => p.GetBoolean(), false),
-                    UserInstance = config.GetValueOrDefault("user_instance", p => p.GetBoolean(), false),
+                    //Pooling should be enabled unless the users explictly disables it
+                    Pooling                 = config.GetValueOrDefault("pooling", true),
+                    ApplicationName         = config.GetValueOrDefault("application_name", string.Empty),
+                    HostNameInCertificate   = config.GetValueOrDefault("hostname_in_certificate", string.Empty),
+                    PacketSize              = config.GetValueOrDefault("packet_size", 8000),
+                    Encrypt                 = config.GetValueOrDefault("encrypted", false),
+                    IntegratedSecurity      = config.GetValueOrDefault("integrated_security", false),
+                    MultipleActiveResultSets = config.GetValueOrDefault("multiple_active_result_sets", false),
+                    ConnectTimeout          = config.GetValueOrDefault("connect_timeout",  15),
+                    LoadBalanceTimeout      = config.GetValueOrDefault("load_balance_timeout", 0),
+                    MaxPoolSize             = config.GetValueOrDefault("max_pool_size", 100),
+                    MinPoolSize             = config.GetValueOrDefault("min_pool_size", 0),
+                    TransactionBinding      = config.GetValueOrDefault("transaction_binding", "Implicit Unbind"),
+                    TypeSystemVersion       = config.GetValueOrDefault("type_system_version", "Latest"),
+                    WorkstationID           = config.GetValueOrDefault("workstation_id", string.Empty),
+                    CurrentLanguage         = config.GetValueOrDefault("current_language", "us_english"),
+                    PersistSecurityInfo     = config.GetValueOrDefault("persist_security_info", false),
+                    Replication             = config.GetValueOrDefault("replication", false),
+                    TrustServerCertificate  = config.GetValueOrDefault("trust_server_certificate", false),
+                    UserInstance            = config.GetValueOrDefault("user_instance", false),
 
                     Password = secret?.Result.ToString(),
                 };
@@ -136,7 +137,7 @@ namespace VNLib.Plugins.Extensions.Sql
             b.UseSqlServer(connString);
 
             //Write debug loggin to the debug log if the user has it enabled or the plugin is in debug mode
-            if (config.GetValueOrDefault("debug", p => p.GetBoolean(), false) || plugin.IsDebug())
+            if (config.GetValueOrDefault("debug", false) || plugin.IsDebug())
             {
                 //Write the SQL to the debug log
                 b.LogTo((v) => plugin.Log.Debug("SqlServer: {v}", v));

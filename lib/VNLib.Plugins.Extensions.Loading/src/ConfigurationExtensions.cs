@@ -198,7 +198,6 @@ namespace VNLib.Plugins.Extensions.Loading
             return value;
         }
 
-
         /// <summary>
         /// Gets a required configuration property from the specified configuration scope
         /// and deserializes the json type.
@@ -211,7 +210,11 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ConfigurationException"></exception>
         public static T GetRequiredProperty<T>(this IConfigScope config, string property)
         {
-            return GetRequiredProperty(config, property, static p => p.Deserialize<T>()!);
+            return GetRequiredProperty(
+                config, 
+                property, 
+                static p => p.Deserialize<T>()!
+            );
         }
 
         /// <summary>
@@ -242,6 +245,107 @@ namespace VNLib.Plugins.Extensions.Loading
             }
             value = default;
             return false;
+        }
+
+        /// <summary>
+        /// Attempts to get a configuration property from the specified configuration scope
+        /// and deserializes the json type.
+        /// output value
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the configuration element to get</param>
+        /// <param name="value">The output value to set</param>
+        /// <returns>A value that indicates if the property was found</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static bool TryGetProperty<T>(this IConfigScope config, string property, out T? value)
+        {
+            return TryGetProperty(
+                config, 
+                property, 
+                static p => p.Deserialize<T>(), 
+                out value
+            );
+        }
+
+        /// <summary>
+        /// Attempts to get a configuration property from the specified configuration scope
+        /// and returns the string value if found, or null if not found.
+        /// output value
+        /// </summary>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the configuration element to get</param>
+        /// <param name="value">The output value to set</param>
+        /// <returns>A value that indicates if the property was found</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static bool TryGetProperty(this IConfigScope config, string property, out string? value)
+        {
+            return TryGetProperty(
+                config, 
+                property, 
+                static p => p.GetString(), 
+                out value
+            );
+        }
+
+        /// <summary>
+        /// Attempts to get a configuration property from the specified configuration scope
+        /// and returns the int32 value if found, or null if not found.
+        /// output value
+        /// </summary>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the configuration element to get</param>
+        /// <param name="value">The output value to set</param>
+        /// <returns>A value that indicates if the property was found</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static bool TryGetProperty(this IConfigScope config, string property, out int? value)
+        {
+            return TryGetProperty(
+                config, 
+                property, 
+                static p => p.GetInt32(), 
+                out value
+            );
+        }
+
+        /// <summary>
+        /// Attempts to get a configuration property from the specified configuration scope
+        /// and returns the uint32 value if found, or null if not found.
+        /// output value
+        /// </summary>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the configuration element to get</param>
+        /// <param name="value">The output value to set</param>
+        /// <returns>A value that indicates if the property was found</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static bool TryGetProperty(this IConfigScope config, string property, out uint? value)
+        {
+            return TryGetProperty(
+                config, 
+                property, 
+                static p => p.GetUInt32(), 
+                out value
+            );
+        }
+
+        /// <summary>
+        /// Attempts to get a configuration property from the specified configuration scope
+        /// and returns the boolean value if found, or null if not found.
+        /// output value
+        /// </summary>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the configuration element to get</param>
+        /// <param name="value">The output value to set</param>
+        /// <returns>A value that indicates if the property was found</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static bool TryGetProperty(this IConfigScope config, string property, out bool? value)
+        {
+            return TryGetProperty(
+                config, 
+                property, 
+                static p => p.GetBoolean(), 
+                out value
+            );
         }
 
         /// <summary>
@@ -280,6 +384,84 @@ namespace VNLib.Plugins.Extensions.Loading
                 config, 
                 property, 
                 static p => p.Deserialize<T>(), 
+                defaultValue
+            );
+        }
+
+        /// <summary>
+        /// Gets a configuration property from the specified configuration scope
+        /// and deserializes the json element if found, or returns the default value 
+        /// if the property is not found.
+        /// </summary>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the configuration element to get</param>
+        /// <param name="defaultValue">The default value to return</param>
+        /// <returns>The property value returned from your getter callback, or the default value if not found</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        [return: NotNullIfNotNull(nameof(defaultValue))]
+        public static string? GetValueOrDefault(this IConfigScope config, string property, string defaultValue)
+        {
+            return GetValueOrDefault(
+                config,
+                property,
+                static p => p.GetString(),
+                defaultValue
+            );
+        }
+
+        /// <summary>
+        /// Gets a configuration property of type int32 from the specified configuration 
+        /// scope and, or returns the default value if the property is not found.
+        /// </summary>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the configuration element to get</param>
+        /// <param name="defaultValue">The default value to return</param>
+        /// <returns>The property value returned from your getter callback, or the default value if not found</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static int GetValueOrDefault(this IConfigScope config, string property, int defaultValue)
+        {
+            return GetValueOrDefault(
+                config,
+                property,
+                static p => p.GetInt32(),
+                defaultValue
+            );
+        }
+
+        /// <summary>
+        /// Gets a configuration property of type uint32 from the specified configuration 
+        /// scope and, or returns the default value if the property is not found.
+        /// </summary>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the configuration element to get</param>
+        /// <param name="defaultValue">The default value to return</param>
+        /// <returns>The property value returned from your getter callback, or the default value if not found</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static uint GetValueOrDefault(this IConfigScope config, string property, uint defaultValue)
+        {
+            return GetValueOrDefault(
+                config,
+                property,
+                static p => p.GetUInt32(),
+                defaultValue
+            );
+        }
+
+        /// <summary>
+        /// Gets a configuration property of type boolean from the specified configuration 
+        /// scope and, or returns the default value if the property is not found.
+        /// </summary>
+        /// <param name="config"></param>
+        /// <param name="property">The name of the configuration element to get</param>
+        /// <param name="defaultValue">The default value to return</param>
+        /// <returns>The property value returned from your getter callback, or the default value if not found</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static bool GetValueOrDefault(this IConfigScope config, string property, bool defaultValue)
+        {
+            return GetValueOrDefault(
+                config,
+                property,
+                static p => p.GetBoolean(),
                 defaultValue
             );
         }

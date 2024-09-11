@@ -704,22 +704,22 @@ namespace VNLib.Plugins.Extensions.Loading
                 return [];
             }
 
-            if (searchPaths.ValueKind == JsonValueKind.Array)
+            switch (searchPaths.ValueKind)
             {
-                //Get the plugins path or throw because it should ALWAYS be defined if this method is called
-                return searchPaths.EnumerateArray()
-                    .Select(static p => p.GetString()!)
-                    .Select(Path.GetFullPath)   //Get absolute file paths
-                    .ToArray();
-            }
-            else if (searchPaths.ValueKind == JsonValueKind.String)
-            {
-                return [Path.GetFullPath(searchPaths.GetString()!)];
-            }
-            else
-            {
-                return [];
-            }
+                case JsonValueKind.Array:
+
+                    //Get the plugins path or throw because it should ALWAYS be defined if this method is called
+                    return searchPaths.EnumerateArray()
+                        .Select(static p => p.GetString()!)
+                        .Select(Path.GetFullPath)   //Get absolute file paths
+                        .ToArray();
+
+                case JsonValueKind.String:
+                    return [ Path.GetFullPath(searchPaths.GetString()!) ];
+
+                default:
+                    return [];
+            }          
         }
     }
 }

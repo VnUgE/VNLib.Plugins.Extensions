@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -48,19 +48,19 @@ namespace VNLib.Plugins.Extensions.Loading
     public sealed class AssemblyLoader<T> : ManagedLibrary, IDisposable
     {
         private readonly CancellationTokenRegistration _reg;
-        private readonly Lazy<T> _instance;
+        private readonly LazyInitializer<T> _instance;
         private bool disposedValue;
 
         /// <summary>
         /// The instance of the loaded type
         /// </summary>
-        public T Resource => _instance.Value;
+        public T Resource => _instance.Instance;
 
         private AssemblyLoader(string assemblyPath, AssemblyLoadContext parentContext, CancellationToken unloadToken)
             :base(assemblyPath, parentContext)
         {
             //Init lazy type loader
-            _instance = new(LoadTypeFromAssembly<T>, LazyThreadSafetyMode.PublicationOnly);            
+            _instance = new(LoadTypeFromAssembly<T>);            
             //Register dispose
             _reg = unloadToken.Register(Dispose);
         }
@@ -96,7 +96,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 if (disposing)
                 {
                     //If the instance is disposable, call its dispose method on unload
-                    if (_instance.IsValueCreated && _instance.Value is IDisposable disposable)
+                    if (_instance.IsLoaded && _instance.Instance is IDisposable disposable)
                     {
                         disposable.Dispose();
                     }
@@ -138,7 +138,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="FileNotFoundException"></exception>
         internal static AssemblyLoader<T> Load(string assemblyName, AssemblyLoadContext loadContext, CancellationToken unloadToken)
         {
-            _ = loadContext ?? throw new ArgumentNullException(nameof(loadContext));
+            ArgumentNullException.ThrowIfNull(loadContext);
 
             //Make sure the file exists
             if (!FileOperations.FileExists(assemblyName))

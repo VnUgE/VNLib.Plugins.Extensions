@@ -48,6 +48,8 @@ namespace VNLib.Plugins.Extensions.Sql
     {
         private async Task<string> BuildConnStringAsync()
         {
+            IOnDemandSecret pwd = plugin.Secrets().GetOnDemandSecret("db_password");
+
             MySqlConnectionStringBuilder sb;
 
             //See if the user suggested a raw connection string
@@ -58,7 +60,7 @@ namespace VNLib.Plugins.Extensions.Sql
                 //If the user did not provide a password, try to get it from secret storage
                 if (string.IsNullOrWhiteSpace(sb.Password))
                 {
-                    using ISecretResult? password = await plugin.TryGetSecretAsync("db_password");
+                    using ISecretResult? password = await pwd.FetchSecretAsync();
                     sb.Password = password?.Result.ToString();
                 }
 
@@ -76,62 +78,62 @@ namespace VNLib.Plugins.Extensions.Sql
                 sb = value.Deserialize<MySqlConnectionStringBuilder>(opt)!;
 
                 //Get the db password from the secret manager
-                using ISecretResult? secret = await plugin.TryGetSecretAsync("db_password");
+                using ISecretResult? secret = await pwd.FetchSecretAsync();
                 sb.Password = secret?.Result.ToString();
             }
             else
             {
                 //Get the password from the secret manager
-                using ISecretResult? secret = await plugin.TryGetSecretAsync("db_password");
+                using ISecretResult? secret = await pwd.FetchSecretAsync();
 
                 sb = new()
                 {
-                    Server = config["hostname"].GetString(),
-                    Database = config["catalog"].GetString(),
-                    UserID = config["username"].GetString(),
-                    Pooling = true,
-                    MinimumPoolSize = config.GetValueOrDefault("min_pool_size", p => p.GetUInt32(), 10u),
-                    MaximumPoolSize = config.GetValueOrDefault("max_pool_size", p => p.GetUInt32(), 50u),
-                    Password = secret?.Result.ToString(),
+                    Pooling         = true,
+                    Server          = config.GetRequiredProperty<string>("hostname"),
+                    Database        = config.GetRequiredProperty<string>("catalog"),
+                    UserID          = config.GetRequiredProperty<string>("username"),
+                    MinimumPoolSize = config.GetValueOrDefault("min_pool_size", 10u),
+                    MaximumPoolSize = config.GetValueOrDefault("max_pool_size", 50u),
+                    Password        = secret?.Result.ToString(),
                 };
 
-                if (config.TryGetProperty("port", p => p.GetUInt16(), out ushort port))
+                if (config.TryGetProperty("port", out ushort port))
                 {
                     sb.Port = port;
                 }
 
-                if (config.TryGetProperty("ssl_mode", p => p.GetString(), out string? sslMode)
+                if (config.TryGetProperty("ssl_mode", out string? sslMode)
                     && Enum.TryParse(sslMode, true, out MySqlSslMode mode))
                 {
                     sb.SslMode = mode;
                 }
 
-                if (config.TryGetProperty("connection_lifetime", value => value.GetUInt32(), out uint connLife))
+                if (config.TryGetProperty("connection_lifetime", out uint connLife))
                 {
                     sb.ConnectionLifeTime = connLife;
                 }
 
-                if (config.TryGetProperty("connection_timeout", value => value.GetUInt32(), out uint connTimeout))
+                if (config.TryGetProperty("connection_timeout", out uint connTimeout))
                 {
                     sb.ConnectionTimeout = connTimeout;
                 }
 
-                if (config.TryGetProperty("pipe_name", value => value.GetString(), out string? pipeName))
+                if (config.TryGetProperty("pipe_name", out string? pipeName))
                 {
                     sb.PipeName = pipeName;
                 }
 
-                if (config.TryGetProperty("allow_load_local_infile", value => value.GetBoolean(), out bool allowLoadLocalInfile))
+                if (config.TryGetProperty("allow_load_local_infile", out bool allowLoadLocalInfile))
                 {
                     sb.AllowLoadLocalInfile = allowLoadLocalInfile;
                 }
 
-                if (config.TryGetProperty("default_command_timeout", value => value.GetUInt32(), out uint defaultCommandTimeout))
+                if (config.TryGetProperty("default_command_timeout", out uint defaultCommandTimeout))
                 {
                     sb.DefaultCommandTimeout = defaultCommandTimeout;
                 }
 
-                if (config.TryGetProperty("interactive_session", value => value.GetBoolean(), out bool interactiveSession))
+                if (config.TryGetProperty("interactive_session", out bool interactiveSession))
                 {
                     sb.InteractiveSession = interactiveSession;
                 }

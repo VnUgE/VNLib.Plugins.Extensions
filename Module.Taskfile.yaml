@@ -11,9 +11,9 @@
 version: '3'
 
 vars:
-  INT_DIR: '{{.SCRATCH_DIR}}/obj/{{.MODULE_NAME}}/'
-  MS_ARGS: '/p:RunAnalyzersDuringBuild=false /p:IntermediateOutputPath="{{.INT_DIR}}" /p:UseCommonOutputDirectory=true /p:BuildInParallel=true /p:MultiProcessorCompilation=true /p:ErrorOnDuplicatePublishOutputFiles=false'
-  PACK_OUT: '{{.OUTPUT_DIR}}/{{.HEAD_SHA}}/pkg'
+  INT_DIR: '{{ .SCRATCH_DIR }}/obj/{{ .MODULE_NAME }}/'
+  MS_ARGS: '/p:RunAnalyzersDuringBuild=false /p:IntermediateOutputPath="{{ .INT_DIR }}" /p:UseCommonOutputDirectory=true /p:BuildInParallel=true /p:MultiProcessorCompilation=true /p:ErrorOnDuplicatePublishOutputFiles=false'
+  PACK_OUT: '{{ .OUTPUT_DIR }}/{{ .HEAD_SHA }}/pkg'
 
 tasks:
 
@@ -22,14 +22,14 @@ tasks:
     cmds:
      - git reset --hard  #clean up any local changes
      - git remote update     
-     - git pull origin {{.BRANCH_NAME}} --verify-signatures 
+     - git pull origin {{ .BRANCH_NAME }} --verify-signatures 
      #re-write semver after hard reset
      - dotnet-gitversion.exe /updateprojectfiles
 
 #called by build pipeline to build module
   build:
     cmds:
-     - echo "building module {{.MODULE_NAME}}" 
+     - echo "building module {{ .MODULE_NAME }}" 
      
      #build debug mode first
      - task: build_debug
@@ -38,10 +38,10 @@ tasks:
   publish:
     cmds:
      #git archive in the module directory
-     - git archive --format {{.ARCHIVE_FILE_FORMAT}} --output {{.ARCHIVE_FILE_NAME}} HEAD
+     - git archive --format {{ .ARCHIVE_FILE_FORMAT }} --output {{ .ARCHIVE_FILE_NAME }} HEAD
      #push packages to the sleet feed (feed path is vnbuild global)
-     - sleet push "{{.PACK_OUT}}/debug/" --source debug --config "{{.SLEET_CONFIG_PATH}}" --force
-     - sleet push "{{.PACK_OUT}}/release/" --source release --config "{{.SLEET_CONFIG_PATH}}" --force
+     - sleet push "{{ .PACK_OUT }}/debug/" --source debug --config "{{ .SLEET_CONFIG_PATH }}" --force
+     - sleet push "{{ .PACK_OUT }}/release/" --source release --config "{{ .SLEET_CONFIG_PATH }}" --force
 
 #called by build pipeline to clean module
   clean:
@@ -56,12 +56,12 @@ tasks:
   build_debug:
     internal: true
     cmds:
-     - dotnet publish -c debug {{.MS_ARGS}}
-     - dotnet pack -c debug {{.MS_ARGS}} -o "{{.PACK_OUT}}/debug/"
+     - dotnet publish -c debug {{ .MS_ARGS }}
+     - dotnet pack -c debug {{ .MS_ARGS }} -o "{{ .PACK_OUT }}/debug/"
      
   build_release:
     internal: true
     cmds:
-     - dotnet publish -c release {{.MS_ARGS}}
-     - dotnet pack -c release {{.MS_ARGS}} -o "{{.PACK_OUT}}/release/" 
+     - dotnet publish -c release {{ .MS_ARGS }}
+     - dotnet pack -c release {{ .MS_ARGS }} -o "{{ .PACK_OUT }}/release/" 
     

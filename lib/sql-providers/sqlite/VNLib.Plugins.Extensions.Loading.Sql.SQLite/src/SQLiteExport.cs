@@ -49,18 +49,20 @@ namespace VNLib.Plugins.Extensions.Sql
 
         private async Task<string> BuildConnStringAsync()
         {
+            IOnDemandSecret pwd = plugin.Secrets().GetOnDemandSecret("db_password");
+
             SqliteConnectionStringBuilder sb;
 
             //See if the user suggested a raw connection string
-            if (config.TryGetProperty("connection_string", ps => ps.GetString(), out string? conString))
+            if (config.TryGetProperty("connection_string", out string? conString))
             {
                 sb = new(conString);
 
                 //If the user did not provide a password, try to get it from secret storage
                 if (string.IsNullOrWhiteSpace(sb.Password))
                 {
-                    using ISecretResult? password = await plugin.TryGetSecretAsync("db_password");
-                    sb.Password = password?.Result.ToString();
+                    using ISecretResult? secret = await pwd.FetchSecretAsync();
+                    sb.Password = secret?.Result.ToString();
                 }
             }
             else if (config.TryGetValue("json", out JsonElement value))
@@ -75,25 +77,24 @@ namespace VNLib.Plugins.Extensions.Sql
                 sb = value.Deserialize<SqliteConnectionStringBuilder>(opt)!;
 
                 //Get the password from the secret manager
-                using ISecretResult? secret = await plugin.TryGetSecretAsync("db_password");
+                using ISecretResult? secret = await pwd.FetchSecretAsync();
                 sb.Password = secret?.Result.ToString();
             }
             else
             {
                 //Get the password from the secret manager
-                using ISecretResult? secret = await plugin.TryGetSecretAsync("db_password");
+                using ISecretResult? secret = await pwd.FetchSecretAsync();
 
                 // Build connection strin
                 sb = new()
                 {
-                    DataSource = config["source"].GetString(),
-                    Pooling = true,
-                    Cache = SqliteCacheMode.Default,
-                    RecursiveTriggers = config.GetValueOrDefault("recursive_triggers", p => p.GetBoolean(), false),
-                    DefaultTimeout = config.GetValueOrDefault("timeout", p => p.GetInt32(), 30),
-                    Mode = config.GetValueOrDefault("mode", p => (SqliteOpenMode)p.GetInt32(), SqliteOpenMode.ReadWriteCreate),
-
-                    Password = secret?.Result.ToString(),
+                    Pooling             = true,
+                    Cache               = SqliteCacheMode.Default,
+                    DataSource          = config.GetRequiredProperty<string>("source"),
+                    RecursiveTriggers   = config.GetValueOrDefault("recursive_triggers", false),
+                    DefaultTimeout      = config.GetValueOrDefault("timeout", 30),
+                    Mode                = config.GetValueOrDefault("mode", p => (SqliteOpenMode)p.GetInt32(), SqliteOpenMode.ReadWriteCreate),
+                    Password            = secret?.Result.ToString(),
                 };                
             }
 
@@ -119,7 +120,7 @@ namespace VNLib.Plugins.Extensions.Sql
             b.UseSqlite(connString);
 
             //Write debug loggin to the debug log if the user has it enabled or the plugin is in debug mode
-            if (config.GetValueOrDefault("debug", p => p.GetBoolean(), false) || plugin.IsDebug())
+            if (config.GetValueOrDefault("debug", false) || plugin.IsDebug())
             {
                 //Write the SQL to the debug log
                 b.LogTo((v) => plugin.Log.Debug("SQLite: {v}", v));

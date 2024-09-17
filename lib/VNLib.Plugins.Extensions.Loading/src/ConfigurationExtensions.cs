@@ -69,6 +69,80 @@ namespace VNLib.Plugins.Extensions.Loading
         public const string PLUGIN_ASSET_KEY = "assets";
         public const string PLUGINS_HOST_KEY = "plugins";
 
+
+        /// <summary>
+        /// Retrieves a top level configuration dictionary of elements with the specified property name,
+        /// or null if no configuration could be found
+        /// </summary>
+        /// <remarks>
+        /// Search order: Plugin config, fall back to host config, null not found
+        /// </remarks>
+        /// <param name="plugin"></param>
+        /// <param name="propName">The config property name to retrieve</param>
+        /// <returns>A <see cref="Dictionary{TKey, TValue}"/> of top level configuration elements for the type</returns>
+        /// <exception cref="ObjectDisposedException"></exception>
+        public static IConfigScope? TryGetConfig(this PluginBase plugin, string propName)
+        {
+            plugin.ThrowIfUnloaded();
+            //Try to get the element from the plugin config first, or fallback to host
+            if (plugin.PluginConfig.TryGetProperty(propName, out JsonElement el)
+                || plugin.HostConfig.TryGetProperty(propName, out el))
+            {
+                //Get the top level config as a dictionary
+                return new ConfigScope(el, propName);
+            }
+            //No config found
+            return null;
+        }
+
+        /// <summary>
+        /// Retrieves a top level configuration dictionary of elements for the specified type.
+        /// The type must contain a <see cref="ConfigurationNameAttribute"/>
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <param name="type">The class type to get the configuration scope variable from</param>
+        /// <returns>A <see cref="IConfigScope"/> for the desired top-level configuration scope</returns>
+        /// <exception cref="ConfigurationException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        public static IConfigScope? TryGetConfigForType(this PluginBase plugin, Type type)
+        {
+            ArgumentNullException.ThrowIfNull(type);
+
+            string? configName = GetConfigNameForType(type);
+
+            return configName != null 
+                ? TryGetConfig(plugin, configName) 
+                : null;
+        }
+
+        /// <summary>
+        /// Retrieves a top level configuration dictionary of elements for the specified type.
+        /// The type must contain a <see cref="ConfigurationNameAttribute"/>
+        /// </summary>
+        /// <typeparam name="T">The type to get the configuration of</typeparam>
+        /// <param name="plugin"></param>
+        /// <returns>A <see cref="Dictionary{TKey, TValue}"/> of top level configuration elements for the type</returns>
+        /// <exception cref="ConfigurationException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        public static IConfigScope? TryGetConfigForType<T>(this PluginBase plugin)
+        {
+            return TryGetConfigForType(plugin, typeof(T));
+        }
+
+        /// <summary>
+        /// Retrieves a top level configuration dictionary of elements for the specified type.
+        /// The type must contain a <see cref="ConfigurationNameAttribute"/>
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <param name="type">The type to get configuration data for</param>
+        /// <returns>A <see cref="IConfigScope"/> of top level configuration elements for the type</returns>
+        /// <exception cref="ObjectDisposedException"></exception>
+        public static IConfigScope GetConfigForType(this PluginBase plugin, Type type)
+        {
+            return TryGetConfigForType(plugin, type)
+                ?? throw new ConfigurationException($"Missing required configuration key for type {type.Name}");
+        }
+
         /// <summary>
         /// Retrieves a top level configuration dictionary of elements for the specified type.
         /// The type must contain a <see cref="ConfigurationNameAttribute"/>
@@ -80,8 +154,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ObjectDisposedException"></exception>
         public static IConfigScope GetConfigForType<T>(this PluginBase plugin)
         {
-            Type t = typeof(T);
-            return plugin.GetConfigForType(t);
+            return GetConfigForType(plugin, typeof(T));
         }
 
         /// <summary>
@@ -100,53 +173,7 @@ namespace VNLib.Plugins.Extensions.Loading
             return TryGetConfig(plugin, propName) 
                 ?? throw new ConfigurationException($"Missing required top level configuration object '{propName}', in host/plugin configuration files");
         }
-
-        /// <summary>
-        /// Retrieves a top level configuration dictionary of elements with the specified property name,
-        /// or null if no configuration could be found
-        /// </summary>
-        /// <remarks>
-        /// Search order: Plugin config, fall back to host config, null not found
-        /// </remarks>
-        /// <param name="plugin"></param>
-        /// <param name="propName">The config property name to retrieve</param>
-        /// <returns>A <see cref="Dictionary{TKey, TValue}"/> of top level configuration elements for the type</returns>
-        /// <exception cref="ObjectDisposedException"></exception>
-        public static IConfigScope? TryGetConfig(this PluginBase plugin, string propName)
-        {
-            plugin.ThrowIfUnloaded();
-            //Try to get the element from the plugin config first, or fallback to host
-            if (plugin.PluginConfig.TryGetProperty(propName, out JsonElement el) 
-                || plugin.HostConfig.TryGetProperty(propName, out el))
-            {
-                //Get the top level config as a dictionary
-                return new ConfigScope(el, propName);
-            }
-            //No config found
-            return null;
-        }
-
-        /// <summary>
-        /// Retrieves a top level configuration dictionary of elements for the specified type.
-        /// The type must contain a <see cref="ConfigurationNameAttribute"/>
-        /// </summary>
-        /// <param name="plugin"></param>
-        /// <param name="type">The type to get configuration data for</param>
-        /// <returns>A <see cref="IConfigScope"/> of top level configuration elements for the type</returns>
-        /// <exception cref="ObjectDisposedException"></exception>
-        public static IConfigScope GetConfigForType(this PluginBase plugin, Type type)
-        {
-            ArgumentNullException.ThrowIfNull(type);
-
-            string? configName = GetConfigNameForType(type);
-
-            if (configName == null)
-            {
-                ThrowConfigNotFoundForType(type);
-            }
-
-            return plugin.GetConfig(configName);
-        }
+      
 
         /// <summary>
         /// Gets a required configuration property from the specified configuration scope

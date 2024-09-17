@@ -108,21 +108,6 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// Gets a secret at the given vault url (in the form of "vault://[mount-name]/[secret-path]?secret=[secret_name]")
-        /// </summary>
-        /// <param name="plugin"></param>
-        /// <param name="vaultPath">The raw vault url to lookup</param>
-        /// <returns>The string of the object at the specified vault path</returns>
-        /// <exception cref="UriFormatException"></exception>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
-        [Obsolete("Deprecated in favor of Secrets")]
-        public static Task<ISecretResult?> GetSecretFromVaultAsync(this PluginBase plugin, ReadOnlySpan<char> vaultPath)
-        {
-            throw new NotSupportedException("This method is not supported in this context");
-        }    
-
-        /// <summary>
         /// Gets the Secret value as a byte buffer
         /// </summary>
         /// <param name="secret"></param>

@@ -114,11 +114,11 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
 
                 routes.Add(new StaticRouteHandler
                 {
-                    Parent = controller,
-                    Route = route,
-                    Protection = HttpProtectionHandler.Create(protection),
-                    Path = RoutingExtensions.SubsituteConfigStringValue(route.Path, config),   //Path may have config variables to substitute
-                    WorkFunc = CreateWorkFunc(controller, method)                //Extract the processor delegate from the method
+                    Parent      = controller,
+                    Route       = route,
+                    Protection  = HttpProtectionHandler.Create(protection),
+                    Path        = RoutingExtensions.SubsituteConfigStringValue(route.Path, config),   //Path may have config variables to substitute
+                    WorkFunc    = CreateWorkFunc(controller, method)                //Extract the processor delegate from the method
                 });
             }
 

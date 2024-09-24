@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -47,19 +47,22 @@ namespace VNLib.Plugins.Extensions.Loading.Users
 
         private readonly IUserManager _dynamicLoader;
 
-        public UserManager(PluginBase plugin)
+        private UserManager(PluginBase plugin, string asmPath)
         {
-            //Load the default user assembly
-            _dynamicLoader = LoadUserAssembly(plugin, DEFAULT_USER_ASM);
+            //Load the assembly
+            _dynamicLoader = LoadUserAssembly(plugin, asmPath);
         }
 
+        public UserManager(PluginBase plugin)
+            :this(plugin, DEFAULT_USER_ASM)
+        { }
+
         public UserManager(PluginBase plugin, IConfigScope config)
-        {
-            //Get the service configuration
-            string customAsm = config[USER_CUSTOM_ASSEMBLY].GetString() ?? DEFAULT_USER_ASM;
-            //Load the assembly
-            _dynamicLoader = LoadUserAssembly(plugin, customAsm);
-        }
+            :this(
+                 plugin,
+                 asmPath: config.GetValueOrDefault(USER_CUSTOM_ASSEMBLY, DEFAULT_USER_ASM)  //Get custom assembly, or default
+            )
+        { }
 
         private static IUserManager LoadUserAssembly(PluginBase plugin, string customAsm)
         {
@@ -99,9 +102,9 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         }
 
         ///<inheritdoc/>
-        public Task<IUser?> GetUserFromUsernameAsync(string emailAddress, CancellationToken cancellationToken = default)
+        public Task<IUser?> GetUserFromUsernameAsync(string username, CancellationToken cancellationToken = default)
         {
-            return _dynamicLoader.GetUserFromUsernameAsync(emailAddress, cancellationToken);
+            return _dynamicLoader.GetUserFromUsernameAsync(username, cancellationToken);
         }
 
         ///<inheritdoc/>

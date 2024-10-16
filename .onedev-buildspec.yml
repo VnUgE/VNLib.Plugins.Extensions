@@ -52,3 +52,38 @@ jobs:
   maxRetries: 3
   retryDelay: 30
   timeout: 14400
+- name: Staging build
+  steps:
+  - !CommandStep
+    name: Clone VNLib.Core into core
+    runInContainer: false
+    interpreter: !DefaultInterpreter
+      commands: |
+        git clone @server_url@/VNLib.Core core --branch master
+    useTTY: true
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CheckoutStep
+    name: checkout
+    cloneCredential: !DefaultCredential {}
+    withLfs: false
+    withSubmodules: false
+    checkoutPath: '@project_name@'
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CommandStep
+    name: run vnbuild build
+    runInContainer: false
+    interpreter: !DefaultInterpreter
+      commands: |
+        vnbuild build -S --include @project_name@ --verbose
+    useTTY: true
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  triggers:
+  - !BranchUpdateTrigger
+    branches: '** -master'
+  jobDependencies:
+  - jobName: Unit Testing
+    requireSuccessful: true
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  timeout: 14400

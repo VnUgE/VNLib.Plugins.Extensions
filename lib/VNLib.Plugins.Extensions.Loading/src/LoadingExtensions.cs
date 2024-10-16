@@ -552,15 +552,10 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ConcreteTypeAmbiguousMatchException"></exception>
         public static T CreateService<T>(this PluginBase plugin)
         {
-            if (plugin.HasConfigForType<T>())
-            {
-                IConfigScope config = plugin.GetConfigForType<T>();
-                return CreateService<T>(plugin, config);
-            }
-            else
-            {
-                return CreateService<T>(plugin, (IConfigScope?)null);
-            }
+            return CreateService<T>(
+                plugin, 
+                config: plugin.TryGetConfigForType<T>()
+            );
         }
 
         /// <summary>

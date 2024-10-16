@@ -22,20 +22,24 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System;
 
-using VNLib.Utils.Extensions;
 using VNLib.Plugins.Essentials.Middleware;
 
 namespace VNLib.Plugins.Extensions.Loading.Routing
 {
+
     /// <summary>
     /// Provides helper extensions for http middleware
     /// </summary>
     public static class MiddlewareHelpers
     {
-        private static readonly ConditionalWeakTable<PluginBase, List<IHttpMiddleware>> _pluginMiddlewareList = new();
+        /// <summary>
+        /// Gets the http middleware manager for the plugin
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <returns>The HttpMiddlewareManager structure</returns>
+        public static HttpMiddlewareManager Middleware(this PluginBase plugin) => new(plugin);
 
         /// <summary>
         /// Exports a single middlware instance to the collection for the plugin. 
@@ -47,24 +51,12 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
         /// WARNING: Adding middleware arrays explicitly to the plugin service pool will override
         /// this function. All instances must be exposed though this function
         /// </remarks>
+        [Obsolete("Use Middleware() extension helper instead")]
         public static void ExportMiddleware<T>(this PluginBase plugin, params T[] instances) where T : IHttpMiddleware
         {
-            /*
-              * The runtime accepts an enumeration of IHttpMiddleware instances, so 
-              * a list can just be exported as an enumerable instance
-              */
-            static List<IHttpMiddleware> OnCreate(PluginBase plugin)
-            {
-                List<IHttpMiddleware> collection = new(1);
-                plugin.ExportService<IEnumerable<IHttpMiddleware>>(collection);
-                return collection;
-            }
-
-            //Get the endpoint collection for the current plugin
-            List<IHttpMiddleware> middlewares = _pluginMiddlewareList.GetValue(plugin, OnCreate);
-
-            //Add the endpoint to the collection
-            instances.ForEach(mw => middlewares.Add(mw));
+            Middleware(plugin)
+                .Add(instances);
         }
+
     }
 }

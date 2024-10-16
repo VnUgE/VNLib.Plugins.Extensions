@@ -3,9 +3,9 @@
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: HttpEndpointAttribute.cs 
+* File: IHttpController.cs 
 *
-* HttpEndpointAttribute.cs is part of VNLib.Plugins.Extensions.Loading which is 
+* IHttpController.cs is part of VNLib.Plugins.Extensions.Loading which is 
 * part of the larger VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
@@ -22,31 +22,31 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-using System;
-
-using VNLib.Net.Http;
+using VNLib.Plugins.Essentials;
+using VNLib.Plugins.Essentials.Endpoints;
 
 namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
 {
-
     /// <summary>
-    /// Attribute to define an http endpoint for a controller. The class 
-    /// must be decorated with the <see cref="HttpControllerAttribute"/> attribute
+    /// The base interface type for all http controllers, which
+    /// are responsible for handling http requests.
     /// </summary>
-    /// <param name="path">The endpoint path</param>
-    /// <param name="method">The method (or methods) allowed to be filtered by this endpoint</param>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-    public sealed class HttpEndpointAttribute(string path, HttpMethod method) : Attribute
+    public interface IHttpController
     {
         /// <summary>
-        /// The path of the endpoint
+        /// Gets the protection settings for all routes within
+        /// this controller.
         /// </summary>
-        public string Path { get; } = path;
+        /// <returns>The endpoint protection settings for all routes</returns>
+        ProtectionSettings GetProtectionSettings();
 
         /// <summary>
-        /// The http method of the endpoint. You may set more than one method
-        /// for a given endpoint
+        /// Allows pre-processing of the http entity before
+        /// the request is processed by routing handlers
         /// </summary>
-        public HttpMethod Method { get; } = method;
+        /// <param name="entity">The request entity to pre-process</param>
+        /// <returns>A value that indicates if the request should continue processing or return</returns>
+        virtual bool PreProccess(HttpEntity entity) => true;
     }
+  
 }

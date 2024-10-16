@@ -87,3 +87,49 @@ jobs:
   maxRetries: 3
   retryDelay: 30
   timeout: 14400
+
+- name: Publish master
+  steps:
+  - !CommandStep
+    name: Clone VNLib.Core into core
+    runInContainer: false
+    interpreter: !DefaultInterpreter
+      commands: |
+        git clone @server_url@/VNLib.Core core --branch master
+    useTTY: true
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CheckoutStep
+    name: checkout
+    cloneCredential: !DefaultCredential {}
+    withLfs: false
+    withSubmodules: false
+    checkoutPath: '@project_name@'
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CommandStep
+    name: VNBuild build
+    runInContainer: false
+    interpreter: !DefaultInterpreter
+      commands: |
+        vnbuild build -S --include @project_name@ --verbose
+    useTTY: true
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CommandStep
+    name: VNBuild publish
+    runInContainer: false
+    interpreter: !DefaultInterpreter
+      commands: |
+        vnbuild publish -i @project_name@ --ftp "@secret:ftp_server_address@" --sign
+    envVars:
+    - name: FTP_USERNAME
+      value: '@secret:ftp_username@'
+    - name: FTP_PASSWORD
+      value: '@secret:ftp_password@'
+    useTTY: true
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  triggers:
+  - !BranchUpdateTrigger
+    branches: master
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  timeout: 14400

@@ -23,10 +23,10 @@
 */
 
 using System;
-using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 using VNLib.Hashing;
 using VNLib.Utils;
@@ -53,10 +53,11 @@ namespace VNLib.Plugins.Extensions.Loading
                 string customAsm = el.GetString() ?? throw new KeyNotFoundException("You must specify a string file path for your custom password hashing assembly");
 
                 //Load the custom assembly
-                IPasswordHashingProvider userProvider = plugin.CreateServiceExternal<IPasswordHashingProvider>(customAsm);
+                Passwords = new CustomPasswordHashingAsm(
+                    plugin.CreateServiceExternal<IPasswordHashingProvider>(customAsm)
+                );
 
-                //Store
-                Passwords = new CustomPasswordHashingAsm(userProvider);
+                plugin.Log.Verbose("Loading custom password hashing assembly: {path}", customAsm);
             }
             else
             {
@@ -76,25 +77,28 @@ namespace VNLib.Plugins.Extensions.Loading
         public IPasswordHashingProvider Passwords { get; }
 
         ///<inheritdoc/>
-        public bool Verify(ReadOnlySpan<char> passHash, ReadOnlySpan<char> password) => Passwords.Verify(passHash, password);
+        public bool Verify(ReadOnlySpan<char> passHash, ReadOnlySpan<char> password) 
+            => Passwords.Verify(passHash, password);
 
         ///<inheritdoc/>
-        public bool Verify(ReadOnlySpan<byte> passHash, ReadOnlySpan<byte> password) => Passwords.Verify(passHash, password);
+        public bool Verify(ReadOnlySpan<byte> passHash, ReadOnlySpan<byte> password) 
+            => Passwords.Verify(passHash, password);
 
         ///<inheritdoc/>
-        public PrivateString Hash(ReadOnlySpan<char> password) => Passwords.Hash(password);
+        public PrivateString Hash(ReadOnlySpan<char> password) 
+            => Passwords.Hash(password);
 
         ///<inheritdoc/>
-        public PrivateString Hash(ReadOnlySpan<byte> password) => Passwords.Hash(password);
+        public PrivateString Hash(ReadOnlySpan<byte> password) 
+            => Passwords.Hash(password);
 
         ///<inheritdoc/>
-        public ERRNO Hash(ReadOnlySpan<byte> password, Span<byte> hashOutput) => Passwords.Hash(password, hashOutput);
+        public ERRNO Hash(ReadOnlySpan<byte> password, Span<byte> hashOutput) 
+            => Passwords.Hash(password, hashOutput);
 
-        sealed class CustomPasswordHashingAsm : IPasswordHashingProvider
+        sealed class CustomPasswordHashingAsm(IPasswordHashingProvider loader) : IPasswordHashingProvider
         {
-            private readonly IPasswordHashingProvider _provider;
-
-            public CustomPasswordHashingAsm(IPasswordHashingProvider loader) => _provider = loader;
+            private readonly IPasswordHashingProvider _provider = loader;
 
             /*
              * Password hashing isnt a super high performance system
@@ -102,17 +106,23 @@ namespace VNLib.Plugins.Extensions.Loading
              * asm wrapper providing unload protection
              */
 
-            public PrivateString Hash(ReadOnlySpan<char> password) => _provider.Hash(password);
+            public PrivateString Hash(ReadOnlySpan<char> password) 
+                => _provider.Hash(password);
 
-            public PrivateString Hash(ReadOnlySpan<byte> password) => _provider.Hash(password);
+            public PrivateString Hash(ReadOnlySpan<byte> password) 
+                => _provider.Hash(password);
 
-            public ERRNO Hash(ReadOnlySpan<byte> password, Span<byte> hashOutput) => _provider.Hash(password, hashOutput);
+            public ERRNO Hash(ReadOnlySpan<byte> password, Span<byte> hashOutput) 
+                => _provider.Hash(password, hashOutput);
 
-            public bool Verify(ReadOnlySpan<char> passHash, ReadOnlySpan<char> password) => _provider.Verify(passHash, password);
+            public bool Verify(ReadOnlySpan<char> passHash, ReadOnlySpan<char> password) 
+                => _provider.Verify(passHash, password);
 
-            public bool Verify(ReadOnlySpan<byte> passHash, ReadOnlySpan<byte> password) => _provider.Verify(passHash, password);
+            public bool Verify(ReadOnlySpan<byte> passHash, ReadOnlySpan<byte> password) 
+                => _provider.Verify(passHash, password);
         }
 
+      
         private sealed class SecretProvider : VnDisposeable, ISecretProvider
         {
             private readonly IAsyncLazy<byte[]> _pepper;
@@ -120,52 +130,57 @@ namespace VNLib.Plugins.Extensions.Loading
             public PasswordHashing Passwords { get; }
 
             public SecretProvider(PluginBase plugin, IConfigScope config)
-            {
-                IArgon2Library? safeLib = null;
-
-                if(config.TryGetValue("lib_path", out JsonElement manualLibPath))
-                {
-                    SafeArgon2Library lib = VnArgon2.LoadCustomLibrary(
-                        manualLibPath.GetString()!, 
-                        System.Runtime.InteropServices.DllImportSearchPath.SafeDirectories
-                    );
-                    
-                    _ = plugin.RegisterForUnload(lib.Dispose);
-                    safeLib = lib;
-                }
-
-                //Load default library if the user did not explictly specify one
-                safeLib ??= VnArgon2.GetOrLoadSharedLib();
-
+            {                
                 Argon2ConfigParams costParams = new();
 
-                if (config.TryGetValue("args", out JsonElement el))
+                if (config.TryGetValue("args", out JsonElement el) && el.ValueKind == JsonValueKind.Object)
                 {
-                    //Convert to dict
-                    IReadOnlyDictionary<string, JsonElement> hashingArgs = el.EnumerateObject().ToDictionary(static k => k.Name, static v => v.Value);
+                    Argon2Arguments userArgs = el.Deserialize<Argon2Arguments>()!;
 
                     costParams = new()
                     {
-                        HashLen = hashingArgs["hash_len"].GetUInt32(),
-                        MemoryCost = hashingArgs["memory_cost"].GetUInt32(),
-                        Parallelism = hashingArgs["parallelism"].GetUInt32(),
-                        SaltLen = (int)hashingArgs["salt_len"].GetUInt32(),
-                        TimeCost = hashingArgs["time_cost"].GetUInt32()
+                        HashLen         = userArgs.HashLen,
+                        MemoryCost      = userArgs.MemoryCost,
+                        Parallelism     = userArgs.Parallelism,
+                        SaltLen         = (int)userArgs.SaltLen,
+                        TimeCost        = userArgs.TimeCost
                     };
                 }
 
-                //Create passwords with the configuration and library
-                Passwords = PasswordHashing.Create(safeLib, this, in costParams);
+                if(
+                    config.TryGetValue("lib_path", out JsonElement manualLibPath) 
+                    && manualLibPath.ValueKind == JsonValueKind.String
+                )
+                {
+                    SafeArgon2Library lib = VnArgon2.LoadCustomLibrary(
+                        dllPath:manualLibPath.GetString()!, 
+                        System.Runtime.InteropServices.DllImportSearchPath.SafeDirectories
+                    );
+                    
+                    //Dynamically loaded lib must be disposed manually
+                    _ = plugin.RegisterForUnload(lib.Dispose);
+
+                    //Create passwords with the configuration and library
+                    Passwords = PasswordHashing.Create(lib, this, in costParams);
+
+                    plugin.Log.Verbose("Loaded custom password hashing library: {path}", manualLibPath.GetString());
+                }
+                else
+                {
+                    //Load default library if the user did not explictly specify one
+                    Passwords = PasswordHashing.Create(this, in costParams);
+                }
 
                 //Get the pepper from secret storage
-                _pepper = plugin.GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
+                _pepper = plugin.Secrets()
+                    .GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
                     .ToLazy(static sr => sr.GetFromBase64());
 
                 _ = _pepper.AsTask()
                     .ContinueWith(secT => {
                             plugin.Log.Error("Failed to load password pepper: {reason}", secT.Exception?.Message);
                         }, 
-                        default, 
+                        cancellationToken: default, 
                         TaskContinuationOptions.OnlyOnFaulted,  //Only run if an exception occured to notify the user during startup
                         TaskScheduler.Default
                     );
@@ -177,7 +192,8 @@ namespace VNLib.Plugins.Extensions.Loading
                 Passwords = PasswordHashing.Create(this, new Argon2ConfigParams());
 
                 //Get the pepper from secret storage
-                _pepper = plugin.GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
+                _pepper = plugin.Secrets()
+                    .GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
                     .ToBase64Bytes()
                     .AsLazy();
             }
@@ -201,12 +217,6 @@ namespace VNLib.Plugins.Extensions.Loading
                 return _pepper.Value.Length;
             }
 
-            protected override void Check()
-            {
-                base.Check();
-                _ = _pepper.Value;
-            }
-
             protected override void Free()
             {
                 Task pepperTask = _pepper.AsTask();
@@ -217,5 +227,24 @@ namespace VNLib.Plugins.Extensions.Loading
                 }
             }
         }
+
+        private sealed class Argon2Arguments
+        {
+            [JsonPropertyName("hash_len")]
+            public required uint HashLen { get; set; }
+
+            [JsonPropertyName("memory_cost")]
+            public required uint MemoryCost { get; set; }
+
+            [JsonPropertyName("parallelism")]
+            public required uint Parallelism { get; set; }
+
+            [JsonPropertyName("salt_len")]
+            public required uint SaltLen { get; set; }
+
+            [JsonPropertyName("time_cost")]
+            public required uint TimeCost { get; set; }
+        }
+
     }
 }

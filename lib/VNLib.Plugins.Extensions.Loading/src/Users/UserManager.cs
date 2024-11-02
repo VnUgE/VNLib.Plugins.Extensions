@@ -84,6 +84,7 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         public IUserManager InternalManager => _dynamicLoader;
 
         ///<inheritdoc/>
+        [Obsolete("Use an overload that accepts a hashing provider")]
         public Task<IUser> CreateUserAsync(IUserCreationRequest creation, string? userId, CancellationToken cancellation = default)
         {
             return _dynamicLoader.CreateUserAsync(creation, userId, cancellation);
@@ -120,6 +121,7 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         }
 
         ///<inheritdoc/>
+        [Obsolete("Use overload that accepts password hashing provider")]
         public Task<ERRNO> UpdatePasswordAsync(IUser user, PrivateString newPass, CancellationToken cancellation = default)
         {
             return _dynamicLoader.UpdatePasswordAsync(user, newPass, cancellation);
@@ -135,6 +137,24 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         public string ComputeSafeUserId(string input)
         {
             return _dynamicLoader.ComputeSafeUserId(input);
+        }
+
+        ///<inheritdoc/>
+        public Task<IUser> CreateUserAsync(IUserCreationRequest creation, string? userId, IPasswordHashingProvider? hashProvider, CancellationToken cancellation = default)
+        {
+            return _dynamicLoader.CreateUserAsync(creation, userId, hashProvider, cancellation);
+        }
+
+        ///<inheritdoc/>
+        public Task<ERRNO> ValidatePasswordAsync(IUser user, PrivateString password, IPasswordHashingProvider? hashProvider, CancellationToken cancellation = default)
+        {
+            return _dynamicLoader.ValidatePasswordAsync(user, password, hashProvider, cancellation);
+        }
+
+        ///<inheritdoc/>
+        public Task<ERRNO> UpdatePasswordAsync(IUser user, PrivateString newPass, IPasswordHashingProvider? hashProvider, CancellationToken cancellation = default)
+        {
+            return _dynamicLoader.UpdatePasswordAsync(user, newPass, hashProvider, cancellation);
         }
     }
 }

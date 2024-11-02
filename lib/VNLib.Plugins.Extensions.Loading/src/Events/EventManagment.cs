@@ -57,7 +57,8 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         public static void ScheduleInterval(this PluginBase plugin, AsyncSchedulableCallback asyncCallback, TimeSpan interval, bool immediate = false)
         {
             plugin.ThrowIfUnloaded();
-            
+            ArgumentNullException.ThrowIfNull(asyncCallback);
+
             plugin.Log.Verbose("Interval for {t} scheduled on type {rr}", interval, asyncCallback.Target);
             
             //Run interval on plugins bg scheduler
@@ -119,7 +120,10 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         /// <param name="immediate">A value that indicates if the callback should be run as soon as possible</param>
         /// <exception cref="ObjectDisposedException"></exception>
         /// <remarks>If exceptions are raised during callback execution, they are written to the plugin's default log provider</remarks>
-        public static void ScheduleInterval(this PluginBase plugin, IIntervalScheduleable scheduleable, TimeSpan interval, bool immediate = false) => 
+        public static void ScheduleInterval(this PluginBase plugin, IIntervalScheduleable scheduleable, TimeSpan interval, bool immediate = false)
+        {
+            ArgumentNullException.ThrowIfNull(scheduleable);
             ScheduleInterval(plugin, scheduleable.OnIntervalAsync, interval, immediate);
+        }
     }
 }

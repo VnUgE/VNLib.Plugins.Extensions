@@ -11,12 +11,12 @@
 version: '3'
 
 vars:  
+  ARCHIVE_FILE_NAME: '{{ .ARCHIVE_FILE_NAME | default "archive.tgz" }}'
   MS_ARGS: 
     /p:RunAnalyzersDuringBuild=false 
     /p:BuildInParallel=true 
     /p:MultiProcessorCompilation=true 
-    /p:ErrorOnDuplicatePublishOutputFiles=false
-  PACK_OUT: '{{ .OUTPUT_DIR }}/{{ .HEAD_SHA }}/pkg'
+    /p:ErrorOnDuplicatePublishOutputFiles=false  
 
 tasks:
 
@@ -36,9 +36,11 @@ tasks:
   build:
     desc: "Used by vnbuild to build the entire module at CI time"
     vars:
+      PACK_OUT: '{{ .OUTPUT_DIR }}/{{ .HEAD_SHA }}/pkg'
       INT_DIR: '{{ .SCRATCH_DIR }}/obj/{{ .MODULE_NAME }}/'
       MS_ARGS: ' 
         {{ .MS_ARGS }} 
+        --nologo
         /p:UseCommonOutputDirectory=true 
         /p:IntermediateOutputPath="{{ .INT_DIR }}"'
     cmds:
@@ -49,10 +51,19 @@ tasks:
      - cmd: dotnet-gitversion.exe /updateprojectfiles
 
      #build debug mode first
-     - task: build_internal
-       vars: { CONFIG: 'debug', MS_ARGS: '{{ .MS_ARGS }}'}
-     - task: build_internal
-       vars: { CONFIG: 'release', MS_ARGS: '{{ .MS_ARGS }}'}
+     - cmd: dotnet publish -c debug {{ .MS_ARGS }}
+     - cmd: dotnet publish -c release {{ .MS_ARGS }}
+
+     # ONLY Pack release config with debug symbols
+     # pack can be run without build or restore because the previous commands build it
+     - cmd: dotnet pack 
+        --no-build 
+        --no-restore
+        --include-symbols
+        --configuration release
+        --output "{{ .PACK_OUT }}/release/" 
+        -p:PackageVersion={{ .BUILD_VERSION }}
+        {{ .MS_ARGS }}
 
   publish:
     desc: "Used by vnbuild to prepare the packages for build servers"      
@@ -77,13 +88,4 @@ tasks:
     cmds:
     #clean solution
      - cmd: dotnet clean /p:BuildInParallel=true /p:MultiProcessorCompilation=true
-     - cmd: powershell -Command "rm {{ .ARCHIVE_FILE_NAME }} --Force" 
-
-
-#Internal tasks
-  build_internal:
-    internal: true
-    cmds:
-     - cmd: dotnet publish -c {{ .CONFIG }} {{ .MS_ARGS }}
-     - cmd: dotnet pack -c debug {{ .MS_ARGS }} -o "{{ .PACK_OUT }}/{{ .CONFIG }}/" -p:PackageVersion={{ .BUILD_VERSION }}
-    
+     - cmd: powershell rm '{{ .ARCHIVE_FILE_NAME }}' --Force

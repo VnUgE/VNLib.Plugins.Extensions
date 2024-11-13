@@ -56,7 +56,7 @@ namespace VNLib.Plugins.Extensions.Loading
         public const string DEBUG_CONFIG_KEY = "debug";
         public const string SECRETS_CONFIG_KEY = "secrets";
         public const string PASSWORD_HASHING_KEY = "passwords";
-        public const string CUSTOM_PASSWORD_ASM_KEY = "custom_asm";
+        public const string CUSTOM_PASSWORD_ASM_KEY = "custom_assembly";
 
         /*
          * Plugin local cache used for storing singletons for a plugin instance
@@ -234,7 +234,10 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             //Get all types from the current assembly that implement the abstract type
             Assembly executingAsm = Assembly.GetExecutingAssembly();
-            Type[] concreteTypes = executingAsm.GetTypes().Where(t => !t.IsAbstract && abstractType.IsAssignableFrom(t)).ToArray();
+            Type[] concreteTypes = executingAsm
+                .GetTypes()
+                .Where(t => !t.IsAbstract && abstractType.IsAssignableFrom(t))
+                .ToArray();
 
             if(concreteTypes.Length == 0)
             {

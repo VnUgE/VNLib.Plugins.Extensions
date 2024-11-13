@@ -23,7 +23,6 @@
 */
 
 using System;
-using System.Text.Json;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
@@ -45,31 +44,28 @@ namespace VNLib.Plugins.Extensions.Loading
     [ConfigurationName(LoadingExtensions.PASSWORD_HASHING_KEY, Required = false)]
     public sealed class ManagedPasswordHashing : IPasswordHashingProvider
     {
-        public ManagedPasswordHashing(PluginBase plugin, IConfigScope config)
+        public ManagedPasswordHashing(PluginBase plugin, IConfigScope? config)
         {
-            //Check for custom hashing assembly
-            if (config.TryGetValue(LoadingExtensions.CUSTOM_PASSWORD_ASM_KEY, out JsonElement el))
-            {
-                string customAsm = el.GetString() ?? throw new KeyNotFoundException("You must specify a string file path for your custom password hashing assembly");
+            string? customAsm = config?.GetValueOrDefault(LoadingExtensions.CUSTOM_PASSWORD_ASM_KEY, defaultValue: null!); 
 
+            //Check for custom hashing assembly
+            if (!string.IsNullOrWhiteSpace(customAsm))
+            {
                 //Load the custom assembly
-                Passwords = new CustomPasswordHashingAsm(
-                    plugin.CreateServiceExternal<IPasswordHashingProvider>(customAsm)
-                );
+                Passwords = plugin.CreateServiceExternal<IPasswordHashingProvider>(customAsm);
 
                 plugin.Log.Verbose("Loading custom password hashing assembly: {path}", customAsm);
             }
             else
             {
-                Passwords = plugin.GetOrCreateSingleton<SecretProvider>().Passwords;
+                SecretProvider pepper = LoadPasswordPepper(plugin);
+
+                Passwords = LoadHashingLibrary(plugin, config, pepper);
             }
         }
 
-        public ManagedPasswordHashing(PluginBase plugin)
-        {
-            //Only configure a default password impl
-            Passwords = plugin.GetOrCreateSingleton<SecretProvider>().Passwords;
-        }
+        public ManagedPasswordHashing(PluginBase plugin) : this(plugin, null)
+        { }
 
         /// <summary>
         /// The underlying <see cref="IPasswordHashingProvider"/>
@@ -96,141 +92,118 @@ namespace VNLib.Plugins.Extensions.Loading
         public ERRNO Hash(ReadOnlySpan<byte> password, Span<byte> hashOutput) 
             => Passwords.Hash(password, hashOutput);
 
-        sealed class CustomPasswordHashingAsm(IPasswordHashingProvider loader) : IPasswordHashingProvider
+        private static PasswordHashing LoadHashingLibrary(PluginBase plugin, IConfigScope? config, ISecretProvider pepper)
         {
-            private readonly IPasswordHashingProvider _provider = loader;
+            PasswordHashing passwords;
 
-            /*
-             * Password hashing isnt a super high performance system
-             * so adding method overhead shouldnt be a large issue for the 
-             * asm wrapper providing unload protection
-             */
+            Argon2ConfigParams costParams = new();
 
-            public PrivateString Hash(ReadOnlySpan<char> password) 
-                => _provider.Hash(password);
+            if (config is null)
+            {
+                //Load default library with default params
+                passwords = PasswordHashing.Create(pepper, in costParams);
+            }
+            else
+            {
+                Argon2Config conf = config.Deserialze<Argon2Config>();
 
-            public PrivateString Hash(ReadOnlySpan<byte> password) 
-                => _provider.Hash(password);
-
-            public ERRNO Hash(ReadOnlySpan<byte> password, Span<byte> hashOutput) 
-                => _provider.Hash(password, hashOutput);
-
-            public bool Verify(ReadOnlySpan<char> passHash, ReadOnlySpan<char> password) 
-                => _provider.Verify(passHash, password);
-
-            public bool Verify(ReadOnlySpan<byte> passHash, ReadOnlySpan<byte> password) 
-                => _provider.Verify(passHash, password);
-        }
-
-      
-        private sealed class SecretProvider : VnDisposeable, ISecretProvider
-        {
-            private readonly IAsyncLazy<byte[]> _pepper;
-
-            public PasswordHashing Passwords { get; }
-
-            public SecretProvider(PluginBase plugin, IConfigScope config)
-            {                
-                Argon2ConfigParams costParams = new();
-
-                if (config.TryGetValue("args", out JsonElement el) && el.ValueKind == JsonValueKind.Object)
+                if (conf.Argon2Args is not null)
                 {
-                    Argon2Arguments userArgs = el.Deserialize<Argon2Arguments>()!;
-
                     costParams = new()
                     {
-                        HashLen         = userArgs.HashLen,
-                        MemoryCost      = userArgs.MemoryCost,
-                        Parallelism     = userArgs.Parallelism,
-                        SaltLen         = (int)userArgs.SaltLen,
-                        TimeCost        = userArgs.TimeCost
+                        HashLen         = conf.Argon2Args.HashLen,
+                        MemoryCost      = conf.Argon2Args.MemoryCost,
+                        Parallelism     = conf.Argon2Args.Parallelism,
+                        SaltLen         = (int)conf.Argon2Args.SaltLen,
+                        TimeCost        = conf.Argon2Args.TimeCost
                     };
                 }
 
-                if(
-                    config.TryGetValue("lib_path", out JsonElement manualLibPath) 
-                    && manualLibPath.ValueKind == JsonValueKind.String
-                )
+                if (!string.IsNullOrWhiteSpace(conf.LibPath))
                 {
                     SafeArgon2Library lib = VnArgon2.LoadCustomLibrary(
-                        dllPath:manualLibPath.GetString()!, 
+                        dllPath: conf.LibPath,
                         System.Runtime.InteropServices.DllImportSearchPath.SafeDirectories
                     );
-                    
+
                     //Dynamically loaded lib must be disposed manually
                     _ = plugin.RegisterForUnload(lib.Dispose);
 
                     //Create passwords with the configuration and library
-                    Passwords = PasswordHashing.Create(lib, this, in costParams);
+                    passwords = PasswordHashing.Create(lib, pepper, in costParams);
 
-                    plugin.Log.Verbose("Loaded custom password hashing library: {path}", manualLibPath.GetString());
+                    plugin.Log.Verbose("Loaded custom password hashing library: {path}", conf.LibPath);
                 }
                 else
                 {
                     //Load default library if the user did not explictly specify one
-                    Passwords = PasswordHashing.Create(this, in costParams);
+                    passwords = PasswordHashing.Create(pepper, in costParams);
                 }
-
-                //Get the pepper from secret storage
-                _pepper = plugin.Secrets()
-                    .GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
-                    .ToLazy(static sr => sr.GetFromBase64());
-
-                _ = _pepper.AsTask()
-                    .ContinueWith(secT => {
-                            plugin.Log.Error("Failed to load password pepper: {reason}", secT.Exception?.Message);
-                        }, 
-                        cancellationToken: default, 
-                        TaskContinuationOptions.OnlyOnFaulted,  //Only run if an exception occured to notify the user during startup
-                        TaskScheduler.Default
-                    );
             }
 
-            public SecretProvider(PluginBase plugin)
+            if (plugin.IsDebug())
             {
-                //Load passwords with default config
-                Passwords = PasswordHashing.Create(this, new Argon2ConfigParams());
-
-                //Get the pepper from secret storage
-                _pepper = plugin.Secrets()
-                    .GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
-                    .ToBase64Bytes()
-                    .AsLazy();
+                plugin.Log.Verbose("Argon2 parameters: {params}", costParams);
             }
+
+            return passwords;
+        }
+
+        private static SecretProvider LoadPasswordPepper(PluginBase plugin)
+        {
+            //Get the pepper from secret storage
+            IAsyncLazy<byte[]> pepper = plugin.Secrets()
+                .GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
+                .ToLazy(static sr => sr.GetFromBase64());
+
+            _ = pepper.AsTask()
+                .ContinueWith(secT => plugin.Log.Error("Failed to load password pepper: {reason}", secT.Exception?.Message),
+                    cancellationToken: default,
+                    TaskContinuationOptions.OnlyOnFaulted,  //Only run if an exception occured to notify the user during startup
+                    TaskScheduler.Default
+                );
+
+            return new(pepper);
+        }
+       
+        private sealed class SecretProvider(IAsyncLazy<byte[]> pepper) : ISecretProvider
+        {
+            /*
+             * Originally this wrapper contained code to zero the pepper buffer
+             * when the plugin unloaded. It was removed because
+             * 
+             * In production a plugin only exits when the process has requested a clean
+             * exit, otheriwse the process is terminated, and memory is no longer
+             * our issue. This memory will be returned to the OS and out of our control.
+             * 
+             * I may reimplement if it's a concern that the OS will leak memory 
+             * reclaimed to another process after it exits
+             */
 
             ///<inheritdoc/>
-            public int BufferSize
-            {
-                get
-                {
-                    Check();
-                    return _pepper.Value.Length;
-                }
-            }
+            public int BufferSize => pepper.Value.Length;
 
             public ERRNO GetSecret(Span<byte> buffer)
-            {
-                Check();
+            {                
                 //Coppy pepper to buffer
-                _pepper.Value.CopyTo(buffer);
+                pepper.Value.CopyTo(buffer);
                 //Return pepper length
-                return _pepper.Value.Length;
-            }
-
-            protected override void Free()
-            {
-                Task pepperTask = _pepper.AsTask();
-                //Only zero pepper value if the pepper was retrieved successfully
-                if (pepperTask.IsCompletedSuccessfully)
-                {                   
-                    MemoryUtil.InitializeBlock(_pepper.Value.AsSpan());
-                }
+                return pepper.Value.Length;
             }
         }
 
-        private sealed class Argon2Arguments
+        private sealed class Argon2Config
         {
-            [JsonPropertyName("hash_len")]
+            [JsonPropertyName("argon2_options")]
+            public Argon2Arguments? Argon2Args { get; set; }
+
+            [JsonPropertyName("argon2_lib_path")]
+            public string? LibPath { get; set; }
+        }
+
+        private sealed record class Argon2Arguments
+        {
+            [JsonPropertyName("hash_length")]
             public required uint HashLen { get; set; }
 
             [JsonPropertyName("memory_cost")]
@@ -239,12 +212,11 @@ namespace VNLib.Plugins.Extensions.Loading
             [JsonPropertyName("parallelism")]
             public required uint Parallelism { get; set; }
 
-            [JsonPropertyName("salt_len")]
+            [JsonPropertyName("salt_length")]
             public required uint SaltLen { get; set; }
 
             [JsonPropertyName("time_cost")]
             public required uint TimeCost { get; set; }
         }
-
     }
 }

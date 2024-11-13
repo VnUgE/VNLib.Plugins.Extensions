@@ -38,6 +38,7 @@ using VNLib.Utils;
 using VNLib.Utils.IO;
 using VNLib.Utils.Memory;
 using VNLib.Utils.Extensions;
+using VNLib.Plugins.Extensions.Loading.Secrets;
 
 /*
  * The purpose of the HCVaultClient is to provide a very simple Hashicorp Vault client
@@ -257,7 +258,7 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             //Try to get the secret from the data element
-            if (dataEl.TryGetProperty(secretName, out JsonElement secretEl))
+            if (dataEl.TryGetProperty(secretName, out JsonElement secretEl) && secretEl.ValueKind == JsonValueKind.String)
             {
                 string? secValue = secretEl.GetString();
                 return secValue == null ? null : SecretResult.ToSecret(secValue);

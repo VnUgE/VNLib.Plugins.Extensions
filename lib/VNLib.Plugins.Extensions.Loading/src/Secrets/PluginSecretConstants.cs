@@ -22,12 +22,13 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-namespace VNLib.Plugins.Extensions.Loading
+namespace VNLib.Plugins.Extensions.Loading.Secrets
 {
 #pragma warning disable CA1707 // Identifiers should not contain underscores
 
     public static class PluginSecretConstants
     {
+        public const string CUSTOM_KV_CONFIG = "vault_config";
         public const string VAULT_OBJECT_NAME = "hashicorp_vault";
         public const string SECRETS_CONFIG_KEY = "secrets";
         public const string VAULT_TOKEN_KEY = "token";

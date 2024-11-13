@@ -26,7 +26,7 @@ using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace VNLib.Plugins.Extensions.Loading
+namespace VNLib.Plugins.Extensions.Loading.Secrets
 {
     /// <summary>
     /// A secret client interace for reading secrets from a vault server

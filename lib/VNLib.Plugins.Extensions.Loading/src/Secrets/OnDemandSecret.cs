@@ -37,9 +37,9 @@ using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;
 using VNLib.Utils.Resources;
 
-using static VNLib.Plugins.Extensions.Loading.PluginSecretConstants;
+using static VNLib.Plugins.Extensions.Loading.Secrets.PluginSecretConstants;
 
-namespace VNLib.Plugins.Extensions.Loading
+namespace VNLib.Plugins.Extensions.Loading.Secrets
 {
     internal sealed class OnDemandSecret(PluginBase plugin, string secretName, Func<IKvVaultClient?> vaultCb) : IOnDemandSecret
     {
@@ -213,7 +213,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 //Enter all host secret objects, then follow up with plugin secert elements
                 hostConf.ForEach(kv => conf[kv.Key] = kv.Value);
                 localConf.ForEach(kv => conf[kv.Key] = kv.Value);
-                
+
             }
             else if (local)
             {

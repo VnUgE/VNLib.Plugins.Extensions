@@ -23,14 +23,14 @@
 */
 
 using System;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
 using VNLib.Utils.Memory;
 
-using static VNLib.Plugins.Extensions.Loading.PluginSecretConstants;
+using VNLib.Plugins.Extensions.Loading.Secrets;
+using static VNLib.Plugins.Extensions.Loading.Secrets.PluginSecretConstants;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
@@ -51,46 +51,53 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The ambient <see cref="IKvVaultClient"/> if loaded, null otherwise</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
-        public IKvVaultClient? GetVaultClient() => LoadingExtensions.GetOrCreateSingleton(_plugin, TryGetVaultLoader);
+        public IKvVaultClient? GetVaultClient() => LoadingExtensions.GetOrCreateSingleton(_plugin, LoadVaultClient);
 
-        private static HCVaultClient? TryGetVaultLoader(PluginBase pbase)
+        private static IKvVaultClient? LoadVaultClient(PluginBase plugin)
+        {
+            IConfigScope? customVaultConf = plugin.TryGetConfig(CUSTOM_KV_CONFIG);
+
+            //No custom config, load HCP by default
+            if(customVaultConf is null)
+            {
+                return LoadHcpVault(plugin);
+            }
+
+            //Try to get the custom assembly path, otherwise load HCP
+            string? customAssemblyPath = customVaultConf.GetValueOrDefault("assembly_name", null!);
+            if(string.IsNullOrWhiteSpace(customAssemblyPath))
+            {
+                return LoadHcpVault(plugin);
+            }
+
+            return plugin.CreateServiceExternal<IKvVaultClient>(customAssemblyPath);
+        }
+        
+
+        private static HCVaultClient? LoadHcpVault(PluginBase plugin)
         {
             //Get vault config
-            IConfigScope? conf = pbase.TryGetConfig(VAULT_OBJECT_NAME);
+            IConfigScope? conf = plugin.TryGetConfig(VAULT_OBJECT_NAME);
 
             if (conf is null)
             {
                 return null;
             }
 
-            //try get server address creds from config
-            string serverAddress = conf.GetRequiredProperty(VAULT_URL_KEY, p => p.GetString()!);
-            bool trustCert = conf.GetValueOrDefault(VAULT_TRUST_CERT_KEY, el => el.GetBoolean(), false);
+            //Get auth token from config, then fall back to environment variable
+            string? envAuthToken =  Environment.GetEnvironmentVariable(VAULT_TOKEN_ENV_NAME);
+            string? authToken = conf.GetValueOrDefault(VAULT_TOKEN_KEY, envAuthToken!);
 
-            string? authToken;
-            
-            if (conf.TryGetValue(VAULT_TOKEN_KEY, out JsonElement tokenEl))
-            {
-                //Init token
-                authToken = tokenEl.GetString();
-            }
-            //Try to get the token as an environment variable
-            else if (Environment.GetEnvironmentVariable(VAULT_TOKEN_ENV_NAME) != null)
-            {
-                authToken = Environment.GetEnvironmentVariable(VAULT_TOKEN_ENV_NAME)!;
-            }
-            else
-            {
-                throw new KeyNotFoundException($"Failed to load the vault authentication method from {VAULT_OBJECT_NAME}");
-            }
-
-            _ = authToken ?? throw new KeyNotFoundException($"Failed to load the vault authentication method from {VAULT_OBJECT_NAME}");
-
-            //Check for vault kv version, otherwise use the default
-            int version = conf.GetValueOrDefault(VAULT_KV_VERSION_KEY, el => el.GetInt32(), HCVaultDefaultKvVersion);
+            _ = authToken ?? throw new KeyNotFoundException($"HCP Vault authentication token required. Set {VAULT_OBJECT_NAME} or env:{VAULT_TOKEN_ENV_NAME}");
 
             //create vault client, invalid or nulls will raise exceptions here
-            return HCVaultClient.Create(serverAddress, authToken, version, trustCert, MemoryUtil.Shared);
+            return HCVaultClient.Create(
+                 serverAddress: conf.GetRequiredProperty(VAULT_URL_KEY, p => p.GetString()!), 
+                 authToken, 
+                 kvVersion: conf.GetValueOrDefault(VAULT_KV_VERSION_KEY, HCVaultDefaultKvVersion), 
+                 trustCert: conf.GetValueOrDefault(VAULT_TRUST_CERT_KEY, false), 
+                 heap: MemoryUtil.Shared
+            );
         }
 
         ///<inheritdoc/>

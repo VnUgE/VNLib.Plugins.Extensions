@@ -84,7 +84,9 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ObjectDisposedException"></exception>
         public static Task<ISecretResult?> TryGetSecretAsync(this PluginBase plugin, string secretName)
         {
-            return plugin.Secrets().TryGetSecretAsync(secretName);
+            return plugin
+                .Secrets()
+                .TryGetSecretAsync(secretName);
         }
 
         /// <summary>
@@ -103,7 +105,10 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ObjectDisposedException"></exception>
         public static async Task<ISecretResult> GetSecretAsync(this PluginSecretStore secrets, string secretName)
         {
-            ISecretResult? res = await secrets.TryGetSecretAsync(secretName).ConfigureAwait(false);
+            ISecretResult? res = await secrets
+                .TryGetSecretAsync(secretName)
+                .ConfigureAwait(false);
+            
             return res ?? throw new KeyNotFoundException($"Missing required secret {secretName}");
         }
 
@@ -118,7 +123,6 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             ArgumentNullException.ThrowIfNull(secret);
             
-            //Temp buffer
             using UnsafeMemoryHandle<byte> buffer = MemoryUtil.UnsafeAlloc(secret.Result.Length);
             
             //Get base64
@@ -144,7 +148,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ArgumentNullException"></exception>
         public static X509Certificate2 GetCertificate(this ISecretResult secret)
         {
-            _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            ArgumentNullException.ThrowIfNull(secret, nameof(secret));
             return X509Certificate2.CreateFromPem(secret.Result);
         }
 
@@ -155,7 +159,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The document parsed from the secret value</returns>
         public static JsonDocument GetJsonDocument(this ISecretResult secret)
         {
-            _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            ArgumentNullException.ThrowIfNull(secret, nameof(secret));
 
             //Alloc buffer, utf8 so 1 byte per char
             using IMemoryHandle<byte> buffer = MemoryUtil.SafeAlloc<byte>(secret.Result.Length);
@@ -177,7 +181,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ArgumentNullException"></exception>
         public static PublicKey GetPublicKey(this ISecretResult secret)
         {          
-            _ = secret ?? throw new ArgumentNullException(nameof(secret));
+            ArgumentNullException.ThrowIfNull(secret, nameof(secret));
             
             //Alloc buffer, base64 is larger than binary value so char len is large enough
             using IMemoryHandle<byte> buffer = MemoryUtil.SafeAlloc<byte>(secret.Result.Length);
@@ -187,20 +191,6 @@ namespace VNLib.Plugins.Extensions.Loading
             
             //Parse the SPKI from base64
             return PublicKey.CreateFromSubjectPublicKeyInfo(buffer.Span[..(int)count], out _);
-        }
-
-        /// <summary>
-        /// Gets the value of the <see cref="SecretResult"/> as a <see cref="PrivateKey"/>
-        /// container
-        /// </summary>
-        /// <param name="secret"></param>
-        /// <returns>The <see cref="PrivateKey"/> from the secret value</returns>
-        /// <exception cref="FormatException"></exception>
-        /// <exception cref="ArgumentNullException"></exception>
-        public static PrivateKey GetPrivateKey(this ISecretResult secret)
-        {
-            ArgumentNullException.ThrowIfNull(secret);
-            return new PrivateKey(secret);
         }
 
         /// <summary>
@@ -277,7 +267,9 @@ namespace VNLib.Plugins.Extensions.Loading
             using ISecretResult sec = await secret.ConfigureAwait(false);
             
             //If required is true and result is null, raise an exception
-            return required && sec == null ? throw new KeyNotFoundException("A required secret was missing") : (sec?.GetJsonWebKey()!);
+            return required && sec == null 
+                ? throw new KeyNotFoundException("A required secret was missing") 
+                : (sec?.GetJsonWebKey()!);
         }
 
         /// <summary>

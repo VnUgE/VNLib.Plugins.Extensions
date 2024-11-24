@@ -74,7 +74,8 @@ jobs:
     runInContainer: false
     interpreter: !DefaultInterpreter
       commands: |
-        vnbuild build -S --verbose
+        dotnet-gitversion.exe core /updateprojectfiles
+        vnbuild build -S --include @project_name@ --verbose
     useTTY: true
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   triggers:
@@ -110,7 +111,8 @@ jobs:
     runInContainer: false
     interpreter: !DefaultInterpreter
       commands: |
-        vnbuild build -S
+        dotnet-gitversion.exe core /updateprojectfiles
+        vnbuild build -S --include @project_name@ 
     useTTY: true
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   - !CommandStep

@@ -52,7 +52,6 @@ namespace VNLib.Plugins.Extensions.Loading
         /// A key in the 'plugins' configuration object that specifies 
         /// an asset search directory
         /// </summary>
-      
         public const string DEBUG_CONFIG_KEY = "debug";
         public const string SECRETS_CONFIG_KEY = "secrets";
         public const string PASSWORD_HASHING_KEY = "passwords";
@@ -87,7 +86,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <param name="plugin">The plugin to obtain or build the singleton for</param>
         /// <param name="serviceFactory">The method to produce the singleton</param>
         /// <returns>The cached or newly created singleton</returns>
-        public static T GetOrCreateSingleton<T>(PluginBase plugin, Func<PluginBase, T> serviceFactory) 
+        public static T GetOrCreateSingleton<T>(PluginBase plugin, Func<PluginBase, T> serviceFactory)
             => (T)GetOrCreateSingleton(plugin, typeof(T), p => serviceFactory(p)!);
 
 
@@ -113,9 +112,9 @@ namespace VNLib.Plugins.Extensions.Loading
              */
 
             string? assetDir = plugin.GetAssetsPath();
-          
-            searchDirs = assetDir is null 
-                ? plugin.GetPluginSearchDirs() 
+
+            searchDirs = assetDir is null
+                ? plugin.GetPluginSearchDirs()
                 : ([assetDir]);
 
             /*
@@ -151,9 +150,9 @@ namespace VNLib.Plugins.Extensions.Loading
         /// or the global plugins ('path' key) directory if an assets directory is not defined.
         /// </remarks>
         public static AssemblyLoader<T> LoadAssembly<T>(
-            this PluginBase plugin, 
-            string assemblyName, 
-            SearchOption dirSearchOption = SearchOption.AllDirectories, 
+            this PluginBase plugin,
+            string assemblyName,
+            SearchOption dirSearchOption = SearchOption.AllDirectories,
             AssemblyLoadContext? explictAlc = null)
         {
             //Get the file path for the assembly
@@ -211,14 +210,15 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="InvalidOperationException"></exception>
         public static AssemblyLoadContext GetPluginLoadContext()
         {
-           /*
-            * Since this library should only be used in a plugin context, the executing assembly
-            * will be loaded into the plugin's isolated load context. So we can get the load 
-            * context for the executing assembly and use that as the plugin's load context.
-            */
+            /*
+             * Since this library should only be used in a plugin context, the executing assembly
+             * will be loaded into the plugin's isolated load context. So we can get the load 
+             * context for the executing assembly and use that as the plugin's load context.
+             */
 
             Assembly executingAsm = Assembly.GetExecutingAssembly();
-            return AssemblyLoadContext.GetLoadContext(executingAsm) ?? throw new InvalidOperationException("Could not get plugin's assembly load context");
+            return AssemblyLoadContext.GetLoadContext(executingAsm)
+                ?? throw new InvalidOperationException("Could not get plugin's assembly load context");
         }
 
         /// <summary>
@@ -239,12 +239,13 @@ namespace VNLib.Plugins.Extensions.Loading
                 .Where(t => !t.IsAbstract && abstractType.IsAssignableFrom(t))
                 .ToArray();
 
-            if(concreteTypes.Length == 0)
+            if (concreteTypes.Length == 0)
             {
-                throw new ConcreteTypeNotFoundException($"Failed to load implemenation of abstract type {abstractType} because no concrete implementations were found in this assembly");
+                throw new ConcreteTypeNotFoundException(
+                    $"Failed to load implemenation of abstract type {abstractType} because no concrete implementations were found in this assembly");
             }
 
-            if(concreteTypes.Length > 1)
+            if (concreteTypes.Length > 1)
             {
                 throw new ConcreteTypeAmbiguousMatchException(
                     $"Failed to load implemenation of abstract type {abstractType} because multiple concrete implementations were found in this assembly");
@@ -266,7 +267,7 @@ namespace VNLib.Plugins.Extensions.Loading
             //Check for debug element
             return plugin.PluginConfig.TryGetProperty(DEBUG_CONFIG_KEY, out JsonElement dbgEl) && dbgEl.GetBoolean();
         }
-        
+
         /// <summary>
         /// Internal exception helper to raise <see cref="ObjectDisposedException"/> if the plugin has been unlaoded
         /// </summary>
@@ -323,7 +324,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 //Await the task results
                 await deferred.ConfigureAwait(false);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 //Log errors
                 plugin.Log.Error(ex, "Error occured while observing deferred task");
@@ -367,9 +368,10 @@ namespace VNLib.Plugins.Extensions.Loading
             static async Task WaitForUnload(PluginBase pb, Action callback)
             {
                 //Wait for unload as a task on the threadpool to avoid deadlocks
-                await pb.UnloadToken.WaitHandle.NoSpinWaitAsync(Timeout.Infinite)
+                _ = await pb.UnloadToken.WaitHandle
+                    .NoSpinWaitAsync(Timeout.Infinite)
                     .ConfigureAwait(false);
-                
+
                 callback();
             }
 
@@ -391,9 +393,9 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>A new instance of the desired service type </returns>
         /// <exception cref="TypeLoadException"></exception>
         public static T CreateServiceExternal<T>(
-            this PluginBase plugin, 
-            string assemblyDllName, 
-            SearchOption search = SearchOption.AllDirectories, 
+            this PluginBase plugin,
+            string assemblyDllName,
+            SearchOption search = SearchOption.AllDirectories,
             AssemblyLoadContext? defaultCtx = null
         ) where T : class
         {
@@ -408,7 +410,7 @@ namespace VNLib.Plugins.Extensions.Loading
             //try to get the first type that has the extern attribute, or fall back to the first public & concrete type
             Type? exported = matchingTypes.FirstOrDefault(t => t.GetCustomAttribute<ServiceExportAttribute>() != null)
                 ?? matchingTypes.Where(t => !t.IsAbstract && t.IsPublic).FirstOrDefault();
-           
+
             _ = exported ?? throw new TypeLoadException($"The desired external asset type {typeof(T).Name} is not exported as part of the assembly {manLib.Assembly.FullName}");
 
             //Try to get a configuration for the exported type
@@ -457,7 +459,7 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             ArgumentNullException.ThrowIfNull(plugin, nameof(plugin));
             plugin.ThrowIfUnloaded();
-            
+
             //Init new service wrapper
             ServiceExport export = new(type, instance, flags);
             plugin.Services.Add(export);
@@ -484,7 +486,8 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="EntryPointNotFoundException"></exception>
         /// <exception cref="ConcreteTypeNotFoundException"></exception>
         /// <exception cref="ConcreteTypeAmbiguousMatchException"></exception>
-        public static T GetOrCreateSingleton<T>(this PluginBase plugin) => GetOrCreateSingleton(plugin, CreateService<T>);
+        public static T GetOrCreateSingleton<T>(this PluginBase plugin) 
+            => GetOrCreateSingleton(plugin, CreateService<T>);
 
         /// <summary>
         /// <para>
@@ -556,7 +559,7 @@ namespace VNLib.Plugins.Extensions.Loading
         public static T CreateService<T>(this PluginBase plugin)
         {
             return CreateService<T>(
-                plugin, 
+                plugin,
                 config: plugin.TryGetConfigForType<T>()
             );
         }
@@ -598,7 +601,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, System.Threading.CancellationToken)"/>
+        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// </summary>
@@ -611,7 +614,8 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="EntryPointNotFoundException"></exception>
         /// <exception cref="ConcreteTypeNotFoundException"></exception>
         /// <exception cref="ConcreteTypeAmbiguousMatchException"></exception>
-        public static T CreateService<T>(this PluginBase plugin, IConfigScope? config) => (T)CreateService(plugin, typeof(T), config);
+        public static T CreateService<T>(this PluginBase plugin, IConfigScope? config) 
+            => (T)CreateService(plugin, typeof(T), config);
 
         /// <summary>
         /// <para>
@@ -622,7 +626,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, System.Threading.CancellationToken)"/>
+        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// </summary>
@@ -661,13 +665,13 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 service = InvokeServiceConstructor(serviceType, plugin, config);
             }
-            catch(TargetInvocationException te) when (te.InnerException != null) 
+            catch (TargetInvocationException te) when (te.InnerException != null)
             {
                 FindNestedConfigurationException(te);
                 FindAndThrowInnerException(te);
                 throw;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 FindNestedConfigurationException(ex);
                 throw;
@@ -695,14 +699,9 @@ namespace VNLib.Plugins.Extensions.Loading
 #pragma warning restore CA5394 // Do not use insecure randomness
 
                 //If the instances supports async loading, dont start work until its loaded
-                if (loading != null)
-                {
-                    _ = loading.ContinueWith(t => ObserveWork(plugin, bw, randomDelay), TaskScheduler.Default);
-                }
-                else
-                {
-                    _ = ObserveWork(plugin, bw, randomDelay);
-                }
+                _ = loading != null
+                    ? loading.ContinueWith(t => ObserveWork(plugin, bw, randomDelay), TaskScheduler.Default)
+                    : ObserveWork(plugin, bw, randomDelay);
             }
 
             //register dispose cleanup
@@ -720,7 +719,7 @@ namespace VNLib.Plugins.Extensions.Loading
          */
 
         private static object InvokeServiceConstructor(Type serviceSType, PluginBase plugin, IConfigScope? config)
-        {            
+        {
             ConstructorInfo? constructor;
 
             /*
@@ -729,8 +728,8 @@ namespace VNLib.Plugins.Extensions.Loading
             if (config != null)
             {
                 constructor = serviceSType.GetConstructor([typeof(PluginBase), typeof(IConfigScope)]);
-                
-                if(constructor is not null)
+
+                if (constructor is not null)
                 {
                     return constructor.Invoke([plugin, config]);
                 }
@@ -745,12 +744,10 @@ namespace VNLib.Plugins.Extensions.Loading
 
             //Finally fall back to the empty constructor
             constructor = serviceSType.GetConstructor([]);
-            if (constructor is not null)
-            {
-                return constructor.Invoke(null);
-            }
 
-            throw new MissingMemberException($"No constructor found for {serviceSType.Name}");
+            return constructor is not null
+                ? constructor.Invoke(null)
+                : throw new MissingMemberException($"No constructor found for {serviceSType.Name}");
         }
 
         [DoesNotReturn]
@@ -769,13 +766,13 @@ namespace VNLib.Plugins.Extensions.Loading
 
         internal static void FindNestedConfigurationException(Exception ex)
         {
-            if(ex is ConfigurationException ce)
+            if (ex is ConfigurationException ce)
             {
                 ExceptionDispatchInfo.Throw(ce);
             }
 
             //Recurse
-            if(ex.InnerException is not null)
+            if (ex.InnerException is not null)
             {
                 FindNestedConfigurationException(ex.InnerException);
             }
@@ -791,7 +788,7 @@ namespace VNLib.Plugins.Extensions.Loading
             private PluginLocalCache(PluginBase plugin)
             {
                 _plugin = plugin;
-                _store = new();
+                _store = [];
                 //Register cleanup on unload
                 _ = _plugin.RegisterForUnload(() => _store.Clear());
             }

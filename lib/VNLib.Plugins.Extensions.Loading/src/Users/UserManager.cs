@@ -40,25 +40,23 @@ namespace VNLib.Plugins.Extensions.Loading.Users
     /// </summary>
     [ConfigurationName("users", Required = false)]
     public class UserManager : IUserManager
-    {       
+    {
 
         public const string USER_CUSTOM_ASSEMBLY = "custom_assembly";
         public const string DEFAULT_USER_ASM = "VNLib.Plugins.Essentials.Users.dll";
 
-        private readonly IUserManager _dynamicLoader;
-
         private UserManager(PluginBase plugin, string asmPath)
         {
             //Load the assembly
-            _dynamicLoader = LoadUserAssembly(plugin, asmPath);
+            InternalManager = LoadUserAssembly(plugin, asmPath);
         }
 
         public UserManager(PluginBase plugin)
-            :this(plugin, DEFAULT_USER_ASM)
+            : this(plugin, DEFAULT_USER_ASM)
         { }
 
         public UserManager(PluginBase plugin, IConfigScope config)
-            :this(
+            : this(
                  plugin,
                  asmPath: config.GetValueOrDefault(USER_CUSTOM_ASSEMBLY, DEFAULT_USER_ASM)  //Get custom assembly, or default
             )
@@ -67,7 +65,7 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         private static IUserManager LoadUserAssembly(PluginBase plugin, string customAsm)
         {
             //Try to load a custom assembly
-            IUserManager externManager = plugin.CreateServiceExternal<IUserManager>(customAsm);    
+            IUserManager externManager = plugin.CreateServiceExternal<IUserManager>(customAsm);
 
             if (plugin.IsDebug())
             {
@@ -81,80 +79,80 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         /// Gets the underlying <see cref="IUserManager"/> that was dynamically loaded.
         /// </summary>
         /// <returns>The user manager instance</returns>
-        public IUserManager InternalManager => _dynamicLoader;
+        public IUserManager InternalManager { get; }
 
         ///<inheritdoc/>
         [Obsolete("Use an overload that accepts a hashing provider")]
         public Task<IUser> CreateUserAsync(IUserCreationRequest creation, string? userId, CancellationToken cancellation = default)
         {
-            return _dynamicLoader.CreateUserAsync(creation, userId, cancellation);
+            return InternalManager.CreateUserAsync(creation, userId, cancellation);
         }
 
         ///<inheritdoc/>
         public IPasswordHashingProvider? GetHashProvider()
         {
-            return _dynamicLoader.GetHashProvider();
+            return InternalManager.GetHashProvider();
         }
 
         ///<inheritdoc/>
         public Task<long> GetUserCountAsync(CancellationToken cancellation = default)
         {
-            return _dynamicLoader.GetUserCountAsync(cancellation);
+            return InternalManager.GetUserCountAsync(cancellation);
         }
 
         ///<inheritdoc/>
         public Task<IUser?> GetUserFromUsernameAsync(string username, CancellationToken cancellationToken = default)
         {
-            return _dynamicLoader.GetUserFromUsernameAsync(username, cancellationToken);
+            return InternalManager.GetUserFromUsernameAsync(username, cancellationToken);
         }
 
         ///<inheritdoc/>
         public Task<IUser?> GetUserFromIDAsync(string userId, CancellationToken cancellationToken = default)
         {
-            return _dynamicLoader.GetUserFromIDAsync(userId, cancellationToken);
+            return InternalManager.GetUserFromIDAsync(userId, cancellationToken);
         }
 
         ///<inheritdoc/>
         public Task<PrivateString?> RecoverPasswordAsync(IUser user, CancellationToken cancellation = default)
         {
-            return _dynamicLoader.RecoverPasswordAsync(user, cancellation);
+            return InternalManager.RecoverPasswordAsync(user, cancellation);
         }
 
         ///<inheritdoc/>
         [Obsolete("Use overload that accepts password hashing provider")]
         public Task<ERRNO> UpdatePasswordAsync(IUser user, PrivateString newPass, CancellationToken cancellation = default)
         {
-            return _dynamicLoader.UpdatePasswordAsync(user, newPass, cancellation);
+            return InternalManager.UpdatePasswordAsync(user, newPass, cancellation);
         }
 
         ///<inheritdoc/>
         public Task<ERRNO> ValidatePasswordAsync(IUser user, PrivateString password, PassValidateFlags flags, CancellationToken cancellation = default)
         {
-            return _dynamicLoader.ValidatePasswordAsync(user, password, flags, cancellation);
+            return InternalManager.ValidatePasswordAsync(user, password, flags, cancellation);
         }
 
         ///<inheritdoc/>
         public string ComputeSafeUserId(string input)
         {
-            return _dynamicLoader.ComputeSafeUserId(input);
+            return InternalManager.ComputeSafeUserId(input);
         }
 
         ///<inheritdoc/>
         public Task<IUser> CreateUserAsync(IUserCreationRequest creation, string? userId, IPasswordHashingProvider? hashProvider, CancellationToken cancellation = default)
         {
-            return _dynamicLoader.CreateUserAsync(creation, userId, hashProvider, cancellation);
+            return InternalManager.CreateUserAsync(creation, userId, hashProvider, cancellation);
         }
 
         ///<inheritdoc/>
         public Task<ERRNO> ValidatePasswordAsync(IUser user, PrivateString password, IPasswordHashingProvider? hashProvider, CancellationToken cancellation = default)
         {
-            return _dynamicLoader.ValidatePasswordAsync(user, password, hashProvider, cancellation);
+            return InternalManager.ValidatePasswordAsync(user, password, hashProvider, cancellation);
         }
 
         ///<inheritdoc/>
         public Task<ERRNO> UpdatePasswordAsync(IUser user, PrivateString newPass, IPasswordHashingProvider? hashProvider, CancellationToken cancellation = default)
         {
-            return _dynamicLoader.UpdatePasswordAsync(user, newPass, hashProvider, cancellation);
+            return InternalManager.UpdatePasswordAsync(user, newPass, hashProvider, cancellation);
         }
     }
 }

@@ -746,7 +746,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 default:
                     return [];
-            }          
+            }
         }
     }
 }

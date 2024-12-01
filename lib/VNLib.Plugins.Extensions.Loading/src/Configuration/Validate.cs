@@ -93,15 +93,14 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration
                 throw new ConfigurationValidationException(message);
             }
         }
-    
 
         public static void Range<T>(T value, T min, T max, [CallerArgumentExpression(nameof(value))] string? paramName = null)
             where T : IComparable<T>
         {
-            
+
             Range2(value, min, max, $"Value for {paramName} must be between {min} and {max}. Value: {value}");
         }
-     
+
 
         public static void FileExists(string path)
         {

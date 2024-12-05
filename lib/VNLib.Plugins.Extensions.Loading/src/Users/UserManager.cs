@@ -82,13 +82,6 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         public IUserManager InternalManager { get; }
 
         ///<inheritdoc/>
-        [Obsolete("Use an overload that accepts a hashing provider")]
-        public Task<IUser> CreateUserAsync(IUserCreationRequest creation, string? userId, CancellationToken cancellation = default)
-        {
-            return InternalManager.CreateUserAsync(creation, userId, cancellation);
-        }
-
-        ///<inheritdoc/>
         public IPasswordHashingProvider? GetHashProvider()
         {
             return InternalManager.GetHashProvider();
@@ -116,19 +109,6 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         public Task<PrivateString?> RecoverPasswordAsync(IUser user, CancellationToken cancellation = default)
         {
             return InternalManager.RecoverPasswordAsync(user, cancellation);
-        }
-
-        ///<inheritdoc/>
-        [Obsolete("Use overload that accepts password hashing provider")]
-        public Task<ERRNO> UpdatePasswordAsync(IUser user, PrivateString newPass, CancellationToken cancellation = default)
-        {
-            return InternalManager.UpdatePasswordAsync(user, newPass, cancellation);
-        }
-
-        ///<inheritdoc/>
-        public Task<ERRNO> ValidatePasswordAsync(IUser user, PrivateString password, PassValidateFlags flags, CancellationToken cancellation = default)
-        {
-            return InternalManager.ValidatePasswordAsync(user, password, flags, cancellation);
         }
 
         ///<inheritdoc/>

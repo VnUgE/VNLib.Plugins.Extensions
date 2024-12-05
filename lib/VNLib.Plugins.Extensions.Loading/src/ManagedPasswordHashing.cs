@@ -46,7 +46,7 @@ namespace VNLib.Plugins.Extensions.Loading
     {
         public ManagedPasswordHashing(PluginBase plugin, IConfigScope? config)
         {
-            string? customAsm = config?.GetValueOrDefault(LoadingExtensions.CUSTOM_PASSWORD_ASM_KEY, defaultValue: null!); 
+            string? customAsm = config?.GetValueOrDefault(LoadingExtensions.CUSTOM_PASSWORD_ASM_KEY, defaultValue: null!);
 
             //Check for custom hashing assembly
             if (!string.IsNullOrWhiteSpace(customAsm))
@@ -152,7 +152,8 @@ namespace VNLib.Plugins.Extensions.Loading
         private static SecretProvider LoadPasswordPepper(PluginBase plugin)
         {
             //Get the pepper from secret storage
-            IAsyncLazy<byte[]> pepper = plugin.Secrets()
+            IAsyncLazy<byte[]> pepper = plugin
+                .Secrets()
                 .GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
                 .ToLazy(static sr => sr.GetFromBase64());
 
@@ -165,7 +166,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
             return new(pepper);
         }
-       
+
         private sealed class SecretProvider(IAsyncLazy<byte[]> pepper) : ISecretProvider
         {
             /*
@@ -184,7 +185,7 @@ namespace VNLib.Plugins.Extensions.Loading
             public int BufferSize => pepper.Value.Length;
 
             public ERRNO GetSecret(Span<byte> buffer)
-            {                
+            {
                 //Coppy pepper to buffer
                 pepper.Value.CopyTo(buffer);
                 //Return pepper length

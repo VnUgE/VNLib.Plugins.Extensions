@@ -42,7 +42,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
     public static partial class RoutingExtensions
     {
         private static readonly ConditionalWeakTable<IEndpoint, PluginBase?> _pluginRefs = new();
-        private static readonly ConditionalWeakTable<PluginBase, EndpointCollection> _pluginEndpoints = new();      
+        private static readonly ConditionalWeakTable<PluginBase, EndpointCollection> _pluginEndpoints = new();
 
         /// <summary>
         /// Constructs and routes the specific endpoint type for the current plugin
@@ -53,9 +53,8 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
         public static T Route<T>(this PluginBase plugin) where T : IEndpoint
         {
             //Create the endpoint service, then route it
-            T endpoint =  plugin.CreateService<T>();
+            T endpoint = plugin.CreateService<T>();
 
-            //Route the endpoint
             Route(plugin, endpoint);
 
             //Store ref to plugin for endpoint
@@ -75,22 +74,24 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
         /// <param name="endpoint">The endpoint to add to the collection</param>
         public static void Route(this PluginBase plugin, IEndpoint endpoint)
         {
+            ArgumentNullException.ThrowIfNull(endpoint);
+
+            //Get the endpoint collection for the current plugin
+            _pluginEndpoints
+                .GetValue(plugin, OnCreate)
+                .Endpoints
+                .Add(endpoint.Path, endpoint);
+
             /*
-             * Export the new collection to the service pool in the constructor
-             * function to ensure it's only export once per plugin
-             */
+            * Export the new collection to the service pool in the constructor
+            * function to ensure it's only export once per plugin
+            */
             static EndpointCollection OnCreate(PluginBase plugin)
             {
                 EndpointCollection collection = new();
                 plugin.ExportService<IVirtualEndpointDefinition>(collection);
                 return collection;
             }
-
-            //Get the endpoint collection for the current plugin
-            EndpointCollection endpoints = _pluginEndpoints.GetValue(plugin, OnCreate);
-            
-            //Add the endpoint to the collection
-            endpoints.Endpoints.Add(endpoint);
         }
 
         /// <summary>
@@ -144,7 +145,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
             {
                 throw;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 throw new ConfigurationException($"Failed to initalize endpoint {endpoint.GetType().Name}", e);
             }
@@ -172,7 +173,6 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
             ILogProvider logger = plugin.Log;
 
             string? logName = typeof(T).GetCustomAttribute<EndpointLogNameAttribute>()?.LogName;
-
             if (!string.IsNullOrWhiteSpace(logName))
             {
                 logger = plugin.Log.CreateScope(SubsituteConfigStringValue(logName, config));
@@ -183,10 +183,10 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
 
         private sealed class EndpointCollection : IVirtualEndpointDefinition
         {
-            public List<IEndpoint> Endpoints { get; } = [];
+            public Dictionary<string, IEndpoint> Endpoints { get; } = [];
 
             ///<inheritdoc/>
-            IEnumerable<IEndpoint> IVirtualEndpointDefinition.GetEndpoints() => Endpoints;
+            IEnumerable<IEndpoint> IVirtualEndpointDefinition.GetEndpoints() => Endpoints.Values;
         }
     }
 }

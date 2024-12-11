@@ -39,6 +39,7 @@ using VNLib.Plugins.Essentials;
 using VNLib.Plugins.Essentials.Accounts;
 using VNLib.Plugins.Essentials.Endpoints;
 using VNLib.Plugins.Essentials.Sessions;
+using VNLib.Plugins.Extensions.Loading.Configuration;
 
 
 namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
@@ -84,7 +85,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
 
             StaticRouteHandler[] staticRoutes = GetStaticRoutes(controller, config);
 
-            if(plugin.IsDebug())
+            if (plugin.IsDebug())
             {
                 (string, string, string)[] eps = staticRoutes
                     .Select(static p => (p.Path, p.Route.Method.ToString(), p.WorkFunc.GetMethodInfo().Name))
@@ -112,19 +113,24 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
                     continue;
                 }
 
+                //Path may have config variables to substitute
+                string routePath = RoutingExtensions.SubsituteConfigStringValue(route.Path, config);
+                Validate.NotNull(routePath, $"Route path for {method.Name} was null or undefined in configuration");
+                Validate.Assert(routePath.StartsWith('/'), $"Route {routePath} for handler {method.Name} path must start with a '/'");
+
                 routes.Add(new StaticRouteHandler
                 {
                     Parent      = controller,
                     Route       = route,
                     Protection  = HttpProtectionHandler.Create(protection),
-                    Path        = RoutingExtensions.SubsituteConfigStringValue(route.Path, config),   //Path may have config variables to substitute
-                    WorkFunc    = CreateWorkFunc(controller, method)                //Extract the processor delegate from the method
+                    Path        = routePath,
+                    WorkFunc    = CreateHandlerDelegate(controller, method)        //Extract the processor delegate from the method
                 });
             }
 
             return [.. routes];
 
-            static EndpointWorkFunc CreateWorkFunc(T controller, MethodInfo method)
+            static EndpointWorkFunc CreateHandlerDelegate(T controller, MethodInfo method)
             {
                 //Create the delegate for the method
                 EndpointWorkFunc? del = method.CreateDelegate<EndpointWorkFunc>(controller);
@@ -300,10 +306,23 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
                     return true;
                 }
 
-                return entity.Session.IsSet
-                    && _allowNewSessions || !entity.Session.IsNew   //May require reused sessions
-                    && entity.Session.SessionType == _sesType
+                return IsSessionValid(entity)
+                    && IsNewSessionAllowed(entity)
                     && entity.IsClientAuthorized(_authLevel);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private bool IsSessionValid(HttpEntity entity)
+            {
+                //Session must be loaded and the desired type
+                return entity.Session.IsSet && entity.Session.SessionType == _sesType;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private bool IsNewSessionAllowed(HttpEntity entity)
+            {
+                //Either the enpoint allows new sessions, or the session is not new
+                return _allowNewSessions || !entity.Session.IsNew;
             }
 
             public static HttpProtectionHandler Create(HttpRouteProtectionAttribute? attr)

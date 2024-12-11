@@ -40,15 +40,15 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
     /// <param name="plugin">The plugin instance to manage middleware for</param>
     public readonly struct HttpMiddlewareManager(PluginBase plugin)
     {
-        private static readonly ConditionalWeakTable<PluginBase, List<IHttpMiddleware>> _pluginMiddlewareList = new();
+        private static readonly ConditionalWeakTable<PluginBase, List<IHttpMiddleware>> _pluginMiddlewareList = [];
 
         /*
          * The runtime accepts an enumeration of IHttpMiddleware instances, so 
          * a list can just be exported as an enumerable instance
          */
-        static List<IHttpMiddleware> OnCreate(PluginBase plugin)
+        private static List<IHttpMiddleware> OnCreate(PluginBase plugin)
         {
-            List<IHttpMiddleware> collection = new(1);
+            List<IHttpMiddleware> collection = new(capacity: 1);
             plugin.ExportService<IEnumerable<IHttpMiddleware>>(collection);
             return collection;
         }

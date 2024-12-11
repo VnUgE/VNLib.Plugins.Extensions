@@ -110,8 +110,8 @@ namespace VNLib.Plugins.Extensions.Loading
 
             string? configName = GetConfigNameForType(type);
 
-            return configName != null 
-                ? TryGetConfig(plugin, configName) 
+            return configName != null
+                ? TryGetConfig(plugin, configName)
                 : null;
         }
 
@@ -169,11 +169,11 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ConfigurationException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
         public static IConfigScope GetConfig(this PluginBase plugin, string propName)
-        {      
-            return TryGetConfig(plugin, propName) 
+        {
+            return TryGetConfig(plugin, propName)
                 ?? throw new ConfigurationException($"Missing required top level configuration object '{propName}', in host/plugin configuration files");
         }
-      
+
 
         /// <summary>
         /// Gets a required configuration property from the specified configuration scope
@@ -190,8 +190,8 @@ namespace VNLib.Plugins.Extensions.Loading
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(getter);
             ArgumentException.ThrowIfNullOrWhiteSpace(property);
-            return !config.TryGetValue(property, out JsonElement el) 
-                ? default 
+            return !config.TryGetValue(property, out JsonElement el)
+                ? default
                 : getter(el);
         }
 
@@ -238,8 +238,8 @@ namespace VNLib.Plugins.Extensions.Loading
         public static T GetRequiredProperty<T>(this IConfigScope config, string property)
         {
             return GetRequiredProperty(
-                config, 
-                property, 
+                config,
+                property,
                 static p => p.Deserialize<T>()!
             );
         }
@@ -288,9 +288,9 @@ namespace VNLib.Plugins.Extensions.Loading
         public static bool TryGetProperty<T>(this IConfigScope config, string property, out T? value)
         {
             return TryGetProperty(
-                config, 
-                property, 
-                static p => p.Deserialize<T>(), 
+                config,
+                property,
+                static p => p.Deserialize<T>(),
                 out value
             );
         }
@@ -308,9 +308,9 @@ namespace VNLib.Plugins.Extensions.Loading
         public static bool TryGetProperty(this IConfigScope config, string property, out string? value)
         {
             return TryGetProperty(
-                config, 
-                property, 
-                static p => p.GetString(), 
+                config,
+                property,
+                static p => p.GetString(),
                 out value
             );
         }
@@ -328,9 +328,9 @@ namespace VNLib.Plugins.Extensions.Loading
         public static bool TryGetProperty(this IConfigScope config, string property, out int? value)
         {
             return TryGetProperty(
-                config, 
-                property, 
-                static p => p.GetInt32(), 
+                config,
+                property,
+                static p => p.GetInt32(),
                 out value
             );
         }
@@ -348,9 +348,9 @@ namespace VNLib.Plugins.Extensions.Loading
         public static bool TryGetProperty(this IConfigScope config, string property, out uint? value)
         {
             return TryGetProperty(
-                config, 
-                property, 
-                static p => p.GetUInt32(), 
+                config,
+                property,
+                static p => p.GetUInt32(),
                 out value
             );
         }
@@ -368,9 +368,9 @@ namespace VNLib.Plugins.Extensions.Loading
         public static bool TryGetProperty(this IConfigScope config, string property, out bool? value)
         {
             return TryGetProperty(
-                config, 
-                property, 
-                static p => p.GetBoolean(), 
+                config,
+                property,
+                static p => p.GetBoolean(),
                 out value
             );
         }
@@ -387,7 +387,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <param name="defaultValue">The default value to return</param>
         /// <returns>The property value returned from your getter callback, or the default value if not found</returns>
         /// <exception cref="ArgumentNullException"></exception>
-        [return:NotNullIfNotNull(nameof(defaultValue))]
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         public static T? GetValueOrDefault<T>(this IConfigScope config, string property, Func<JsonElement, T> getter, T defaultValue)
         {
             return TryGetProperty(config, property, getter, out T? value) ? value : defaultValue;
@@ -408,9 +408,9 @@ namespace VNLib.Plugins.Extensions.Loading
         public static T? GetValueOrDefault<T>(this IConfigScope config, string property, T defaultValue)
         {
             return GetValueOrDefault(
-                config, 
-                property, 
-                static p => p.Deserialize<T>(), 
+                config,
+                property,
+                static p => p.Deserialize<T>(),
                 defaultValue
             );
         }
@@ -564,7 +564,7 @@ namespace VNLib.Plugins.Extensions.Loading
         public static T DeserialzeAndValidate<T>(this IConfigScope scope) where T : IOnConfigValidation
         {
             T conf = scope.Deserialze<T>();
-            
+
             TryValidateConfig(conf);
 
             return conf;
@@ -698,7 +698,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <param name="plugin"></param>
         /// <returns>The absolute path to the assets directory if defined, null otherwise</returns>
         public static string? GetAssetsPath(this PluginBase plugin)
-        { 
+        {
             //Get global plugin config element
             IConfigScope config = plugin.GetConfig(PLUGINS_HOST_KEY);
 
@@ -742,7 +742,7 @@ namespace VNLib.Plugins.Extensions.Loading
                         .ToArray();
 
                 case JsonValueKind.String:
-                    return [ Path.GetFullPath(searchPaths.GetString()!) ];
+                    return [Path.GetFullPath(searchPaths.GetString()!)];
 
                 default:
                     return [];

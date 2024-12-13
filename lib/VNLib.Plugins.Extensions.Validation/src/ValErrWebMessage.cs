@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Validation
@@ -22,20 +22,14 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-using System.Collections;
-using System.Text.Json.Serialization;
+using System;
 
 namespace VNLib.Plugins.Extensions.Validation
 {
     /// <summary>
     /// Extends the <see cref="WebMessage"/> class with provisions for a collection of validations
     /// </summary>
+    [Obsolete("Use base class WebMessage instead")]
     public class ValErrWebMessage : WebMessage
-    {
-        /// <summary>
-        /// A collection of error messages to send to clients
-        /// </summary>
-        [JsonPropertyName("errors")]
-        public ICollection Errors { get; set; }
-    }
+    { }
 }

@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2024 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Validation
@@ -23,6 +23,7 @@
 */
 
 using System;
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 
 using FluentValidation;
@@ -45,7 +46,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <returns>The inverse of <paramref name="assertion"/></returns>
         public static bool Assert(this WebMessage webm, [DoesNotReturnIf(false)] bool assertion, string message)
         {
-            if(!assertion)
+            if (!assertion)
             {
                 webm.Success = false;
                 webm.Result = message;
@@ -54,14 +55,73 @@ namespace VNLib.Plugins.Extensions.Validation
         }
 
         /// <summary>
+        /// If <paramref name="assertion"/> evaluates to false, sets the specified assertion message
+        /// to the <see cref="WebMessage.Result"/> to the specified string
+        /// </summary>
+        /// <param name="webm"></param>
+        /// <param name="assertion">The result of the assertion</param>
+        /// <param name="errors">The error collection to send to the client in response</param>
+        /// <returns>The inverse of <paramref name="assertion"/></returns>
+        public static bool AssertError(this WebMessage webm, [DoesNotReturnIf(false)] bool assertion, ICollection errors)
+        {
+            if (!assertion)
+            {
+                webm.Success = false;
+                webm.Errors = errors;
+            }
+            return !assertion;
+        }
+
+        /// <summary>
+        /// If <paramref name="assertion"/> evaluates to false, sets the specified assertion message
+        /// to the <see cref="WebMessage.Errors"/> to the specified string array
+        /// </summary>
+        /// <param name="webm"></param>
+        /// <param name="assertion">The result of the assertion</param>
+        /// <param name="errors">The error collection to send to the client in response</param>
+        /// <returns>The inverse of <paramref name="assertion"/></returns>
+        public static bool AssertError(this WebMessage webm, [DoesNotReturnIf(false)] bool assertion, string[] errors)
+        {
+            return AssertError(webm, assertion, (ICollection)errors);
+        }
+
+        /// <summary>
+        /// If <paramref name="assertion"/> evaluates to false, sets the specified assertion message
+        /// to the <see cref="WebMessage.Errors"/> to the specified object array
+        /// </summary>
+        /// <param name="webm"></param>
+        /// <param name="assertion">The result of the assertion</param>
+        /// <param name="errors">The error collection to send to the client in response</param>
+        /// <returns>The inverse of <paramref name="assertion"/></returns>
+        public static bool AssertError(this WebMessage webm, [DoesNotReturnIf(false)] bool assertion, object[] errors)
+        {
+            return AssertError(webm, assertion, (ICollection)errors);
+        }
+
+        /// <summary>
+        /// If <paramref name="assertion"/> evaluates to false, sets the specified assertion message
+        /// to the <see cref="WebMessage.Errors"/> to the specified string
+        /// </summary>
+        /// <param name="webm"></param>
+        /// <param name="assertion">The result of the assertion</param>
+        /// <param name="error">A single error to return to the client in the errors field</param>
+        /// <returns>The inverse of <paramref name="assertion"/></returns>
+        public static bool AssertError(this WebMessage webm, [DoesNotReturnIf(false)] bool assertion, string error)
+        {
+            return AssertError(webm, assertion, [error]);
+        }
+
+        /// <summary>
         /// Validates the specified instance, and stores errors to the specified <paramref name="webMessage"/>
         /// </summary>
         /// <param name="instance">The instance to validate</param>
         /// <param name="validator"></param>
-        /// <param name="webMessage">The <see cref="ValErrWebMessage"/> to store errors to</param>
+        /// <param name="webMessage">The <see cref="WebMessage"/> to store errors to</param>
         /// <returns>True if the result of the validation is valid, false otherwise and the <paramref name="webMessage"/> is not modified</returns>
-        public static bool Validate<T>(this IValidator<T> validator, T instance, ValErrWebMessage webMessage)
+        public static bool Validate<T>(this IValidator<T> validator, T instance, WebMessage webMessage)
         {
+            ArgumentNullException.ThrowIfNull(validator);
+
             //Validate value
             ValidationResult result = validator.Validate(instance);
             //If not valid, set errors on web message
@@ -71,6 +131,19 @@ namespace VNLib.Plugins.Extensions.Validation
                 webMessage.Errors = result.GetErrorsAsCollection();
             }
             return result.IsValid;
+        }
+
+        /// <summary>
+        /// Validates the specified instance, and stores errors to the specified <paramref name="webMessage"/>
+        /// </summary>
+        /// <param name="instance">The instance to validate</param>
+        /// <param name="validator"></param>
+        /// <param name="webMessage">The <see cref="ValErrWebMessage"/> to store errors to</param>
+        /// <returns>True if the result of the validation is valid, false otherwise and the <paramref name="webMessage"/> is not modified</returns>
+        [Obsolete("Use WebMessage instead")]
+        public static bool Validate<T>(this IValidator<T> validator, T instance, ValErrWebMessage webMessage)
+        {
+            return Validate(validator, instance, (WebMessage)webMessage);
         }
     }
 }

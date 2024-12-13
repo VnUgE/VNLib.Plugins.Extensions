@@ -37,5 +37,10 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
         /// The name of the logging scope for the endpoint
         /// </summary>
         public string LogName { get; } = logName;
+
+        /// <summary>
+        /// Optional default name for the endpoint
+        /// </summary>
+        public string? DefaultName { get; set; }
     }
 }

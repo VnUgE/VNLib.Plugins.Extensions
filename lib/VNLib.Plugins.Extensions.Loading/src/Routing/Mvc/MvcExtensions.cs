@@ -114,7 +114,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
                 }
 
                 //Path may have config variables to substitute
-                string routePath = RoutingExtensions.SubsituteConfigStringValue(route.Path, config);
+                string? routePath = RoutingExtensions.SubsituteConfigStringValue(config, route.Path, @default: null);
                 Validate.NotNull(routePath, $"Route path for {method.Name} was null or undefined in configuration");
                 Validate.Assert(routePath.StartsWith('/'), $"Route {routePath} for handler {method.Name} path must start with a '/'");
 

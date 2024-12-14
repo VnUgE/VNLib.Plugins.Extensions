@@ -24,7 +24,6 @@
 
 using System;
 using System.Data;
-using System.Text;
 using System.Data.Common;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -43,9 +42,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
     public static class SqlDbConnectionLoader
     {
         public const string SQL_CONFIG_KEY = "sql";
-        public const string DB_PASSWORD_KEY = "db_password";
         public const string SQL_PROVIDER_DLL_KEY = "provider";
-  
 
         /// <summary>
         /// Gets (or loads) the ambient sql connection factory for the current plugin 
@@ -88,10 +85,10 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         {
             //Get the sql configuration scope
             IConfigScope sqlConf = plugin.GetConfig(SQL_CONFIG_KEY);
-         
+
             //Get the provider dll path
             string dllPath = sqlConf.GetRequiredProperty(SQL_PROVIDER_DLL_KEY, k => k.GetString()!);
-           
+
             /*
              * I am loading a bare object here and dynamically resolbing the required methods
              * insead of forcing a shared interface. This allows the external library to be
@@ -170,14 +167,14 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
             IRuntimeDbProvider dbp = plugin.GetDbProvider();
             IDBCommandGenerator cb = dbp.GetCommandGenerator();
 
+            //Compile the db command as a text Sql command
+            string[] createComands = builder.BuildCreateCommand(cb);
+
             //Wait for the connection factory to load
             Func<DbConnection> dbConFactory = await dbp.GetDbConnectionAsync();
 
             //Create a new db connection
             await using DbConnection connection = dbConFactory();
-
-            //Compile the db command as a text Sql command
-            string[] createComamnds = builder.BuildCreateCommand(cb);
 
             //begin connection
             await connection.OpenAsync(plugin.UnloadToken);
@@ -190,7 +187,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
             command.Transaction = transaction;
             command.CommandType = CommandType.Text;
 
-            foreach (string createCmd in createComamnds)
+            foreach (string createCmd in createComands)
             {
                 if (plugin.IsDebug())
                 {

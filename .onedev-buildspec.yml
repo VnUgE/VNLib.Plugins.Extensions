@@ -78,6 +78,14 @@ jobs:
         vnbuild build -S --include @project_name@ --verbose
     useTTY: true
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CommandStep
+    name: mock publish
+    runInContainer: false
+    interpreter: !DefaultInterpreter
+      commands: |
+        vnbuild publish -i @project_name@
+    useTTY: true
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   triggers:
   - !BranchUpdateTrigger
     branches: develop

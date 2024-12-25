@@ -39,6 +39,7 @@ using VNLib.Utils.IO;
 using VNLib.Utils.Memory;
 using VNLib.Utils.Extensions;
 using VNLib.Plugins.Extensions.Loading.Secrets;
+using VNLib.Plugins.Extensions.Loading.Configuration;
 
 /*
  * The purpose of the HCVaultClient is to provide a very simple Hashicorp Vault client
@@ -74,7 +75,7 @@ namespace VNLib.Plugins.Extensions.Loading
             {
                 AllowAutoRedirect = false,
                 UseCookies = false,
-                MaxResponseHeadersLength = 2048,
+                MaxResponseHeadersLength = 10,
                 ClientCertificateOptions = ClientCertificateOption.Automatic,
                 AutomaticDecompression = DecompressionMethods.All,
                 PreAuthenticate = false,
@@ -93,7 +94,6 @@ namespace VNLib.Plugins.Extensions.Loading
                 MaxResponseContentBufferSize = 4096     //Buffer only needs to be little for vault requests 
             };
 
-           
             //Set the vault access token header, should probably clean this up later
             _client.DefaultRequestHeaders.Add(VaultTokenHeaderName, hcToken);
             _kvVersion = kvVersion;
@@ -117,7 +117,7 @@ namespace VNLib.Plugins.Extensions.Loading
             ArgumentException.ThrowIfNullOrEmpty(token);
             ArgumentNullException.ThrowIfNull(heap);
 
-            if(kvVersion != 1 && kvVersion != 2)
+            if (kvVersion != 1 && kvVersion != 2)
             {
                 throw new ArgumentException($"Unsupported vault KV storage version {kvVersion}, must be either 1 or 2");
             }
@@ -138,13 +138,13 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="KeyNotFoundException"></exception>
         public static HCVaultClient CreateFromEnv(int kvVersion, bool trustCert, IUnmangedHeap heap)
         {
-            string address = Environment.GetEnvironmentVariable("VAULT_ADDR")
-                ?? throw new KeyNotFoundException("VAULT_ADDR environment variable not found");
+            string? address = Environment.GetEnvironmentVariable("VAULT_ADDR");
+            Validate.NotNull(address, "VAULT_ADDR environment variable not set");
 
-            string token = Environment.GetEnvironmentVariable("VAULT_TOKEN") 
-                ?? throw new KeyNotFoundException("VAULT_TOKEN environment variable not found");
+            string? token = Environment.GetEnvironmentVariable("VAULT_TOKEN");
+            Validate.NotNull(token, "VAULT_TOKEN environment variable not set");
 
-            return Create(address, token, kvVersion, trustCert, heap);        
+            return Create(address, token, kvVersion, trustCert, heap);
         }
 
         ///<inheritdoc/>
@@ -171,7 +171,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 return FromResponse(res, secretName);
             }
-            catch(HttpRequestException he) when(he.InnerException is SocketException se)
+            catch (HttpRequestException he) when(he.InnerException is SocketException se)
             {
                 throw se.SocketErrorCode switch
                 {
@@ -180,7 +180,7 @@ namespace VNLib.Plugins.Extensions.Loading
                     _ => new HCVaultException("Failed to establish a TCP connection to the vault server, see inner exception", se),
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw new HCVaultException("Failed to retreive secret from Hashicorp Vault server, see inner exception", ex);
             }
@@ -197,8 +197,8 @@ namespace VNLib.Plugins.Extensions.Loading
              */
 
             Task<ISecretResult?> asAsync = Task.Run(() => ReadSecretAsync(path, mountPoint, secretName));
-           
-            if(!asAsync.Wait(ClientDefaultTimeout))
+
+            if (!asAsync.Wait(ClientDefaultTimeout))
             {
                 throw new TimeoutException("Failed to retreive the secret from the vault in the configured timeout period");
             }
@@ -276,7 +276,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
             //Make sure the response has content
             long? ctLen = response.Content.Headers.ContentLength;
-            if(!ctLen.HasValue || ctLen.Value == 0)
+            if (!ctLen.HasValue || ctLen.Value == 0)
             {
                 return ValueTask.FromException(
                     new HttpRequestException($"Failed to fetch secret '{secretName}' from vault with error code {response.StatusCode}")
@@ -284,7 +284,7 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             //Check for way too big response entity body
-            if(ctLen.Value > MaxErrResponseContentLength)
+            if (ctLen.Value > MaxErrResponseContentLength)
             {
                 return ValueTask.FromException(
                     new HttpRequestException(
@@ -302,7 +302,7 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             return ExceptionsFromContentAsync(secretName, response);
-           
+
             static ValueTask ExceptionFromVaultErrors(string secretName, HttpStatusCode code, VaultErrorMessage? errs)
             {
                 //If the error message is null, raise an exception

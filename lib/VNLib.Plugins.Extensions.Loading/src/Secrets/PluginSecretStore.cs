@@ -26,6 +26,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 using VNLib.Utils.Memory;
 
@@ -40,7 +41,7 @@ namespace VNLib.Plugins.Extensions.Loading
     /// <param name="plugin">The plugin instance to get secrets from</param>
     public readonly struct PluginSecretStore(PluginBase plugin) : IEquatable<PluginSecretStore>
     {
-        const int HCVaultDefaultKvVersion = 2;
+        internal const int HCVaultDefaultKvVersion = 2;
 
         private readonly PluginBase _plugin = plugin;
 
@@ -56,23 +57,19 @@ namespace VNLib.Plugins.Extensions.Loading
         private static IKvVaultClient? LoadVaultClient(PluginBase plugin)
         {
             IConfigScope? customVaultConf = plugin.TryGetConfig(CUSTOM_KV_CONFIG);
+            KvVaultConfig? kvVaultConfig = customVaultConf?.Deserialze<KvVaultConfig>();
 
             //No custom config, load HCP by default
-            if(customVaultConf is null)
+            if (customVaultConf is null || kvVaultConfig is null)
             {
                 return LoadHcpVault(plugin);
             }
 
             //Try to get the custom assembly path, otherwise load HCP
-            string? customAssemblyPath = customVaultConf.GetValueOrDefault("assembly_name", null!);
-            if(string.IsNullOrWhiteSpace(customAssemblyPath))
-            {
-                return LoadHcpVault(plugin);
-            }
-
-            return plugin.CreateServiceExternal<IKvVaultClient>(customAssemblyPath);
+            return !string.IsNullOrWhiteSpace(kvVaultConfig.CustomAssemblyPath)
+                ? plugin.CreateServiceExternal<IKvVaultClient>(kvVaultConfig.CustomAssemblyPath)
+                : LoadHcpVault(plugin);
         }
-        
 
         private static HCVaultClient? LoadHcpVault(PluginBase plugin)
         {
@@ -92,10 +89,10 @@ namespace VNLib.Plugins.Extensions.Loading
 
             //create vault client, invalid or nulls will raise exceptions here
             return HCVaultClient.Create(
-                 serverAddress: conf.GetRequiredProperty(VAULT_URL_KEY, p => p.GetString()!), 
-                 authToken, 
-                 kvVersion: conf.GetValueOrDefault(VAULT_KV_VERSION_KEY, HCVaultDefaultKvVersion), 
-                 trustCert: conf.GetValueOrDefault(VAULT_TRUST_CERT_KEY, false), 
+                 serverAddress: conf.GetRequiredProperty(VAULT_URL_KEY, p => p.GetString()!),
+                 authToken,
+                 kvVersion: conf.GetValueOrDefault(VAULT_KV_VERSION_KEY, HCVaultDefaultKvVersion),
+                 trustCert: conf.GetValueOrDefault(VAULT_TRUST_CERT_KEY, false),
                  heap: MemoryUtil.Shared
             );
         }
@@ -135,5 +132,12 @@ namespace VNLib.Plugins.Extensions.Loading
 
         ///<inheritdoc/>
         public override int GetHashCode() => _plugin.GetHashCode();
+
+
+        private sealed class KvVaultConfig
+        {
+            [JsonPropertyName("assembly_name")]
+            public string? CustomAssemblyPath { get; set; }
+        }
     }
 }

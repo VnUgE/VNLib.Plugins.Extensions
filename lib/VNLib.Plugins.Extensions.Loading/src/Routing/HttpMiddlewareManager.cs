@@ -25,7 +25,6 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-using VNLib.Utils.Extensions;
 using VNLib.Plugins.Essentials.Middleware;
 
 namespace VNLib.Plugins.Extensions.Loading.Routing
@@ -54,20 +53,27 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
         }
 
         /// <summary>
-        /// Exports a single middlware instance to the collection for the plugin. 
+        /// Exports the params array of middleware to the collection for the plugin. 
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <param name="instances">A params array of middleware instances to export to the plugin</param>
         /// <remarks>
         /// WARNING: Adding middleware arrays explicitly to the plugin service pool will override
         /// this function. All instances must be exposed though this function
         /// </remarks>
-        public readonly void Add<T>(params T[] instances) where T : IHttpMiddleware
+        public readonly void Add(params IHttpMiddleware[] instances)
         {
-            List<IHttpMiddleware> middlewares = _pluginMiddlewareList.GetValue(plugin, OnCreate);
+            _pluginMiddlewareList
+                .GetValue(plugin, OnCreate)
+                .AddRange(instances);
+        }
 
-            //Add the endpoint to the collection
-            instances.ForEach(mw => middlewares.Add(mw));
+        /// <summary>
+        /// Creates and exports a new instance of the middleware to the plugin
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public readonly void Add<T>() where T : IHttpMiddleware
+        {
+            Add([plugin.CreateService<T>()]);
         }
     }
 

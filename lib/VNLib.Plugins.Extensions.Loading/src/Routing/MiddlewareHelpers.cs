@@ -38,7 +38,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
         /// Gets the http middleware manager for the plugin
         /// </summary>
         /// <param name="plugin"></param>
-        /// <returns>The HttpMiddlewareManager structure</returns>
+        /// <returns>The <see cref="HttpMiddlewareManager"/> structure</returns>
         public static HttpMiddlewareManager Middleware(this PluginBase plugin) => new(plugin);
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
         public static void ExportMiddleware<T>(this PluginBase plugin, params T[] instances) where T : IHttpMiddleware
         {
             Middleware(plugin)
-                .Add(instances);
+                .Add([.. instances]);
         }
 
     }

@@ -79,7 +79,7 @@ tasks:
         --logger "console;verbosity=detailed"
         --configuration debug
         --verbosity normal
-        --framework {{ .FRAMEWORK | default "net8.0" }}
+        --framework {{ .TARGET_FRAMEWORK | default "net8.0" }}
 
 #called by build pipeline to clean module
   clean:

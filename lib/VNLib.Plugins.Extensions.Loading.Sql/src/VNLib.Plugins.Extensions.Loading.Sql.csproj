@@ -19,7 +19,7 @@
     <Product>VNLib.Plugins.Extensions.Loading.Sql</Product>
     <PackageId>VNLib.Plugins.Extensions.Loading.Sql</PackageId>
     <Description>An Essentials framework extension library for configuring database connections using the EntityFrameworkCore patterns and abstractions. Supports MSSql, MySql and SqlLite database connections via plugin configuration.</Description>
-    <Copyright>Copyright © 2024 Vaughn Nugent</Copyright>
+    <Copyright>Copyright © 2025 Vaughn Nugent</Copyright>
     <PackageProjectUrl>https://www.vaughnnugent.com/resources/software/modules/VNLib.Plugins.Extensions</PackageProjectUrl>
     <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/VNLib.Plugins.Extensions.Loading.Sql</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>

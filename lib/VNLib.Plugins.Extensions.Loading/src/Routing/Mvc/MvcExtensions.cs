@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -75,7 +75,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
         /// <exception cref="ObjectDisposedException"></exception>
         /// <exception cref="InvalidOperationException"></exception>
         public static T Route<T>(this PluginBase plugin) where T : IHttpController 
-            => plugin.Route(default(T));
+            => Route<T>(plugin, controller: default);
 
         private static IEndpoint[] GetStaticEndpointsForController<T>(PluginBase plugin, T controller)
           where T : IHttpController
@@ -160,7 +160,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
          * This is an abstraction for architecture mapping. This endpoint will serve
          * a single path, but can server mutliple http methods.
          */
-        private sealed class StaticEndpoint(IHttpController parent) : ResourceEndpointBase
+        private sealed class StaticEndpoint(IHttpController controller) : ResourceEndpointBase
         {
             /*
              * This array holds all the processor functions for each http method.
@@ -172,7 +172,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
             private readonly StaticRouteProcessor[] _processorFunctions = new StaticRouteProcessor[32];
 
             //Cache local copy incase the parent call creates too much overhead
-            private readonly ProtectionSettings _protection = parent.GetProtectionSettings();
+            private readonly ProtectionSettings _protection = controller.GetProtectionSettings();
 
             /// <summary>
             /// <inheritdoc/>
@@ -201,7 +201,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
             ///<inheritdoc/>
             protected override ERRNO PreProccess(HttpEntity entity)
             {
-                return base.PreProccess(entity) && parent.PreProccess(entity);
+                return base.PreProccess(entity) && controller.PreProccess(entity);
             }
 
             ///<inheritdoc/>
@@ -209,14 +209,14 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
             {
                 StaticRouteProcessor handler = _processorFunctions[GetArrayOffsetForMethod(entity.Server.Method)];
 
-                if (!handler.Protection.CheckProtection(entity))
+                if (handler.Protection.CheckProtection(entity))
                 {
-                    //Allow the protection handler to define a custom response code
-                    entity.CloseResponse(handler.Protection.ErrorCode);
-                    return new(VfReturnType.VirtualSkip);
+                    return handler.WorkFunction(entity);
                 }
 
-                return handler.WorkFunction(entity);
+                //Allow the protection handler to define a custom response code
+                entity.CloseResponse(handler.Protection.ErrorCode);
+                return new(VfReturnType.VirtualSkip);
             }
 
             /*
@@ -301,14 +301,11 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
             public bool CheckProtection(HttpEntity entity)
             {
                 //If protection is disabled, always return true
-                if (!_enabled)
-                {
-                    return true;
-                }
-
-                return IsSessionValid(entity)
-                    && IsNewSessionAllowed(entity)
-                    && entity.IsClientAuthorized(_authLevel);
+                return !_enabled || (
+                    IsSessionValid(entity) &&
+                    IsNewSessionAllowed(entity) &&
+                    entity.IsClientAuthorized(_authLevel)
+                );
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

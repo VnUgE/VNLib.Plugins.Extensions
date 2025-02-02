@@ -19,7 +19,7 @@
     <Authors>Vaughn Nugent</Authors>
     <Company>Vaughn Nugent</Company>
     <Product>VNLib.Plugins.Extensions.Sql.MySQL</Product>
-    <Copyright>Copyright © 2024 Vaughn Nugent</Copyright>
+    <Copyright>Copyright © 2025 Vaughn Nugent</Copyright>
     <PackageProjectUrl>https://www.vaughnnugent.com/resources/software/modules/VNLib.Plugins.Extensions</PackageProjectUrl>
     <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/sql-providers/VNLib.Plugins.Extensions.Sql.MySQL</RepositoryUrl>
     <Description>A runtime asset library that provides MySQL interfaces for ADO and EFCore SQL server clients</Description>

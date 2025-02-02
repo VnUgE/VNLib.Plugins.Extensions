@@ -19,7 +19,7 @@
     <Product>VNLib.Plugins.Extensions.Data</Product>
     <PackageId>VNLib.Plugins.Extensions.Data</PackageId>
     <Description>An Essentials framework extension library that provides data structures for abstractions between data and databases, using the EntityFrameworkCore library and design patterns.</Description>
-    <Copyright>Copyright © 2024 Vaughn Nugent</Copyright>
+    <Copyright>Copyright © 2025 Vaughn Nugent</Copyright>
     <PackageProjectUrl>https://www.vaughnnugent.com/resources/software/modules/VNLib.Plugins.Extensions</PackageProjectUrl>
     <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/VNLib.Plugins.Extensions.Data</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -48,7 +48,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.12" />
   </ItemGroup>
 
   <ItemGroup>

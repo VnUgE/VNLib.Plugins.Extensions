@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -97,22 +97,33 @@ namespace VNLib.Plugins.Extensions.Loading
             );
         }
 
+        /// <summary>
+        /// Checks if a named secret is set in the plugin configuration. 
+        /// It does not check if the secret has a value only if it's defined.
+        /// </summary>
+        /// <param name="secretName">The name of the secret to search for</param>
+        /// <returns>True if the system configuration has a key set for the secret name within the secret configuration element</returns>
+        public readonly bool IsSet(string secretName)
+        {
+            return OnDemandSecret.IsSecretDefined(_plugin, secretName);
+        }
+
         ///<inheritdoc/>
-        public Task<ISecretResult?> TryGetSecretAsync(string secretName, CancellationToken cancellation = default)
+        public readonly Task<ISecretResult?> TryGetSecretAsync(string secretName, CancellationToken cancellation = default)
         {
             IOnDemandSecret secret = GetOnDemandSecret(secretName);
             return secret.FetchSecretAsync(cancellation);
         }
 
         ///<inheritdoc/>
-        public ISecretResult? TryGetSecret(string secretName)
+        public readonly ISecretResult? TryGetSecret(string secretName)
         {
             IOnDemandSecret secret = GetOnDemandSecret(secretName);
             return secret.FetchSecret();
         }
 
         ///<inheritdoc/>
-        public IOnDemandSecret GetOnDemandSecret(string secretName)
+        public readonly IOnDemandSecret GetOnDemandSecret(string secretName)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(secretName);
             return new OnDemandSecret(_plugin, secretName, GetVaultClient);

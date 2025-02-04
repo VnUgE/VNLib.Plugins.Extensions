@@ -60,10 +60,10 @@ namespace VNLib.Plugins.Extensions.Loading
 
             //Copy string data into a new char array
             SecretResult res = new(result.ToCharArray());
-            
+
             //PrivateStringManager will safely erase the original string if it is able to
             PrivateStringManager.EraseString(result);
-           
+
             return res;
         }
 

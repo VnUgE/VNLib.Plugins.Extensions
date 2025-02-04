@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -56,9 +56,14 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 plugin.Log.Verbose("Loading custom password hashing assembly: {path}", customAsm);
             }
+            //Allow the user to explicitly disable pepper
+            else if (config?.GetValueOrDefault("disable_pepper", false) == true)
+            {
+                Passwords = LoadHashingLibrary(plugin, config, null);
+            }
             else
             {
-                SecretProvider pepper = LoadPasswordPepper(plugin);
+                SecretProvider? pepper = LoadPasswordPepper(plugin);
 
                 Passwords = LoadHashingLibrary(plugin, config, pepper);
             }
@@ -92,11 +97,19 @@ namespace VNLib.Plugins.Extensions.Loading
         public ERRNO Hash(ReadOnlySpan<byte> password, Span<byte> hashOutput) 
             => Passwords.Hash(password, hashOutput);
 
-        private static PasswordHashing LoadHashingLibrary(PluginBase plugin, IConfigScope? config, ISecretProvider pepper)
+        private static PasswordHashing LoadHashingLibrary(PluginBase plugin, IConfigScope? config, ISecretProvider? pepper)
         {
             PasswordHashing passwords;
 
             Argon2ConfigParams costParams = new();
+
+            if (pepper is null)
+            {
+                plugin.Log.Warn(
+                    "Password pepper is not defined. Your password database is more " +
+                    "secure if you enable a pepper. If you meant to disable the password pepper you may ignore this message"
+                );
+            }
 
             if (config is null)
             {
@@ -149,8 +162,14 @@ namespace VNLib.Plugins.Extensions.Loading
             return passwords;
         }
 
-        private static SecretProvider LoadPasswordPepper(PluginBase plugin)
+        private static SecretProvider? LoadPasswordPepper(PluginBase plugin)
         {
+            //If no secret was set for the password hashing key, return null
+            if (!plugin.Secrets().IsSet(LoadingExtensions.PASSWORD_HASHING_KEY))
+            {
+                return null;
+            }
+
             //Get the pepper from secret storage
             IAsyncLazy<byte[]> pepper = plugin
                 .Secrets()

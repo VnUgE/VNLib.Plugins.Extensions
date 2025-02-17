@@ -22,19 +22,13 @@ jobs:
 - name: Unit Testing
   steps:
   - !CommandStep
-    name: Clone VNLib.Core into core
+    name: Clone Dependencies
     runInContainer: false
     interpreter: !DefaultInterpreter
       commands: |
         git clone @server_url@/VNLib.Core core --branch master
+        git clone @server_url@/@project_name@ --branch @branch@
     useTTY: true
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
-  - !CheckoutStep
-    name: checkout
-    cloneCredential: !DefaultCredential {}
-    withLfs: false
-    withSubmodules: false
-    checkoutPath: '@project_name@'
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   - !CommandStep
     name: run unit tests
@@ -55,19 +49,13 @@ jobs:
 - name: Staging build
   steps:
   - !CommandStep
-    name: Clone VNLib.Core into core
+    name: Clone Dependencies
     runInContainer: false
     interpreter: !DefaultInterpreter
       commands: |
         git clone @server_url@/VNLib.Core core --branch master
+        git clone @server_url@/@project_name@ --branch @branch@
     useTTY: true
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
-  - !CheckoutStep
-    name: checkout
-    cloneCredential: !DefaultCredential {}
-    withLfs: false
-    withSubmodules: false
-    checkoutPath: '@project_name@'
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   - !CommandStep
     name: run vnbuild build
@@ -100,19 +88,13 @@ jobs:
 - name: Publish master
   steps:
   - !CommandStep
-    name: Clone VNLib.Core into core
+    name: Clone Dependencies
     runInContainer: false
     interpreter: !DefaultInterpreter
       commands: |
         git clone @server_url@/VNLib.Core core --branch master
+        git clone @server_url@/@project_name@ --branch @branch@
     useTTY: true
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
-  - !CheckoutStep
-    name: checkout
-    cloneCredential: !DefaultCredential {}
-    withLfs: false
-    withSubmodules: false
-    checkoutPath: '@project_name@'
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   - !CommandStep
     name: VNBuild build

@@ -147,7 +147,7 @@ namespace VNLib.Plugins.Extensions.Loading
                             //Create passwords with the configuration and library
                             passwords = Argon2HashProvider.Create(lib, pepper, in costParams);
 
-                            plugin.Log.Verbose("Loaded custom password hashing library: {path}", config.LibPath);
+                            plugin.Log.Verbose("Loaded custom argon2 native hashing library: {path}", config.LibPath);
                         }
                         else
                         {

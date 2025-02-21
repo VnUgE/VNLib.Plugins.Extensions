@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -58,7 +58,8 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         public UserManager(PluginBase plugin, IConfigScope config)
             : this(
                  plugin,
-                 asmPath: config.GetValueOrDefault(USER_CUSTOM_ASSEMBLY, DEFAULT_USER_ASM)  //Get custom assembly, or default
+                 //Get custom assembly, or default
+                 asmPath: config.GetValueOrDefault(USER_CUSTOM_ASSEMBLY, DEFAULT_USER_ASM) ?? DEFAULT_USER_ASM 
             )
         { }
 

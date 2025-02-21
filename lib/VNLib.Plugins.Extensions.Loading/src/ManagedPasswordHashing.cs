@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -39,28 +39,33 @@ namespace VNLib.Plugins.Extensions.Loading
 
     /// <summary>
     /// A plugin configurable <see cref="IPasswordHashingProvider"/> managed implementation. Users may load custom 
-    /// assemblies backing instances of this class or configure the <see cref="PasswordHashing"/> implementation
+    /// assemblies backing instances of this class or configure the <see cref="Argon2HashProvider"/> implementation
     /// </summary>
     [ConfigurationName(LoadingExtensions.PASSWORD_HASHING_KEY, Required = false)]
     public sealed class ManagedPasswordHashing : IPasswordHashingProvider
     {
         public ManagedPasswordHashing(PluginBase plugin, IConfigScope? config)
         {
-            string? customAsm = config?.GetValueOrDefault(LoadingExtensions.CUSTOM_PASSWORD_ASM_KEY, defaultValue: null!);
+            PasswordConfigJson conf = config?.Deserialze<PasswordConfigJson>() ?? new();
 
             //Check for custom hashing assembly
-            if (!string.IsNullOrWhiteSpace(customAsm))
+            if (!string.IsNullOrWhiteSpace(conf.CustomLibAsmPath))
             {
                 //Load the custom assembly
-                Passwords = plugin.CreateServiceExternal<IPasswordHashingProvider>(customAsm);
+                Passwords = plugin.CreateServiceExternal<IPasswordHashingProvider>(conf.CustomLibAsmPath);
 
-                plugin.Log.Verbose("Loading custom password hashing assembly: {path}", customAsm);
+                plugin.Log.Verbose("Loading custom password hashing assembly: {path}", conf.CustomLibAsmPath);
+            }
+            //Allow the user to explicitly disable pepper
+            else if (conf.DisablePepper)
+            {
+                Passwords = LoadHashingLibrary(plugin, conf, pepper: null);
             }
             else
             {
-                SecretProvider pepper = LoadPasswordPepper(plugin);
+                SecretProvider? pepper = LoadPasswordPepper(plugin);
 
-                Passwords = LoadHashingLibrary(plugin, config, pepper);
+                Passwords = LoadHashingLibrary(plugin, conf, pepper);
             }
         }
 
@@ -92,53 +97,70 @@ namespace VNLib.Plugins.Extensions.Loading
         public ERRNO Hash(ReadOnlySpan<byte> password, Span<byte> hashOutput) 
             => Passwords.Hash(password, hashOutput);
 
-        private static PasswordHashing LoadHashingLibrary(PluginBase plugin, IConfigScope? config, ISecretProvider pepper)
+        private static IPasswordHashingProvider LoadHashingLibrary(PluginBase plugin, PasswordConfigJson config, ISecretProvider? pepper)
         {
-            PasswordHashing passwords;
+            IPasswordHashingProvider passwords;
 
             Argon2ConfigParams costParams = new();
 
-            if (config is null)
+            if (pepper is null)
             {
-                //Load default library with default params
-                passwords = PasswordHashing.Create(pepper, in costParams);
+                plugin.Log.Warn(
+                    "Password pepper is not defined. Your password database is more " +
+                    "secure if you enable a pepper. If you meant to disable the password pepper you may ignore this message"
+                );
             }
-            else
+
+            switch (config.ProviderName)
             {
-                Argon2Config conf = config.Deserialze<Argon2Config>();
+                //If no provider is specified or the provider is argon2
+                case "":
+                case null:
+                    plugin.Log.Debug("Attempting to load default password hashing library: argon2");
+                    goto case "argon2";
 
-                if (conf.Argon2Args is not null)
-                {
-                    costParams = new()
+                case "argon2":
                     {
-                        HashLen         = conf.Argon2Args.HashLen,
-                        MemoryCost      = conf.Argon2Args.MemoryCost,
-                        Parallelism     = conf.Argon2Args.Parallelism,
-                        SaltLen         = (int)conf.Argon2Args.SaltLen,
-                        TimeCost        = conf.Argon2Args.TimeCost
-                    };
-                }
+                        if (config.Argon2Args is not null)
+                        {
+                            costParams = new()
+                            {
+                                HashLen     = config.Argon2Args.HashLen,
+                                MemoryCost  = config.Argon2Args.MemoryCost,
+                                Parallelism = config.Argon2Args.Parallelism,
+                                SaltLen     = (int)config.Argon2Args.SaltLen,
+                                TimeCost    = config.Argon2Args.TimeCost
+                            };
+                        }
 
-                if (!string.IsNullOrWhiteSpace(conf.LibPath))
-                {
-                    SafeArgon2Library lib = VnArgon2.LoadCustomLibrary(
-                        dllPath: conf.LibPath,
-                        System.Runtime.InteropServices.DllImportSearchPath.SafeDirectories
-                    );
+                        //See if the user want to load a custom argon2 library
+                        if (!string.IsNullOrWhiteSpace(config.LibPath))
+                        {
+                            SafeArgon2Library lib = VnArgon2.LoadCustomLibrary(
+                                dllPath: config.LibPath,
+                                System.Runtime.InteropServices.DllImportSearchPath.SafeDirectories
+                            );
 
-                    //Dynamically loaded lib must be disposed manually
-                    _ = plugin.RegisterForUnload(lib.Dispose);
+                            //Dynamically loaded lib must be disposed manually
+                            _ = plugin.RegisterForUnload(lib.Dispose);
 
-                    //Create passwords with the configuration and library
-                    passwords = PasswordHashing.Create(lib, pepper, in costParams);
+                            //Create passwords with the configuration and library
+                            passwords = Argon2HashProvider.Create(lib, pepper, in costParams);
 
-                    plugin.Log.Verbose("Loaded custom password hashing library: {path}", conf.LibPath);
-                }
-                else
-                {
-                    //Load default library if the user did not explictly specify one
-                    passwords = PasswordHashing.Create(pepper, in costParams);
-                }
+                            plugin.Log.Verbose("Loaded custom argon2 native hashing library: {path}", config.LibPath);
+                        }
+                        else
+                        {
+                            //Load default library if the user did not explictly specify one
+                            passwords = Argon2HashProvider.Create(pepper, in costParams);
+                        }
+
+                        break;
+                    }
+
+                default:
+                    throw new ConfigurationException($"Invalid password hashing provider specified: {config.ProviderName}");
+
             }
 
             if (plugin.IsDebug())
@@ -149,8 +171,14 @@ namespace VNLib.Plugins.Extensions.Loading
             return passwords;
         }
 
-        private static SecretProvider LoadPasswordPepper(PluginBase plugin)
+        private static SecretProvider? LoadPasswordPepper(PluginBase plugin)
         {
+            //If no secret was set for the password hashing key, return null
+            if (!plugin.Secrets().IsSet(LoadingExtensions.PASSWORD_HASHING_KEY))
+            {
+                return null;
+            }
+
             //Get the pepper from secret storage
             IAsyncLazy<byte[]> pepper = plugin
                 .Secrets()
@@ -193,8 +221,17 @@ namespace VNLib.Plugins.Extensions.Loading
             }
         }
 
-        private sealed class Argon2Config
+        private sealed class PasswordConfigJson
         {
+            [JsonPropertyName("provider_name")]
+            public string ProviderName { get; set; } = "argon2";
+
+            [JsonPropertyName("custom_assembly")]
+            public string? CustomLibAsmPath { get; set; }
+
+            [JsonPropertyName("disable_pepper")]
+            public bool DisablePepper { get; set; } = false;
+
             [JsonPropertyName("argon2_options")]
             public Argon2Arguments? Argon2Args { get; set; }
 

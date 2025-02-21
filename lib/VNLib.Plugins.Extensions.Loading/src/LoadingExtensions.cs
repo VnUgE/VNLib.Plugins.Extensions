@@ -55,7 +55,6 @@ namespace VNLib.Plugins.Extensions.Loading
         public const string DEBUG_CONFIG_KEY = "debug";
         public const string SECRETS_CONFIG_KEY = "secrets";
         public const string PASSWORD_HASHING_KEY = "passwords";
-        public const string CUSTOM_PASSWORD_ASM_KEY = "custom_assembly";
 
         /*
          * Plugin local cache used for storing singletons for a plugin instance
@@ -498,7 +497,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, System.Threading.CancellationToken)"/>
+        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// </summary>
@@ -540,7 +539,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, System.Threading.CancellationToken)"/>
+        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// <para>
@@ -573,7 +572,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, System.Threading.CancellationToken)"/>
+        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// </summary>

@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -51,48 +51,73 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
 
         public string SecretName { get; } = secretName ?? throw new ArgumentNullException(nameof(secretName));
 
+        /*
+         * Caching the raw secret (read from the config file here)
+         * 
+         * SECURITY NOTE: 
+         * It is assumed that secrets stored in plaintext in the configuration file 
+         * are not any more secret than storing a copy of it's string value in memory
+         * right here. The configuration file is always loaded into memory so it's not 
+         * any worse albeit haveing a second copy.
+         * 
+         * That said, all secrets derrived (loaded) from this secret, env variable, 
+         * file, or vault, are read on demand and cleared from memory as soon as possible.
+         * So these methods are considered much more secure.
+         */
+        private readonly string? _rawSecretValue = TryGetSecretFromConfig(plugin, secretName);
+
         ///<inheritdoc/>
         public ISecretResult? FetchSecret()
         {
             plugin.ThrowIfUnloaded();
 
-            //Get the secret from the config file raw
-            string? rawSecret = TryGetSecretFromConfig(secretName);
-
-            if (rawSecret == null)
+            if (_rawSecretValue == null)
             {
                 return null;
             }
 
             //Secret is a vault path, or return the raw value
-            if (rawSecret.StartsWith(VAULT_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
+            if (_rawSecretValue.StartsWith(VAULT_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
             {
-                ValueTask<ISecretResult?> res = GetSecretFromVault(rawSecret, false);
+                ValueTask<ISecretResult?> res = GetSecretFromVault(_rawSecretValue, false);
                 Debug.Assert(res.IsCompleted);
                 return res.GetAwaiter().GetResult();
             }
 
             //See if the secret is an environment variable path
-            if (rawSecret.StartsWith(ENV_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
+            if (_rawSecretValue.StartsWith(ENV_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
             {
                 //try to get the environment variable
-                string envVar = rawSecret[ENV_URL_SCHEME.Length..];
+                string envVar = _rawSecretValue[ENV_URL_SCHEME.Length..];
                 string? envVal = Environment.GetEnvironmentVariable(envVar);
+
+                /*
+                 * I can't safely take ownership of the memory of the 
+                 * string returned by the environment variable. So I can only 
+                 * copy it and let the refence fall out of scope.
+                 * 
+                 * In the future I may consider using PrivateStringManager to
+                 * wrap it if I can determine it's safe to destroy the string.
+                 */
 
                 return envVal == null ? null : SecretResult.ToSecret(envVal);
             }
 
             //See if the secret is a file path
-            if (rawSecret.StartsWith(FILE_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
+            if (_rawSecretValue.StartsWith(FILE_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
             {
-                string filePath = rawSecret[FILE_URL_SCHEME.Length..];
+                string filePath = _rawSecretValue[FILE_URL_SCHEME.Length..];
                 byte[] fileData = File.ReadAllBytes(filePath);
 
                 return GetResultFromFileData(fileData);
             }
 
-            //Finally, return the raw value
-            return SecretResult.ToSecret(rawSecret);
+            /*
+             * Copy the raw string value to a new secret value. 
+             * Read the security note on the _rawSecretValue field
+             * above.
+             */
+            return SecretResult.ToSecret(_rawSecretValue);
         }
 
         ///<inheritdoc/>
@@ -100,40 +125,52 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         {
             plugin.ThrowIfUnloaded();
 
-            //Get the secret from the config file raw
-            string? rawSecret = TryGetSecretFromConfig(secretName);
-
-            if (rawSecret == null)
+            if (_rawSecretValue == null)
             {
                 return Task.FromResult<ISecretResult?>(null);
             }
 
             //Secret is a vault path, or return the raw value
-            if (rawSecret.StartsWith(VAULT_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
+            if (_rawSecretValue.StartsWith(VAULT_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
             {
                 //Exec vault async
-                ValueTask<ISecretResult?> res = GetSecretFromVault(rawSecret, true);
+                ValueTask<ISecretResult?> res = GetSecretFromVault(_rawSecretValue, true);
                 return res.AsTask();
             }
 
             //See if the secret is an environment variable path
-            if (rawSecret.StartsWith(ENV_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
+            if (_rawSecretValue.StartsWith(ENV_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
             {
                 //try to get the environment variable
-                string envVar = rawSecret[ENV_URL_SCHEME.Length..];
+                string envVar = _rawSecretValue[ENV_URL_SCHEME.Length..];
                 string? envVal = Environment.GetEnvironmentVariable(envVar);
+
+
+                /*
+                 * I can't safely take ownership of the memory of the 
+                 * string returned by the environment variable. So I can only 
+                 * copy it and let the refence fall out of scope.
+                 * 
+                 * In the future I may consider using PrivateStringManager to
+                 * wrap it if I can determine it's safe to destroy the string.
+                 */
+
                 return Task.FromResult<ISecretResult?>(envVal == null ? null : SecretResult.ToSecret(envVal));
             }
 
             //See if the secret is a file path
-            if (rawSecret.StartsWith(FILE_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
+            if (_rawSecretValue.StartsWith(FILE_URL_SCHEME, StringComparison.OrdinalIgnoreCase))
             {
-                string filePath = rawSecret[FILE_URL_SCHEME.Length..];
+                string filePath = _rawSecretValue[FILE_URL_SCHEME.Length..];
                 return GetResultFromFileAsync(filePath, cancellation);
             }
 
-            //Finally, return the raw value
-            return Task.FromResult<ISecretResult?>(SecretResult.ToSecret(rawSecret));
+            /*
+            * Copy the raw string value to a new secret value. 
+            * Read the security note on the _rawSecretValue field
+            * above.
+            */
+            return Task.FromResult<ISecretResult?>(SecretResult.ToSecret(_rawSecretValue));
 
 
             static async Task<ISecretResult?> GetResultFromFileAsync(string filePath, CancellationToken ct)
@@ -196,7 +233,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             }
         }
 
-        private string? TryGetSecretFromConfig(string secretName)
+        private static string? TryGetSecretFromConfig(PluginBase plugin, string secretName)
         {
             bool local = plugin.PluginConfig.TryGetProperty(SECRETS_CONFIG_KEY, out JsonElement localEl);
             bool host = plugin.HostConfig.TryGetProperty(SECRETS_CONFIG_KEY, out JsonElement hostEl);
@@ -207,8 +244,13 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             if (local && host)
             {
                 //Load both config objects to dict
-                Dictionary<string, JsonElement> localConf = localEl.EnumerateObject().ToDictionary(x => x.Name, x => x.Value);
-                Dictionary<string, JsonElement> hostConf = hostEl.EnumerateObject().ToDictionary(x => x.Name, x => x.Value);
+                Dictionary<string, JsonElement> localConf = localEl
+                    .EnumerateObject()
+                    .ToDictionary(static x => x.Name, static x => x.Value);
+
+                Dictionary<string, JsonElement> hostConf = hostEl
+                    .EnumerateObject()
+                    .ToDictionary(static x => x.Name, static x => x.Value);
 
                 //Enter all host secret objects, then follow up with plugin secert elements
                 hostConf.ForEach(kv => conf[kv.Key] = kv.Value);
@@ -218,16 +260,45 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             else if (local)
             {
                 //Store only local config
-                conf = localEl.EnumerateObject().ToDictionary(x => x.Name, x => x.Value, StringComparer.OrdinalIgnoreCase);
+                conf = localEl
+                    .EnumerateObject()
+                    .ToDictionary(
+                        static x => x.Name,
+                        static x => x.Value,
+                        StringComparer.OrdinalIgnoreCase
+                    );
             }
             else if (host)
             {
                 //store only host config
-                conf = hostEl.EnumerateObject().ToDictionary(x => x.Name, x => x.Value, StringComparer.OrdinalIgnoreCase);
+                conf = hostEl
+                    .EnumerateObject()
+                    .ToDictionary(
+                        static x => x.Name,
+                        static x => x.Value,
+                        StringComparer.OrdinalIgnoreCase
+                    );
             }
 
             //Get the value or default json element
             return conf.TryGetValue(secretName, out JsonElement el) ? el.GetString() : null;
+        }
+
+        /// <summary>
+        /// Attempts to quickly check if a secret has been defined in the system configuration.
+        /// It does not check if the value exists from whatever store it is defined in.
+        /// </summary>
+        /// <param name="plugin">The plugin to check</param>
+        /// <param name="secretName">The name of the secret to search for</param>
+        /// <returns>True of the host or plugin configuration contains a named element with the secret</returns>
+        internal static bool IsSecretDefined(PluginBase plugin, string secretName)
+        {
+            /*
+             * A secret is defined if an element is found in either the plugin or host config.
+             * Plugin is always checked first.
+             */
+            return (plugin.PluginConfig.TryGetProperty(SECRETS_CONFIG_KEY, out JsonElement secConfig) && secConfig.TryGetProperty(secretName, out _))
+                || (plugin.HostConfig.TryGetProperty(SECRETS_CONFIG_KEY, out secConfig) && secConfig.TryGetProperty(secretName, out _));
         }
 
         private static SecretResult GetResultFromFileData(byte[] secretFileData)

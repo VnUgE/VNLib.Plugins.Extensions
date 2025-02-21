@@ -10,14 +10,23 @@
 version: '3'
 
 vars:
-  TARGET: '{{.USER_WORKING_DIR}}/bin'
-  RELEASE_DIR: "./bin/release/{{.TARGET_FRAMEWORK}}/publish"
+  TARGET_FRAMEWORK: '{{ .TARGET_FRAMEWORK | default "net8.0" }}'
+  BINARY_DIR: '{{ .BINARY_DIR | default "bin" }}'
+  RELEASE_DIR: "{{ .BINARY_DIR }}/release/{{ .TARGET_FRAMEWORK }}/publish"
 
 tasks:
   
+  default:
+    desc: 'Builds a single managed library when run from a project root'
+    dir: '{{ .USER_WORKING_DIR }}'
+    vars:
+      CONFIGURATION: '{{ .CONFIGURATION | default "release" }}'
+    cmds:
+      - cmd: dotnet build -c {{ .CONFIGURATION }} {{ .MS_ARGS }} {{ .CLI_ARGS }}
+
   #when build succeeds, archive the output into a tgz 
   postbuild_success:
-    dir: '{{.USER_WORKING_DIR}}'
+    dir: '{{ .USER_WORKING_DIR }}'
     cmds:
      #pack up source code
      - task: packsource
@@ -27,11 +36,11 @@ tasks:
        vars: { BUILD_MODE: debug }
 
      #remove uncessary files from the release dir
-     - powershell -Command "Get-ChildItem -Recurse '{{.RELEASE_DIR}}/' -Include *.pdb,*.xml | Remove-Item"
+     - cmd: powershell -Command "Get-ChildItem -Recurse '{{ .RELEASE_DIR }}/' -Include *.pdb,*.xml | Remove-Item"
 
      #run post in release mode
      - task: postbuild
-       vars: { BUILD_MODE: release }    
+       vars: { BUILD_MODE: release }
 
 
   postbuild_failed:
@@ -40,31 +49,34 @@ tasks:
 
 
   postbuild:
-    dir: '{{.USER_WORKING_DIR}}'      
+    dir: '{{ .USER_WORKING_DIR }}'
     internal: true
     vars:
       #the build output directory
-      BUILD_OUT: "{{.USER_WORKING_DIR}}/bin/{{.BUILD_MODE}}/{{.TARGET_FRAMEWORK}}/publish" 
+      BUILD_OUT: "{{ .BINARY_DIR }}/{{ .BUILD_MODE }}/{{ .TARGET_FRAMEWORK }}/publish" 
 
     cmds:
      #copy license and readme to target
-     - cd .. && powershell -Command "Copy-Item -Path ./build.readme.md -Destination '{{.BUILD_OUT}}/readme.md'"
+     - cmd: powershell cp '../build.readme.md' '{{ .BUILD_OUT }}/readme.md'
 
      #tar outputs
-     - cd "{{.BUILD_OUT}}" && tar -czf "{{.TARGET}}/{{.BUILD_MODE}}.tgz" .
+     - cmd: cd "{{ .BUILD_OUT }}" && tar -czf "{{ .USER_WORKING_DIR }}/{{ .BINARY_DIR }}/{{ .BUILD_MODE }}.tgz" .
  
   packsource:
-    dir: '{{.USER_WORKING_DIR}}'
+    dir: '{{ .USER_WORKING_DIR }}'
     internal: true
+    vars:
+      EXCLUDES:
+        --exclude="bin"
+        --exclude="obj"
     cmds:
     #copy source code to target
-    - powershell -Command "Get-ChildItem -Include *.cs,*.csproj -Recurse | Where { \$_.FullName -notlike '*\obj\*' -and \$_.FullName -notlike '*\bin\*' } | Resolve-Path -Relative | tar --files-from - -czf '{{.TARGET}}/src.tgz'"
-
+    - cmd: tar {{ .EXCLUDES }} -czf '{{ .BINARY_DIR }}/src.tgz' .
 
 #Remove the output dirs on clean
   clean:
-    dir: '{{.USER_WORKING_DIR}}'
+    dir: '{{ .USER_WORKING_DIR }}'
     ignore_error: true
     cmds:
      - for: ['bin/', 'obj/']
-       cmd: powershell Remove-Item -Recurse '{{.ITEM}}'
+       cmd: powershell rm -Recurse '{{ .ITEM }}'

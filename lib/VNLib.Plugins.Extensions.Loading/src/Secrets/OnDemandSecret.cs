@@ -51,7 +51,19 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
 
         public string SecretName { get; } = secretName ?? throw new ArgumentNullException(nameof(secretName));
 
-        //Cache the secret value from the config
+        /*
+         * Caching the raw secret (read from the config file here)
+         * 
+         * SECURITY NOTE: 
+         * It is assumed that secrets stored in plaintext in the configuration file 
+         * are not any more secret than storing a copy of it's string value in memory
+         * right here. The configuration file is always loaded into memory so it's not 
+         * any worse albeit haveing a second copy.
+         * 
+         * That said, all secrets derrived (loaded) from this secret, env variable, 
+         * file, or vault, are read on demand and cleared from memory as soon as possible.
+         * So these methods are considered much more secure.
+         */
         private readonly string? _rawSecretValue = TryGetSecretFromConfig(plugin, secretName);
 
         ///<inheritdoc/>
@@ -79,6 +91,15 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
                 string envVar = _rawSecretValue[ENV_URL_SCHEME.Length..];
                 string? envVal = Environment.GetEnvironmentVariable(envVar);
 
+                /*
+                 * I can't safely take ownership of the memory of the 
+                 * string returned by the environment variable. So I can only 
+                 * copy it and let the refence fall out of scope.
+                 * 
+                 * In the future I may consider using PrivateStringManager to
+                 * wrap it if I can determine it's safe to destroy the string.
+                 */
+
                 return envVal == null ? null : SecretResult.ToSecret(envVal);
             }
 
@@ -91,7 +112,11 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
                 return GetResultFromFileData(fileData);
             }
 
-            //Finally, return the raw value
+            /*
+             * Copy the raw string value to a new secret value. 
+             * Read the security note on the _rawSecretValue field
+             * above.
+             */
             return SecretResult.ToSecret(_rawSecretValue);
         }
 
@@ -119,6 +144,17 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
                 //try to get the environment variable
                 string envVar = _rawSecretValue[ENV_URL_SCHEME.Length..];
                 string? envVal = Environment.GetEnvironmentVariable(envVar);
+
+
+                /*
+                 * I can't safely take ownership of the memory of the 
+                 * string returned by the environment variable. So I can only 
+                 * copy it and let the refence fall out of scope.
+                 * 
+                 * In the future I may consider using PrivateStringManager to
+                 * wrap it if I can determine it's safe to destroy the string.
+                 */
+
                 return Task.FromResult<ISecretResult?>(envVal == null ? null : SecretResult.ToSecret(envVal));
             }
 
@@ -129,7 +165,11 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
                 return GetResultFromFileAsync(filePath, cancellation);
             }
 
-            //Finally, return the raw value
+            /*
+            * Copy the raw string value to a new secret value. 
+            * Read the security note on the _rawSecretValue field
+            * above.
+            */
             return Task.FromResult<ISecretResult?>(SecretResult.ToSecret(_rawSecretValue));
 
 
@@ -254,7 +294,8 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         internal static bool IsSecretDefined(PluginBase plugin, string secretName)
         {
             /*
-             * A secret is defined if an element is found in either the plugin or host config
+             * A secret is defined if an element is found in either the plugin or host config.
+             * Plugin is always checked first.
              */
             return (plugin.PluginConfig.TryGetProperty(SECRETS_CONFIG_KEY, out JsonElement secConfig) && secConfig.TryGetProperty(secretName, out _))
                 || (plugin.HostConfig.TryGetProperty(SECRETS_CONFIG_KEY, out secConfig) && secConfig.TryGetProperty(secretName, out _));

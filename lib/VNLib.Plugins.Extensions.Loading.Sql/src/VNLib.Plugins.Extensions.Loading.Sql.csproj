@@ -8,10 +8,6 @@
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
-
-  <PropertyGroup>
-    <AnalysisLevel Condition="'$(BuildingInsideVisualStudio)' == true">latest-all</AnalysisLevel>
-  </PropertyGroup>
   
   <PropertyGroup>
     <Authors>Vaughn Nugent</Authors>
@@ -40,7 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.13" />
   </ItemGroup>
 
   <ItemGroup>

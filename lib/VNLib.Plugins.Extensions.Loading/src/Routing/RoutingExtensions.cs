@@ -120,7 +120,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
         private static readonly Regex ConfigSyntaxParser = ParserRegex();
         private delegate void InitFunc(string path, ILogProvider log);
 
-        [GeneratedRegex("{{(.*?)}}", RegexOptions.Compiled)]
+        [GeneratedRegex("{{\\s*(.*?)\\s*}}", RegexOptions.Compiled)]
         private static partial Regex ParserRegex();
 
         private static void InitEndpointSettings<T>(PluginBase plugin, T endpoint) where T : IEndpoint

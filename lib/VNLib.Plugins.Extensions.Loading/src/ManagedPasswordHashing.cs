@@ -46,7 +46,7 @@ namespace VNLib.Plugins.Extensions.Loading
     {
         public ManagedPasswordHashing(PluginBase plugin, IConfigScope? config)
         {
-            PasswordConfigJson conf = config?.Deserialze<PasswordConfigJson>() ?? new();
+            PasswordConfigJson conf = config?.Deserialize<PasswordConfigJson>() ?? new();
 
             //Check for custom hashing assembly
             if (!string.IsNullOrWhiteSpace(conf.CustomLibAsmPath))

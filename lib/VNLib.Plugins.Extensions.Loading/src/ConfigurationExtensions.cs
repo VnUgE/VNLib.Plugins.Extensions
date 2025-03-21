@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -563,7 +563,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ConfigurationValidationException"></exception>
         public static T DeserialzeAndValidate<T>(this IConfigScope scope) where T : IOnConfigValidation
         {
-            T conf = scope.Deserialze<T>();
+            T conf = scope.Deserialize<T>();
 
             TryValidateConfig(conf);
 
@@ -616,7 +616,7 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             //Deserialze the element
             TConfig config = plugin.GetConfigForType<TConfig>()
-                .Deserialze<TConfig>();
+                .Deserialize<TConfig>();
 
             TryValidateConfig(config);
 
@@ -650,7 +650,7 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             //Deserialze the element
             TConfig config = plugin.GetConfig(elementName)
-                .Deserialze<TConfig>();
+                .Deserialize<TConfig>();
 
             TryValidateConfig(config);
 
@@ -689,7 +689,7 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             //Try get the config
             IConfigScope? s3conf = plugin.TryGetConfig(S3_CONFIG);
-            return s3conf?.Deserialze<S3Config>();
+            return s3conf?.Deserialize<S3Config>();
         }
 
         /// <summary>

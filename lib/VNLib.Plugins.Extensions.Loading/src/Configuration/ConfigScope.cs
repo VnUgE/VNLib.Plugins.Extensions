@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -76,7 +76,7 @@ namespace VNLib.Plugins.Extensions.Loading
         public bool ContainsKey(string key) => _config.Instance.ContainsKey(key);
 
         ///<inheritdoc/>
-        public T Deserialze<T>() => _element.Deserialize<T>()!;
+        public T Deserialize<T>() => _element.Deserialize<T>()!;
 
         ///<inheritdoc/>
         public IEnumerator<KeyValuePair<string, JsonElement>> GetEnumerator() => _config.Instance.GetEnumerator();

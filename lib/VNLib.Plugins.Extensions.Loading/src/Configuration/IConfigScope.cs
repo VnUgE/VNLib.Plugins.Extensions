@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -22,6 +22,7 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
+using System;
 using System.Text.Json;
 using System.Collections.Generic;
 
@@ -42,6 +43,14 @@ namespace VNLib.Plugins.Extensions.Loading
         /// </summary>
         /// <typeparam name="T">The type to deserialze the current config to</typeparam>
         /// <returns>The instance created from the current scope</returns>
-        T Deserialze<T>();
+        T Deserialize<T>();
+
+        /// <summary>
+        /// Json deserialzes the current config scope to the desired type
+        /// </summary>
+        /// <typeparam name="T">The type to deserialze the current config to</typeparam>
+        /// <returns>The instance created from the current scope</returns>
+        [Obsolete("Use the correct spelling of Deserialize")]
+        public virtual T Deserialze<T>() => Deserialize<T>();
     }
 }

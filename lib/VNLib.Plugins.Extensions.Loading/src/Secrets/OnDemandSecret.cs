@@ -170,7 +170,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             * Read the security note on the _rawSecretValue field
             * above.
             */
-            return Task.FromResult<ISecretResult?>(SecretResult.ToSecret(_rawSecretValue));
+            return Task.FromResult<ISecretResult?>(SecretResult.ToSecret(_rawSecretValue.AsSpan()));
 
 
             static async Task<ISecretResult?> GetResultFromFileAsync(string filePath, CancellationToken ct)

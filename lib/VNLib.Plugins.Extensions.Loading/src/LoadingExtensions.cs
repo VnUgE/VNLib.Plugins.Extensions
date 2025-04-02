@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -126,7 +126,9 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             //Get the first file that matches the search file
-            return searchDirs.SelectMany(d => Directory.EnumerateFiles(d, assemblyName, searchOption)).FirstOrDefault();
+            return searchDirs
+                .SelectMany(d => Directory.EnumerateFiles(d, assemblyName, searchOption))
+                .FirstOrDefault();
         }
 
         /// <summary>
@@ -165,6 +167,7 @@ namespace VNLib.Plugins.Extensions.Loading
             {
                 plugin.Log.Verbose("Loading assembly {asm}: from file {file}", assemblyName, asmFile);
             }
+
             //Load the assembly
             return AssemblyLoader<T>.Load(asmFile, explictAlc, plugin.UnloadToken);
         }
@@ -191,7 +194,8 @@ namespace VNLib.Plugins.Extensions.Loading
             this PluginBase plugin,
             string assemblyName,
             SearchOption dirSearchOption = SearchOption.AllDirectories,
-            AssemblyLoadContext? explictAlc = null)
+            AssemblyLoadContext? explictAlc = null
+        )
         {
             /*
              * Using an assembly loader instance instead of managed library, so it respects 
@@ -808,7 +812,8 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 lock (_store)
                 {
-                    lazyService = _store.Where(t => t.Key.IsAssignableTo(serviceType))
+                    lazyService = _store
+                        .Where(t => t.Key.IsAssignableTo(serviceType))
                         .Select(static tk => tk.Value)
                         .FirstOrDefault();
 

@@ -162,7 +162,7 @@ namespace VNLib.Plugins.Extensions.Sql
             b.UseMySql(connString, ServerVersion.AutoDetect(connString));
 
             //Write debug loggin to the debug log if the user has it enabled or the plugin is in debug mode
-            if (config.GetValueOrDefault("debug", p => p.GetBoolean(), false) || plugin.IsDebug())
+            if (config.GetValueOrDefault("debug", false) || plugin.IsDebug())
             {
                 //Write the SQL to the debug log
                 b.LogTo((v) => plugin.Log.Debug("MySql: {v}", v));

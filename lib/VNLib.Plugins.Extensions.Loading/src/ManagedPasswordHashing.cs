@@ -47,6 +47,11 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             PasswordConfigJson conf = config?.Deserialize<PasswordConfigJson>() ?? new();
 
+            if (plugin.IsDebug())
+            {
+                plugin.Log.Debug("Password configuration: {pwd}", conf);
+            }
+
             //Check for custom hashing assembly
             if (!string.IsNullOrWhiteSpace(conf.CustomLibAsmPath))
             {
@@ -62,7 +67,7 @@ namespace VNLib.Plugins.Extensions.Loading
             }
             else
             {
-                ISecretProvider? pepper = LoadPasswordPepper(plugin);
+                ISecretProvider? pepper = LoadPasswordPepper(plugin, conf.PepperMlockEnabled);
 
                 Passwords = LoadHashingLibrary(plugin, conf, pepper);
             }
@@ -170,7 +175,7 @@ namespace VNLib.Plugins.Extensions.Loading
             return passwords;
         }
 
-        private static SecretProvider? LoadPasswordPepper(PluginBase plugin)
+        private static ISecretProvider? LoadPasswordPepper(PluginBase plugin, bool useMlock)
         {
             //If no secret was set for the password hashing key, return null
             if (!plugin.Secrets().IsSet(LoadingExtensions.PASSWORD_HASHING_KEY))
@@ -178,34 +183,50 @@ namespace VNLib.Plugins.Extensions.Loading
                 return null;
             }
 
-            //Get the pepper from secret storage
-            IAsyncLazy<MemoryLockedPasswordSecret> pepper = plugin
+            IAsyncLazy<byte[]> pepper = plugin
                 .Secrets()
                 .GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
-                .ToLazy(static sr => sr.GetFromBase64())
-                .Transform(arr =>
-                {
-                    bool isLocked = false;
-                    MemoryLockedPasswordSecret secret = MemoryLockedPasswordSecret.Create(MemoryUtil.Shared, arr, ref isLocked);
+                .ToBase64Bytes()
+                .AsLazy();
 
-                    //TODO: Handle the case where memory locking is not supported or fails
-                    plugin.Log.Debug("Password pepper locked in memory: {locked}", isLocked ? "yes" : "no");
-
-                    return secret;
-                });
-
+            //Log errors at startup instead of deferring to when it's used
             _ = pepper.AsTask()
                 .ContinueWith(secT => plugin.Log.Error("Failed to load password pepper: {reason}", secT.Exception?.Message),
-                    cancellationToken: default,
-                    TaskContinuationOptions.OnlyOnFaulted,  //Only run if an exception occurred to notify the user during startup
-                    TaskScheduler.Default
-                );
+                   cancellationToken: default,
+                   TaskContinuationOptions.OnlyOnFaulted,  //Only run if an exception occurred to notify the user during startup
+                   TaskScheduler.Default
+               );
 
-            return new (pepper);
+            if (useMlock)
+            {
+                //Get the pepper from secret storage
+                IAsyncLazy<MemoryLockedPasswordSecret> lockedPepper = pepper
+                    .Transform(arr =>
+                    {
+                        bool isLocked = false;
+                        MemoryLockedPasswordSecret secret = MemoryLockedPasswordSecret.Create(MemoryUtil.Shared, arr, ref isLocked);
+
+                        //TODO: Handle the case where memory locking is not supported or fails
+                        plugin.Log.Debug("Password pepper locked in memory: {locked}", isLocked ? "yes" : "no");
+
+                        return secret;
+                    });
+
+                return new SecretProvider(lockedPepper);
+            }
+            else
+            {
+                //If memory locking is not supported, just return the raw secret
+                plugin.Log.Debug("Password pepper not locked in memory, using raw secret");
+                return new RawPasswordSecret(pepper);
+            }
         }
 
-        private sealed class SecretProvider(IAsyncLazy<MemoryLockedPasswordSecret> pepper) : ISecretProvider
+       
+
+        private sealed class RawPasswordSecret(IAsyncLazy<byte[]> rawSecret) : ISecretProvider
         {
+
             /*
              * Originally this wrapper contained code to zero the pepper buffer
              * when the plugin unloaded. It was removed because
@@ -218,6 +239,19 @@ namespace VNLib.Plugins.Extensions.Loading
              * reclaimed to another process after it exits
              */
 
+            ///<inheritdoc/>
+            public int BufferSize => rawSecret.Value.Length;
+
+            ///<inheritdoc/>
+            public ERRNO GetSecret(Span<byte> buffer)
+            {
+                rawSecret.Value.CopyTo(buffer);
+                return rawSecret.Value.Length;
+            }
+        }
+
+        private sealed class SecretProvider(IAsyncLazy<MemoryLockedPasswordSecret> pepper) : ISecretProvider
+        {
             ///<inheritdoc/>
             public int BufferSize => pepper.Value.BufferSize;
 
@@ -273,7 +307,7 @@ namespace VNLib.Plugins.Extensions.Loading
             public static MemoryLockedPasswordSecret Create(IUnmangedHeap heap, byte[] secretData, ref bool locked)
             {
                 ArgumentNullException.ThrowIfNull(heap, nameof(heap));
-                ArgumentNullException.ThrowIfNull(secretData, nameof(secretData));
+                ArgumentNullException.ThrowIfNull(secretData, nameof(secretData));                
 
                 MemoryHandle<byte> handle = MemoryUtil.SafeAllocNearestPage<byte>(heap, secretData.Length);
 
@@ -308,7 +342,7 @@ namespace VNLib.Plugins.Extensions.Loading
             }
         }
 
-        private sealed class PasswordConfigJson
+        private sealed record class PasswordConfigJson
         {
             /// <summary>
             /// The name of the internal password provider, currently only
@@ -343,6 +377,13 @@ namespace VNLib.Plugins.Extensions.Loading
             /// </summary>
             [JsonPropertyName("argon2_lib_path")]
             public string? LibPath { get; set; }
+
+            /// <summary>
+            /// Specifies whether the password pepper should be locked in memory using mlock or 
+            /// similar functionality.
+            /// </summary>
+            [JsonPropertyName("pepper_mlock_enabled")]
+            public bool PepperMlockEnabled { get; set; } = true; // Default to true, can be overridden by user config
         }
 
         /// <summary>

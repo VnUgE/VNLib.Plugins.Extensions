@@ -183,6 +183,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 return null;
             }
 
+            //Get the pepper from secret storage
             IAsyncLazy<byte[]> pepper = plugin
                 .Secrets()
                 .GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
@@ -198,8 +199,7 @@ namespace VNLib.Plugins.Extensions.Loading
                );
 
             if (useMlock)
-            {
-                //Get the pepper from secret storage
+            {                
                 IAsyncLazy<MemoryLockedPasswordSecret> lockedPepper = pepper
                     .Transform(arr =>
                     {
@@ -216,8 +216,7 @@ namespace VNLib.Plugins.Extensions.Loading
             }
             else
             {
-                //If memory locking is not supported, just return the raw secret
-                plugin.Log.Debug("Password pepper not locked in memory, using raw secret");
+                // The default is mlock, so we don't need to inform the user because they knowingly disabled it
                 return new RawPasswordSecret(pepper);
             }
         }

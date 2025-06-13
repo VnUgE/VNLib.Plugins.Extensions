@@ -80,7 +80,7 @@ tasks:
         {{ .MS_ARGS }}
 
   publish:
-    desc: "Used by vnbuild to prepare the packages for build servers"      
+    desc: "Used by vnbuild to prepare the packages for build servers"
     cmds:
      #git archive in the module directory
      - cmd: git archive --format {{ .ARCHIVE_FILE_FORMAT }} --output {{ .ARCHIVE_FILE_NAME }} HEAD

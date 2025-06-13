@@ -9,6 +9,13 @@ jobs:
     passwordSecret: github-access-token
     force: false
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !PushRepository
+    name: Codeberg push sync
+    remoteUrl: https://codeberg.org/VnUgE/VNLib.Plugins.Extensions.git
+    userName: VnUgE
+    passwordSecret: codeberg-access-token
+    force: true
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   triggers:
   - !TagCreateTrigger
     projects: VNLib.Plugins.Extensions
@@ -64,7 +71,7 @@ jobs:
     runInContainer: false
     interpreter: !DefaultInterpreter
       commands: |
-        dotnet-gitversion.exe core /updateprojectfiles
+        dotnet gitversion core /updateprojectfiles
         vnbuild build --no-delay --include @project_name@ --verbose
     useTTY: true
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
@@ -100,11 +107,20 @@ jobs:
     useTTY: true
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   - !CommandStep
+    name: Create git tag
+    runInContainer: false
+    interpreter: !DefaultInterpreter
+      commands: |
+        cd @project_name@
+        task -t Module.Taskfile.yaml tag-current-commit
+    useTTY: true
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CommandStep
     name: VNBuild build
     runInContainer: false
     interpreter: !DefaultInterpreter
       commands: |
-        dotnet-gitversion.exe core /updateprojectfiles
+        dotnet gitversion core /updateprojectfiles
         vnbuild build --no-delay --include @project_name@ 
     useTTY: true
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL

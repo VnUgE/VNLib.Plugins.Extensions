@@ -23,15 +23,14 @@
 */
 
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 using VNLib.Hashing;
 using VNLib.Utils;
 using VNLib.Utils.Memory;
 using VNLib.Utils.Logging;
-using VNLib.Utils.Extensions;
 using VNLib.Plugins.Essentials.Accounts;
 
 namespace VNLib.Plugins.Extensions.Loading
@@ -48,6 +47,11 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             PasswordConfigJson conf = config?.Deserialize<PasswordConfigJson>() ?? new();
 
+            if (plugin.IsDebug())
+            {
+                plugin.Log.Debug("Password configuration: {pwd}", conf);
+            }
+
             //Check for custom hashing assembly
             if (!string.IsNullOrWhiteSpace(conf.CustomLibAsmPath))
             {
@@ -63,7 +67,7 @@ namespace VNLib.Plugins.Extensions.Loading
             }
             else
             {
-                SecretProvider? pepper = LoadPasswordPepper(plugin);
+                ISecretProvider? pepper = LoadPasswordPepper(plugin, conf.PepperMlockEnabled);
 
                 Passwords = LoadHashingLibrary(plugin, conf, pepper);
             }
@@ -171,7 +175,7 @@ namespace VNLib.Plugins.Extensions.Loading
             return passwords;
         }
 
-        private static SecretProvider? LoadPasswordPepper(PluginBase plugin)
+        private static ISecretProvider? LoadPasswordPepper(PluginBase plugin, bool useMlock)
         {
             //If no secret was set for the password hashing key, return null
             if (!plugin.Secrets().IsSet(LoadingExtensions.PASSWORD_HASHING_KEY))
@@ -183,20 +187,45 @@ namespace VNLib.Plugins.Extensions.Loading
             IAsyncLazy<byte[]> pepper = plugin
                 .Secrets()
                 .GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
-                .ToLazy(static sr => sr.GetFromBase64());
+                .ToBase64Bytes()
+                .AsLazy();
 
+            //Log errors at startup instead of deferring to when it's used
             _ = pepper.AsTask()
                 .ContinueWith(secT => plugin.Log.Error("Failed to load password pepper: {reason}", secT.Exception?.Message),
-                    cancellationToken: default,
-                    TaskContinuationOptions.OnlyOnFaulted,  //Only run if an exception occured to notify the user during startup
-                    TaskScheduler.Default
-                );
+                   cancellationToken: default,
+                   TaskContinuationOptions.OnlyOnFaulted,  //Only run if an exception occurred to notify the user during startup
+                   TaskScheduler.Default
+               );
 
-            return new(pepper);
+            if (useMlock)
+            {                
+                IAsyncLazy<MemoryLockedPasswordSecret> lockedPepper = pepper
+                    .Transform(arr =>
+                    {
+                        bool isLocked = false;
+                        MemoryLockedPasswordSecret secret = MemoryLockedPasswordSecret.Create(MemoryUtil.Shared, arr, ref isLocked);
+
+                        //TODO: Handle the case where memory locking is not supported or fails
+                        plugin.Log.Debug("Password pepper locked in memory: {locked}", isLocked ? "yes" : "no");
+
+                        return secret;
+                    });
+
+                return new SecretProvider(lockedPepper);
+            }
+            else
+            {
+                // The default is mlock, so we don't need to inform the user because they knowingly disabled it
+                return new RawPasswordSecret(pepper);
+            }
         }
 
-        private sealed class SecretProvider(IAsyncLazy<byte[]> pepper) : ISecretProvider
+       
+
+        private sealed class RawPasswordSecret(IAsyncLazy<byte[]> rawSecret) : ISecretProvider
         {
+
             /*
              * Originally this wrapper contained code to zero the pepper buffer
              * when the plugin unloaded. It was removed because
@@ -210,37 +239,159 @@ namespace VNLib.Plugins.Extensions.Loading
              */
 
             ///<inheritdoc/>
-            public int BufferSize => pepper.Value.Length;
+            public int BufferSize => rawSecret.Value.Length;
 
+            ///<inheritdoc/>
             public ERRNO GetSecret(Span<byte> buffer)
             {
-                //Coppy pepper to buffer
-                pepper.Value.CopyTo(buffer);
-                //Return pepper length
-                return pepper.Value.Length;
+                rawSecret.Value.CopyTo(buffer);
+                return rawSecret.Value.Length;
             }
         }
 
-        private sealed class PasswordConfigJson
+        private sealed class SecretProvider(IAsyncLazy<MemoryLockedPasswordSecret> pepper) : ISecretProvider
         {
+            ///<inheritdoc/>
+            public int BufferSize => pepper.Value.BufferSize;
+
+            ///<inheritdoc/>
+            public ERRNO GetSecret(Span<byte> buffer) => pepper.Value.GetSecret(buffer);
+        }
+
+        private sealed class MemoryLockedPasswordSecret : IDisposable
+        {
+
+            private readonly int _actualSize;
+            private readonly MemoryHandle<byte> _secretBuffer;
+
+            private MemoryLockedPasswordSecret(MemoryHandle<byte> buffer, int actualSize)
+            {
+                _secretBuffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
+                _actualSize = actualSize;
+            }           
+
+            ///<inheritdoc/>
+            public int BufferSize => _actualSize;
+
+            ///<inheritdoc/>
+            public ERRNO GetSecret(Span<byte> buffer)
+            {
+                MemoryUtil.Copy(
+                    source:_secretBuffer, 
+                    sourceOffset: 0, 
+                    dest:buffer, 
+                    destOffset: 0, 
+                    _actualSize
+                );              
+             
+                return _actualSize;
+            }
+
+            ///<inheritdoc/>
+            public void Dispose()
+            {
+                // If the memory can be locked, it was locked, so we need to unlock it before disposing
+                if (MemoryUtil.MemoryLockSupported)
+                {
+                    bool unlocked = MemoryUtil.UnlockMemory(_secretBuffer);
+                    Debug.Assert(unlocked);
+                }
+
+                // Clear the memory to prevent it from being leaked
+                MemoryUtil.InitializeBlock(ref _secretBuffer.GetReference(), _actualSize);
+
+                _secretBuffer.Dispose();
+            }
+
+            public static MemoryLockedPasswordSecret Create(IUnmangedHeap heap, byte[] secretData, ref bool locked)
+            {
+                ArgumentNullException.ThrowIfNull(heap, nameof(heap));
+                ArgumentNullException.ThrowIfNull(secretData, nameof(secretData));                
+
+                MemoryHandle<byte> handle = MemoryUtil.SafeAllocNearestPage<byte>(heap, secretData.Length);
+
+                try
+                {
+                    //Attempt to lock the memory to prevent it from being swapped out to disk (not supported on all platforms)
+                    if (MemoryUtil.MemoryLockSupported)
+                    {
+                        //Lock the memory to prevent it from being swapped out to disk
+                        locked = MemoryUtil.LockMemory(handle);
+                    }
+
+                    MemoryUtil.CopyArray(
+                        source:secretData,                       
+                        sourceOffset: 0,
+                        dest:handle,
+                        destOffset: 0, 
+                        (nuint)secretData.Length
+                    );
+
+                    // Clear the original array to prevent it from floating around in memory
+                    MemoryUtil.InitializeBlock(secretData);
+
+                    //Return the memory locked secret
+                    return new MemoryLockedPasswordSecret(handle, secretData.Length);
+                }
+                catch
+                {
+                    handle.Dispose();
+                    throw;
+                }
+            }
+        }
+
+        private sealed record class PasswordConfigJson
+        {
+            /// <summary>
+            /// The name of the internal password provider, currently only
+            /// supports "argon2" as a valid provider name.
+            /// </summary>
             [JsonPropertyName("provider_name")]
             public string ProviderName { get; set; } = "argon2";
 
+            /// <summary>
+            /// Allows users to specify a custom assembly path to load a 
+            /// password hashing provider from.
+            /// </summary>
             [JsonPropertyName("custom_assembly")]
             public string? CustomLibAsmPath { get; set; }
 
+            /// <summary>
+            /// Disables the password pepper. This is not recommended as it 
+            /// reduces the security of the password hashing.
+            /// </summary>
             [JsonPropertyName("disable_pepper")]
             public bool DisablePepper { get; set; } = false;
 
+            /// <summary>
+            /// Optionally allows users to specify custom Argon2 parameters
+            /// </summary>
             [JsonPropertyName("argon2_options")]
             public Argon2Arguments? Argon2Args { get; set; }
 
+            /// <summary>
+            /// The path to the custom Argon2 library to load. If not specified, 
+            /// the default library will be used. (Environment variable used)
+            /// </summary>
             [JsonPropertyName("argon2_lib_path")]
             public string? LibPath { get; set; }
+
+            /// <summary>
+            /// Specifies whether the password pepper should be locked in memory using mlock or 
+            /// similar functionality.
+            /// </summary>
+            [JsonPropertyName("pepper_mlock_enabled")]
+            public bool PepperMlockEnabled { get; set; } = true; // Default to true, can be overridden by user config
         }
 
+        /// <summary>
+        /// Class is meant to map to the <see cref="Argon2ConfigParams"/>
+        /// structure.
+        /// </summary>
         private sealed record class Argon2Arguments
         {
+
             [JsonPropertyName("hash_length")]
             public required uint HashLen { get; set; }
 

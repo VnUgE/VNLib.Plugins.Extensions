@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - [no ci] bump version
+- Update format and add git-cliff
 
 ## [0.1.2-rc.2] - 2025-06-13
 
@@ -85,7 +86,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Remove unsafe/unused features and update namespaces
 - Remove vnbuild verbostiy flag for publish tasks
 
 [0.1.2-rc.3]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2-rc.3&id2=v0.1.2-rc.2

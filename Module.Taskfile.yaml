@@ -35,7 +35,6 @@ tasks:
       - cmd: git clone 
           {{ .GIT_SERVER_URL }}/vnlib.core 
           --branch {{ .CORE_TAG }} 
-          --verify-signatures
           --ipv4
           core 
 

@@ -34,8 +34,12 @@ jobs:
     runInContainer: false
     interpreter: !DefaultInterpreter
       commands: |
-        git clone @server_url@/VNLib.Core core --branch master
         git clone @server_url@/@project_name@ --branch @branch@
+        cd @project_name@
+        task -t Module.Taskfile.yaml clone-deps
+    envVars:
+    - name: GIT_SERVER_URL
+      value: '@server_url@'
     useTTY: true
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   - !CommandStep
@@ -54,6 +58,7 @@ jobs:
   maxRetries: 3
   retryDelay: 30
   timeout: 14400
+
 - name: Staging build
   jobExecutor: windows
   steps:
@@ -62,8 +67,12 @@ jobs:
     runInContainer: false
     interpreter: !DefaultInterpreter
       commands: |
-        git clone @server_url@/VNLib.Core core --branch master
         git clone @server_url@/@project_name@ --branch @branch@
+        cd @project_name@
+        task -t Module.Taskfile.yaml clone-deps
+    envVars:
+    - name: GIT_SERVER_URL
+      value: '@server_url@'
     useTTY: true
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   - !CommandStep
@@ -102,8 +111,12 @@ jobs:
     runInContainer: false
     interpreter: !DefaultInterpreter
       commands: |
-        git clone @server_url@/VNLib.Core core --branch master
         git clone @server_url@/@project_name@ --branch @branch@
+        cd @project_name@
+        task -t Module.Taskfile.yaml clone-deps
+    envVars:
+    - name: GIT_SERVER_URL
+      value: '@server_url@'
     useTTY: true
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   - !CommandStep

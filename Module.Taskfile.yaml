@@ -24,6 +24,20 @@ tasks:
     desc: 'Builds the managed libraries in this module for development'
     cmds:
       - cmd: dotnet build -c debug {{ .MS_ARGS }}
+  
+  clone-deps:
+    desc: 'Clones required git dependencies from the server'
+    dir: '{{ .ROOT_DIR }}/..'
+    vars:
+      CORE_TAG: 'master'
+      GIT_SERVER_URL: '{{ .GIT_SERVER_URL | default "https://github.com/vnuge" }}'
+    cmds:
+      - cmd: git clone 
+          {{ .GIT_SERVER_URL }}/vnlib.core 
+          --branch {{ .CORE_TAG }} 
+          --verify-signatures
+          --ipv4
+          core 
 
 #called by build pipeline to sync repo
   update:

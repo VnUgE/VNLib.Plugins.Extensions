@@ -29,7 +29,7 @@ tasks:
     desc: 'Clones required git dependencies from the server'
     dir: '{{ .ROOT_DIR }}/..'
     vars:
-      CORE_TAG: 'v0.1.2-rc.5'
+      CORE_TAG: 'v0.1.2-rc.6'
       GIT_SERVER_URL: '{{ .GIT_SERVER_URL | default "https://github.com/vnuge" }}'
     cmds:
       - cmd: git clone 

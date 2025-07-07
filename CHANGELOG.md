@@ -5,12 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2-rc.4] - 2025-07-07
+
+### Changed
+
+- Centralize source dependencies into taskfile
+- Pin core version to v0.1.2-rc.5
+- Bump vnlib.core version to v0.1.2-rc.6
+
+### Removed
+
+- Remove invalid signature check on git clone command
+
 ## [0.1.2-rc.3] - 2025-06-24
 
 ### Changed
 
 - [no ci] bump version
 - Update format and add git-cliff
+- Final changelog update before release
 
 ## [0.1.2-rc.2] - 2025-06-13
 
@@ -34,14 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Allow users to load custom vault providers
 - Add mock publish stage to development builds
 
 ### Changed
 
-- Update CI nuget packaging and speed up publish steps
-- Efcore package updates
-- Revert build includes & run manual gitversion to update project files
 - Trigger build for core update
 - Minor formatting changes
 - Package updates
@@ -76,7 +85,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix sleet dependency versions by running full build
 - Endpoint initialization
 - Fix target framework build variable
 - Fix sql lib references & update copyright date
@@ -84,10 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix unexpected raw secret erasure
 - Fix spelling mistake
 
-### Removed
-
-- Remove vnbuild verbostiy flag for publish tasks
-
+[0.1.2-rc.4]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2-rc.4&id2=v0.1.2-rc.3
 [0.1.2-rc.3]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2-rc.3&id2=v0.1.2-rc.2
 [0.1.2-rc.2]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2-rc.2&id2=v0.1.1
 

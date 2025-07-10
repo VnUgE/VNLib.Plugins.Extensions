@@ -1,4 +1,9 @@
-version: 37
+version: 40
+properties:
+- name: deps_core_version
+  value: v0.1.2-rc.6
+  archived: false
+
 jobs:
 - name: GitHub Push
   steps:
@@ -8,14 +13,16 @@ jobs:
     userName: VnUgE
     passwordSecret: github-access-token
     force: false
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    condition: SUCCESSFUL
+    optional: false
   - !PushRepository
     name: Codeberg push sync
     remoteUrl: https://codeberg.org/VnUgE/VNLib.Plugins.Extensions.git
     userName: VnUgE
     passwordSecret: codeberg-access-token
     force: true
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    condition: SUCCESSFUL
+    optional: false
   triggers:
   - !TagCreateTrigger
     projects: VNLib.Plugins.Extensions
@@ -35,13 +42,13 @@ jobs:
     interpreter: !DefaultInterpreter
       commands: |
         git clone @server_url@/@project_name@ --branch @branch@
-        cd @project_name@
-        task -t Module.Taskfile.yaml clone-deps
+        git clone @server_url@/VNLib.Core core --branch @property:deps_core_version@
     envVars:
     - name: GIT_SERVER_URL
       value: '@server_url@'
     useTTY: true
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    condition: SUCCESSFUL
+    optional: false
   - !CommandStep
     name: run unit tests
     runInContainer: false
@@ -50,7 +57,8 @@ jobs:
         cd @project_name@
         task -t Module.Taskfile.yaml test
     useTTY: true
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    condition: SUCCESSFUL
+    optional: false
   triggers:
   - !BranchUpdateTrigger
     branches: '** -master'
@@ -68,13 +76,13 @@ jobs:
     interpreter: !DefaultInterpreter
       commands: |
         git clone @server_url@/@project_name@ --branch @branch@
-        cd @project_name@
-        task -t Module.Taskfile.yaml clone-deps
+        git clone @server_url@/VNLib.Core core --branch @property:deps_core_version@
     envVars:
     - name: GIT_SERVER_URL
       value: '@server_url@'
     useTTY: true
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    condition: SUCCESSFUL
+    optional: false
   - !CommandStep
     name: run vnbuild build
     runInContainer: false
@@ -83,7 +91,8 @@ jobs:
         dotnet gitversion core /updateprojectfiles
         vnbuild build --no-delay --include @project_name@ --verbose
     useTTY: true
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    condition: SUCCESSFUL
+    optional: false
   - !CommandStep
     name: mock publish
     runInContainer: false
@@ -91,7 +100,8 @@ jobs:
       commands: |
         vnbuild publish -i @project_name@
     useTTY: true
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    condition: SUCCESSFUL
+    optional: false
   triggers:
   - !BranchUpdateTrigger
     branches: develop
@@ -112,13 +122,13 @@ jobs:
     interpreter: !DefaultInterpreter
       commands: |
         git clone @server_url@/@project_name@ --branch @branch@
-        cd @project_name@
-        task -t Module.Taskfile.yaml clone-deps
+        git clone @server_url@/VNLib.Core core --branch @property:deps_core_version@
     envVars:
     - name: GIT_SERVER_URL
       value: '@server_url@'
     useTTY: true
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    condition: SUCCESSFUL
+    optional: false
   - !CommandStep
     name: Create git tag
     runInContainer: false
@@ -127,16 +137,18 @@ jobs:
         cd @project_name@
         task -t Module.Taskfile.yaml tag-current-commit
     useTTY: true
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    condition: SUCCESSFUL
+    optional: false
   - !CommandStep
     name: VNBuild build
     runInContainer: false
     interpreter: !DefaultInterpreter
       commands: |
-        dotnet gitversion core /updateprojectfiles
-        vnbuild build --no-delay --include @project_name@ 
+          dotnet gitversion core /updateprojectfiles
+          vnbuild build --no-delay --include @project_name@
     useTTY: true
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    condition: SUCCESSFUL
+    optional: false
   - !CommandStep
     name: VNBuild publish
     runInContainer: false
@@ -149,7 +161,8 @@ jobs:
     - name: FTP_PASSWORD
       value: '@secret:ftp_password@'
     useTTY: true
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+    condition: SUCCESSFUL
+    optional: false
   triggers:
   - !BranchUpdateTrigger
     branches: master

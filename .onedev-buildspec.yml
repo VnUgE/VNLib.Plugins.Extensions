@@ -41,8 +41,8 @@ jobs:
     runInContainer: false
     interpreter: !DefaultInterpreter
       commands: |
-        git clone @server_url@/@project_name@ --branch @branch@
-        git clone @server_url@/VNLib.Core core --branch @property:deps_core_version@
+        git clone @server_url@/@project_path@ --branch @branch@ @project_name@
+        git clone @server_url@/vnuge/vnlib/VNLib.Core core --branch @property:deps_core_version@
     envVars:
     - name: GIT_SERVER_URL
       value: '@server_url@'
@@ -75,8 +75,8 @@ jobs:
     runInContainer: false
     interpreter: !DefaultInterpreter
       commands: |
-        git clone @server_url@/@project_name@ --branch @branch@
-        git clone @server_url@/VNLib.Core core --branch @property:deps_core_version@
+        git clone @server_url@/@project_path@ --branch @branch@ @project_name@
+        git clone @server_url@/vnuge/vnlib/VNLib.Core core --branch @property:deps_core_version@
     envVars:
     - name: GIT_SERVER_URL
       value: '@server_url@'
@@ -121,8 +121,8 @@ jobs:
     runInContainer: false
     interpreter: !DefaultInterpreter
       commands: |
-        git clone @server_url@/@project_name@ --branch @branch@
-        git clone @server_url@/VNLib.Core core --branch @property:deps_core_version@
+        git clone @server_url@/@project_path@ --branch @branch@ @project_name@
+        git clone @server_url@/vnuge/vnlib/VNLib.Core core --branch @property:deps_core_version@
     envVars:
     - name: GIT_SERVER_URL
       value: '@server_url@'

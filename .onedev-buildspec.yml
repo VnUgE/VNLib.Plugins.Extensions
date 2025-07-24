@@ -1,7 +1,7 @@
 version: 40
 properties:
 - name: deps_core_version
-  value: v0.1.2-rc.6
+  value: v0.1.2-rc.7
   archived: false
 
 jobs:

@@ -66,9 +66,9 @@ namespace VNLib.Plugins.Extensions.Loading
 
         private readonly HttpClient _client;
         private readonly int _kvVersion;
-        private readonly IUnmangedHeap _bufferHeap;
+        private readonly IUnmanagedHeap _bufferHeap;
 
-        private HCVaultClient(string serverAddress, string hcToken, int kvVersion, bool trustCert, IUnmangedHeap heap)
+        private HCVaultClient(string serverAddress, string hcToken, int kvVersion, bool trustCert, IUnmanagedHeap heap)
         {
 #pragma warning disable CA2000 // Dispose objects before losing scope
             HttpClientHandler handler = new()
@@ -111,7 +111,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The new client instance</returns>
         /// <exception cref="ArgumentException"></exception>
         /// <exception cref="ArgumentNullException"></exception>
-        public static HCVaultClient Create(string serverAddress, string token, int kvVersion, bool trustCert, IUnmangedHeap heap)
+        public static HCVaultClient Create(string serverAddress, string token, int kvVersion, bool trustCert, IUnmanagedHeap heap)
         {
             ArgumentException.ThrowIfNullOrEmpty(serverAddress);
             ArgumentException.ThrowIfNullOrEmpty(token);
@@ -136,7 +136,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ArgumentException"></exception>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="KeyNotFoundException"></exception>
-        public static HCVaultClient CreateFromEnv(int kvVersion, bool trustCert, IUnmangedHeap heap)
+        public static HCVaultClient CreateFromEnv(int kvVersion, bool trustCert, IUnmanagedHeap heap)
         {
             string? address = Environment.GetEnvironmentVariable("VAULT_ADDR");
             Validate.NotNull(address, "VAULT_ADDR environment variable not set");
@@ -346,7 +346,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
             public VnMemoryStream StreamData { get; }
 
-            public SecretResponse(uint initSize, IUnmangedHeap heap)
+            public SecretResponse(uint initSize, IUnmanagedHeap heap)
             {
                 _memHandle = heap.Alloc<byte>(initSize, false);
                 StreamData = VnMemoryStream.FromHandle(_memHandle, false, 0, false);

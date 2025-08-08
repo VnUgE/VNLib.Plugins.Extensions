@@ -303,7 +303,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 _secretBuffer.Dispose();
             }
 
-            public static MemoryLockedPasswordSecret Create(IUnmangedHeap heap, byte[] secretData, ref bool locked)
+            public static MemoryLockedPasswordSecret Create(IUnmanagedHeap heap, byte[] secretData, ref bool locked)
             {
                 ArgumentNullException.ThrowIfNull(heap, nameof(heap));
                 ArgumentNullException.ThrowIfNull(secretData, nameof(secretData));                

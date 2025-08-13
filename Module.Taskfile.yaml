@@ -46,6 +46,22 @@ tasks:
      - cmd: echo "Tagging current commit with version v{{ .BUILD_VERSION }}"
      - cmd: git tag -s -a v{{ .BUILD_VERSION }} -m "CI Build version {{ .BUILD_VERSION }}"
      - cmd: git push origin v{{ .BUILD_VERSION }}
+  
+  configure-dep:
+    desc: 'CI task to clone a dependency repo at a specific branch and version and initialzies it'
+    dir: '{{ .USER_WORKING_DIR }}'
+    requires:
+      vars: [DEP_REPO, DEP_REVISION]
+    vars:
+      DEP_BRANCH: '{{ splitList "/" .DEP_REVISION | first }}'
+      DEP_VERSION: '{{ splitList "/" .DEP_REVISION | last }}'
+      IMPLICIT_DIR: '{{ splitList "/" .DEP_REPO | last }}'
+      DEP_DIR: '{{ default .IMPLICIT_DIR .DEP_DIR }}'
+    cmds:
+      - cmd: git clone {{ .DEP_REPO }} --single-branch --branch {{ .DEP_BRANCH }} {{ .DEP_DIR }}
+      - cmd: cd {{ .DEP_DIR }} && git fetch --tags 
+      - cmd: cd {{ .DEP_DIR }} && git reset --hard {{ .DEP_VERSION }} 
+      - cmd: cd {{ .DEP_DIR }} && dotnet gitversion /updateprojectfiles
 
 #called by build pipeline to build module
   build:

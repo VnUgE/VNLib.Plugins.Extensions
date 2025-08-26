@@ -12,18 +12,13 @@ version: '3'
 
 vars:  
   ARCHIVE_FILE_NAME: '{{ .ARCHIVE_FILE_NAME | default "archive.tgz" }}'
-  MS_ARGS: 
-    /p:RunAnalyzersDuringBuild=false 
-    /p:BuildInParallel=true 
-    /p:MultiProcessorCompilation=true 
-    /p:ErrorOnDuplicatePublishOutputFiles=false  
 
 tasks:
 
   default:
     desc: 'Builds the managed libraries in this module for development'
     cmds:
-      - cmd: dotnet build -c debug {{ .MS_ARGS }}
+      - cmd: dotnet build -c debug {{ .CLI_ARGS }}
 
 #called by build pipeline to sync repo
   update:
@@ -70,7 +65,6 @@ tasks:
       PACK_OUT: '{{ .OUTPUT_DIR }}/{{ .HEAD_SHA }}/pkg'
       INT_DIR: '{{ .SCRATCH_DIR }}/obj/{{ .MODULE_NAME }}/'
       MS_ARGS: ' 
-        {{ .MS_ARGS }} 
         --nologo
         /p:UseCommonOutputDirectory=true 
         /p:IntermediateOutputPath="{{ .INT_DIR }}"'
@@ -104,12 +98,21 @@ tasks:
   test:
     desc: "Runs managed tests against the entire solution and all loaded test projects"
     cmds:
-     - cmd: dotnet test
-        {{ .CLI_ARGS }}
-        --logger "console;verbosity=detailed"
-        --configuration debug
-        --verbosity normal
-        --framework {{ .TARGET_FRAMEWORK | default "net8.0" }}
+      - cmd: dotnet build 
+          --nologo
+          --configuration debug
+          --verbosity normal
+          --no-incremental
+
+      - cmd: dotnet test
+          --no-build
+          --nologo
+          --logger "console;verbosity=detailed"
+          --configuration debug
+          --framework {{ .TARGET_FRAMEWORK | default "net8.0" }}
+          --environment VNLIB_SHARED_HEAP_DIAGNOSTICS="1"
+          {{ .CLI_ARGS }}
+
 
 #called by build pipeline to clean module
   clean:
@@ -117,10 +120,10 @@ tasks:
     ignore_error: true
     cmds:
     #clean solution
-     - cmd: dotnet clean /p:BuildInParallel=true /p:MultiProcessorCompilation=true
+     - cmd: dotnet clean
      - cmd: powershell rm '{{ .ARCHIVE_FILE_NAME }}' --Force
 
-  write-changelog:    
+  write-changelog:
     cmds:
      - cmd: git-cliff
          --verbose

@@ -22,7 +22,7 @@ tasks:
     vars:
       CONFIGURATION: '{{ .CONFIGURATION | default "release" }}'
     cmds:
-      - cmd: dotnet build -c {{ .CONFIGURATION }} {{ .MS_ARGS }} {{ .CLI_ARGS }}
+      - cmd: dotnet build -c {{ .CONFIGURATION }} {{ .CLI_ARGS }}
 
   #when build succeeds, archive the output into a tgz 
   postbuild_success:

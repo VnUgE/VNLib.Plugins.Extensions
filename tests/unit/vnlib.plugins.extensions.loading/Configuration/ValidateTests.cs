@@ -8,7 +8,8 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration.Tests
         [TestMethod()]
         public void RangeTest()
         {
-            Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.Range(5, 1, 10));
+            Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.Range(-15, 1, 10));
+            Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.Range(0, 1, 10));
             Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.Range(15, 1, 10));
             Validate.Range(5, 1, 10);
         }
@@ -47,11 +48,13 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration.Tests
         [TestMethod()]
         public void Range2Test()
         {
-            Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.Range2(5, 1, 10, nameof(RangeTest)));
+            Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.Range2(-15, 1, 10, nameof(RangeTest)));
+            Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.Range2(0, 1, 10, nameof(RangeTest)));
             Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.Range2(15, 1, 10, nameof(RangeTest)));
             Validate.Range2(5, 1, 10, nameof(RangeTest));
 
-            Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.Range2(5.0, 1.0, 10.0, nameof(RangeTest)));
+            Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.Range2(-15.0, 1.0, 10.0, nameof(RangeTest)));
+            Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.Range2(0.0, 1.0, 10.0, nameof(RangeTest)));
             Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.Range2(15.0, 1.0, 10.0, nameof(RangeTest)));
             Validate.Range2(5.0, 1.0, 10.0, nameof(RangeTest));
         }
@@ -60,7 +63,9 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration.Tests
         public void FileExistsTest()
         {
             Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.FileExists("ThisFileDoesNotExist.txt"));
-            Validate.FileExists("Configuration/ValidateTests.cs");          
+
+            //Assumes the DLL is in the output directory
+            Validate.FileExists("VNLib.Plugins.Extensions.Loading.dll");          
         }
     }
 }

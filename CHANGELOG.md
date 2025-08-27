@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2-rc.7] - 2025-08-27
+
+### Changed
+
+- Centralize MSBuild config via Directory.Build.props; drop MS_ARGS - [a70ce82](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=a70ce827239c19398e73700c7ce6135225e6a4e5)
+- Enable CS0618 and IDE0251 warnings as errors for using obsolete APIs and readonly struct modifiers - [f9d7e39](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=f9d7e39e4bfedde1ff473f10fb57ffc986142084)
+- Update `vnlib.core` to v0.1.2-rc.9 - (deps) [f8c6649](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=f8c6649236679ecdd3a434160fbde2c6d3c9f5e7)
+- Adding more documentation to config substitution for mvc static route attributes - (loading) [14ad900](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=14ad900e6d2cd74baaa15642093be69d45f748f5)
+
+### Fixed
+
+- Add loading extensions unit testing project - [0a2051b](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=0a2051bb3df2d9883e2854ec5043ba7ac72f74ae)
+
 ## [0.1.2-rc.6] - 2025-08-13
 
 ### Changed
@@ -65,7 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Endpoint initialization - [3f6a803](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=3f6a80306935afbd9cc74bd2bec83977a2ae12ae)
 - Fix unexpected raw secret erasure - [4237750](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=42377501eb066f99c8e9d3f4a89b7595329e519b)
 
-[0.1.2-rc.6]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=vv0.1.2-rc.6&id2=v0.1.2-rc.5
+[0.1.2-rc.7]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=vv0.1.2-rc.7&id2=v0.1.2-rc.6
+[0.1.2-rc.6]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2-rc.6&id2=v0.1.2-rc.5
 [0.1.2-rc.5]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2-rc.5&id2=v0.1.2-rc.4
 [0.1.2-rc.4]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2-rc.4&id2=v0.1.2-rc.3
 [0.1.2-rc.2]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2-rc.2&id2=v0.1.1

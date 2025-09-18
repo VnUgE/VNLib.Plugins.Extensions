@@ -1,7 +1,7 @@
 version: 40
 properties:
 - name: deps_core_version
-  value: master/v0.1.2-rc.10
+  value: develop/HEAD
   archived: false
 jobs:
 - name: Git Mirror Push

@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -33,6 +33,10 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
     /// Attribute to define a static http endpoint for a controller. A static route is a 
     /// route that is configured at startup and does not do any type of dynamic pattern
     /// matching.
+    /// <para>
+    /// Values in the <see cref="Path"/> property may include configuration substitution in the 
+    /// form of {{ var_name }}/my-api, which will be replaced at startup with the configured value.
+    /// </para>
     /// </summary>
     /// <param name="path">The static route path, may include configuration substitution variables</param>
     /// <param name="method">The method (or methods) allowed to be filtered by this endpoint</param>

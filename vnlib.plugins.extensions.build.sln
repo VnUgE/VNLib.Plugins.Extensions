@@ -16,6 +16,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		.onedev-buildspec.yml = .onedev-buildspec.yml
+		CHANGELOG.md = CHANGELOG.md
+		Directory.Build.props = Directory.Build.props
 		Extensions.sln.licenseheader = Extensions.sln.licenseheader
 		GitVersion.yml = GitVersion.yml
 		LICENSE = LICENSE
@@ -31,6 +33,19 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNLib.Plugins.Extensions.Loading.Sql.SQLite", "lib\sql-providers\sqlite\VNLib.Plugins.Extensions.Loading.Sql.SQLite\src\VNLib.Plugins.Extensions.Loading.Sql.SQLite.csproj", "{F6520193-1C5B-4A7C-8E5A-05D910AC9139}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNLib.Plugins.Extensions.Loading.Sql.SQLServer", "lib\sql-providers\sqlserver\VNLib.Plugins.Extensions.Loading.Sql.SQLServer\src\VNLib.Plugins.Extensions.Loading.Sql.SQLServer.csproj", "{2766FAA1-F7D0-45B9-A77B-9CE1F966FB3F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "unit", "unit", "{F9BE1445-0A6A-47FE-A01C-3586AF110ED2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VNLib.Plugins.Extensions.Loading.Tests", "tests\unit\vnlib.plugins.extensions.loading\VNLib.Plugins.Extensions.Loading.Tests.csproj", "{803E0C32-8337-51DA-F392-C77DCB14391B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "lib", "lib", "{08831534-2028-460F-992D-24A1E4525DE2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ci", "ci", "{A9DDA30C-0EE6-431B-9820-B4D03EB451AD}"
+	ProjectSection(SolutionItems) = preProject
+		ci\cliff.toml = ci\cliff.toml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -66,14 +81,25 @@ Global
 		{2766FAA1-F7D0-45B9-A77B-9CE1F966FB3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2766FAA1-F7D0-45B9-A77B-9CE1F966FB3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2766FAA1-F7D0-45B9-A77B-9CE1F966FB3F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{803E0C32-8337-51DA-F392-C77DCB14391B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{803E0C32-8337-51DA-F392-C77DCB14391B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{803E0C32-8337-51DA-F392-C77DCB14391B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{803E0C32-8337-51DA-F392-C77DCB14391B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{6A3D4938-0064-443A-A87C-5DB8F8811110} = {08831534-2028-460F-992D-24A1E4525DE2}
+		{B8D6ED0A-92C5-437F-A33E-2D8C3FC2EA30} = {08831534-2028-460F-992D-24A1E4525DE2}
+		{A9942495-EB73-4A54-B64D-F2F7CA4C3F46} = {08831534-2028-460F-992D-24A1E4525DE2}
+		{857DA423-DD18-40B4-AABB-0C12DB5E389D} = {08831534-2028-460F-992D-24A1E4525DE2}
+		{A03C3E08-6EAA-4D4A-A434-E9455E9B3868} = {08831534-2028-460F-992D-24A1E4525DE2}
 		{50B5D5B8-2944-43E3-9CB0-F19D46F42984} = {A03C3E08-6EAA-4D4A-A434-E9455E9B3868}
 		{F6520193-1C5B-4A7C-8E5A-05D910AC9139} = {A03C3E08-6EAA-4D4A-A434-E9455E9B3868}
 		{2766FAA1-F7D0-45B9-A77B-9CE1F966FB3F} = {A03C3E08-6EAA-4D4A-A434-E9455E9B3868}
+		{F9BE1445-0A6A-47FE-A01C-3586AF110ED2} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{803E0C32-8337-51DA-F392-C77DCB14391B} = {F9BE1445-0A6A-47FE-A01C-3586AF110ED2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BC28944A-A5ED-4433-AAC7-82840C94387A}

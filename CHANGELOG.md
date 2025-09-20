@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2025-09-20
+
+### Changed
+
+- Update Microsoft.EntityFrameworkCore to version 8.0.20 - (deps) [8182252](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=8182252be0d06c5108a41adc01bbe5e4021b1907)
+- Update EntityFrameworkCore.Sqlite package to version 8.0.20 - (deps) [0b4f158](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=0b4f158eee322ee0dfa290a4c31b3867e39189af)
+- Update EntityFrameworkCore.SqlServer to 8.0.20 - (deps) [4e50ea5](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=4e50ea51aa34a81c63422d7959c372ac3c851e9b)
+- Update vnlib.core to version v0.1.2 - (deps) [ce89b9c](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=ce89b9c3ba8c07e641f1790ccad5a22a75f14b56)
+
 ## [0.1.2-rc.8] - 2025-09-08
 
 ### Changed
@@ -28,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Patch for vnlib.core breaking change for IUmanagedHeap - [984590b](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=984590b0e333e7878e04fb4148975b941ac42995)
 - Update `Microsoft.EntityFrameworkCore` to v8.0.19 - (deps) [9c8c72c](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=9c8c72c954b2f7a45b759898b8ce2340684ea170)
 - Update `EntityFrameworkCore.Sqlite` to v8.0.19 - (deps) [adc6472](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=adc6472a8c140a75d1632bd116bb6a22dfd27f19)
 - Update vnlib.core to v0.1.2-rc.8 - (deps) [963e839](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=963e83946bef40acb3caa93dedc2b9a582e5890b)
@@ -84,6 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Endpoint initialization - [3f6a803](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=3f6a80306935afbd9cc74bd2bec83977a2ae12ae)
 - Fix unexpected raw secret erasure - [4237750](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=42377501eb066f99c8e9d3f4a89b7595329e519b)
 
+[0.1.2]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2&id2=v0.1.2-rc.8
 [0.1.2-rc.8]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2-rc.8&id2=v0.1.2-rc.7
 [0.1.2-rc.7]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2-rc.7&id2=v0.1.2-rc.6
 [0.1.2-rc.6]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2-rc.6&id2=v0.1.2-rc.5

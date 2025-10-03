@@ -57,10 +57,10 @@ tasks:
 
     cmds:
      #copy license and readme to target
-     - cmd: powershell cp '../build.readme.md' '{{ .BUILD_OUT }}/readme.md'
+     - cmd: cp '../build.readme.md' '{{ .BUILD_OUT }}/readme.md'
 
      #tar outputs
-     - cmd: cd "{{ .BUILD_OUT }}" && tar -czf "{{ .USER_WORKING_DIR }}/{{ .BINARY_DIR }}/{{ .BUILD_MODE }}.tgz" .
+     - cmd: cd "{{ .BUILD_OUT }}" && tar{{ if eq OS "windows" }}.exe{{ end }} -czf "{{ .USER_WORKING_DIR }}/{{ .BINARY_DIR }}/{{ .BUILD_MODE }}.tgz" .
  
   packsource:
     dir: '{{ .USER_WORKING_DIR }}'
@@ -71,7 +71,7 @@ tasks:
         --exclude="obj"
     cmds:
     #copy source code to target
-    - cmd: tar {{ .EXCLUDES }} -czf '{{ .BINARY_DIR }}/src.tgz' .
+    - cmd: tar{{ if eq OS "windows" }}.exe{{ end }} {{ .EXCLUDES }} -czf '{{ .BINARY_DIR }}/src.tgz' .
 
 #Remove the output dirs on clean
   clean:
@@ -79,4 +79,4 @@ tasks:
     ignore_error: true
     cmds:
      - for: ['bin/', 'obj/']
-       cmd: powershell rm -Recurse '{{ .ITEM }}'
+       cmd: rm -rf '{{ .ITEM }}'

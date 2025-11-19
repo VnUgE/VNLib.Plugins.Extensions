@@ -23,12 +23,57 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.22" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.22" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\core\lib\Plugins.Essentials.ServiceStack\src\VNLib.Plugins.Essentials.ServiceStack.csproj" />
     <ProjectReference Include="..\..\..\lib\VNLib.Plugins.Extensions.Loading.Sql\src\VNLib.Plugins.Extensions.Loading.Sql.csproj" />
   </ItemGroup>
+
+  <ItemGroup>    
+    <!-- SQL Provider references - to access types directly in the project -->
+    <ProjectReference Include="..\..\..\lib\sql-providers\sqlite\VNLib.Plugins.Extensions.Loading.Sql.SQLite\src\VNLib.Plugins.Extensions.Loading.Sql.SQLite.csproj">
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\lib\sql-providers\mysql\VNLib.Plugins.Extensions.Loading.Sql.MySql\src\VNLib.Plugins.Extensions.Loading.Sql.MySQL.csproj">
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\lib\sql-providers\sqlserver\VNLib.Plugins.Extensions.Loading.Sql.SQLServer\src\VNLib.Plugins.Extensions.Loading.Sql.SQLServer.csproj">
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- Custom target to copy SQL provider binaries to separate directories in the assets folder -->
+  <Target Name="CopySqlProviders" AfterTargets="Build">
+    <PropertyGroup>
+      <AssetsDir>$(OutDir)assets\</AssetsDir>
+    </PropertyGroup>
+    
+    <!-- Create assets directory structure -->
+    <MakeDir Directories="$(AssetsDir)VNLib.Plugins.Extensions.Sql.SQLite" />
+    <MakeDir Directories="$(AssetsDir)VNLib.Plugins.Extensions.Sql.MySQL" />
+    <MakeDir Directories="$(AssetsDir)VNLib.Plugins.Extensions.Sql.SqlServer" />
+    
+    <!-- Copy SQLite provider -->
+    <ItemGroup>
+      <SqliteFiles Include="..\..\..\lib\sql-providers\sqlite\VNLib.Plugins.Extensions.Loading.Sql.SQLite\src\bin\$(Configuration)\net8.0\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SqliteFiles)" DestinationFolder="$(AssetsDir)VNLib.Plugins.Extensions.Sql.SQLite\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    
+    <!-- Copy MySQL provider -->
+    <ItemGroup>
+      <MySqlFiles Include="..\..\..\lib\sql-providers\mysql\VNLib.Plugins.Extensions.Loading.Sql.MySql\src\bin\$(Configuration)\net8.0\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(MySqlFiles)" DestinationFolder="$(AssetsDir)VNLib.Plugins.Extensions.Sql.MySQL\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    
+    <!-- Copy SQL Server provider -->
+    <ItemGroup>
+      <SqlServerFiles Include="..\..\..\lib\sql-providers\sqlserver\VNLib.Plugins.Extensions.Loading.Sql.SQLServer\src\bin\$(Configuration)\net8.0\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SqlServerFiles)" DestinationFolder="$(AssetsDir)VNLib.Plugins.Extensions.Sql.SqlServer\%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

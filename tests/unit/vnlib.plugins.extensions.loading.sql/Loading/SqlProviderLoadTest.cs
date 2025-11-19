@@ -164,7 +164,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql.Tests.Loading
                     }
 
                     //FIXME: Mysql attempts to connect to the server to get version information when
-                    // getting context options, which can't be tested here in uint testing.
+                    // getting context options, which can't be tested here in unit testing.
 
                     //DbContextOptions options = service.GetDbContextOptionsAsync().GetAwaiter().GetResult();
                     //Assert.IsNotNull(options);

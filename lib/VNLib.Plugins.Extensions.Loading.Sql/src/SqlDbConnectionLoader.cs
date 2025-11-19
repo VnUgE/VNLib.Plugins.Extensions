@@ -90,7 +90,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
             string dllPath = sqlConf.GetRequiredProperty(SQL_PROVIDER_DLL_KEY, k => k.GetString()!);
 
             /*
-             * I am loading a bare object here and dynamically resolbing the required methods
+             * I am loading a bare object here and dynamically resolving the required methods
              * insead of forcing a shared interface. This allows the external library to be
              * more flexible and slimmer.
              */

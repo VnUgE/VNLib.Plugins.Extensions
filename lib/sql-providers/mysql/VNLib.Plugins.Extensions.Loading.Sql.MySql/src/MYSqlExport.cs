@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql.Mysql
@@ -158,7 +158,7 @@ namespace VNLib.Plugins.Extensions.Sql
             string connString = await BuildConnStringAsync();
 
             //Build the options using the mysql extension method
-            DbContextOptionsBuilder b = new();;
+            DbContextOptionsBuilder b = new();
             b.UseMySql(connString, ServerVersion.AutoDetect(connString));
 
             //Write debug loggin to the debug log if the user has it enabled or the plugin is in debug mode

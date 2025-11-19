@@ -49,7 +49,7 @@ namespace VNLib.Plugins.Extensions.Sql
     {
         protected override void Free()
         {           
-            // Clear all connection pools to flush any active connections before existing process
+            // Clear all connection pools to flush any active connections before exiting process
             SqliteConnection.ClearAllPools();
         }
 

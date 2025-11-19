@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql.SQLite
@@ -34,6 +34,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Microsoft.Data.Sqlite;
 
+using VNLib.Utils;
 using VNLib.Utils.Logging;
 using VNLib.Plugins.Extensions.Loading;
 using VNLib.Plugins.Extensions.Loading.Sql;
@@ -44,8 +45,13 @@ namespace VNLib.Plugins.Extensions.Sql
 
     [ServiceExport]
     [ConfigurationName("sql", Required = true)]
-    public sealed class SQLiteExport(PluginBase plugin, IConfigScope config) : IRuntimeDbProvider
+    public sealed class SQLiteExport(PluginBase plugin, IConfigScope config) : VnDisposeable, IRuntimeDbProvider
     {
+        protected override void Free()
+        {           
+            // Clear all connection pools to flush any active connections before existing process
+            SqliteConnection.ClearAllPools();
+        }
 
         private async Task<string> BuildConnStringAsync()
         {

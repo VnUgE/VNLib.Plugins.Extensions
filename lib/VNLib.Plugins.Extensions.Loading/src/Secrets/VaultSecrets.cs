@@ -62,6 +62,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
+        [Obsolete("Use PluginSecretStore.GetSecretAsync instead")]
         public static async Task<ISecretResult> GetSecretAsync(this PluginBase plugin, string secretName)
         {
             ISecretResult? res = await TryGetSecretAsync(plugin, secretName).ConfigureAwait(false);
@@ -82,6 +83,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The element from the configuration file with the given name, or null if the configuration or property does not exist</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
+        [Obsolete("Use PluginSecretStore.TryGetSecretAsync instead")]
         public static Task<ISecretResult?> TryGetSecretAsync(this PluginBase plugin, string secretName)
         {
             return plugin

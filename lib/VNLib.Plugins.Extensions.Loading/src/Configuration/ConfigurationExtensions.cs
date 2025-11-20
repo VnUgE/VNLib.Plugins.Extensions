@@ -30,14 +30,12 @@ using System.Diagnostics.CodeAnalysis;
 using VNLib.Plugins.Extensions.Loading.Configuration;
 
 /*
- *   BACKWARDS COMPATIBILITY NOTE:
- *     This class was originally exposed in the NLib.Plugins.Extensions.Loading
+ *   TODO: 
+ *     This class was originally exposed in the VNLib.Plugins.Extensions.Loading
  *     even though the file has been moved to the Configuration directory. To maintain 
  *     backwards compatibility with existing user code, the namespace has not been changed.
  */
-#pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace VNLib.Plugins.Extensions.Loading
-#pragma warning restore IDE0130 // Namespace does not match folder structure
 {
 
     /// <summary>
@@ -149,22 +147,22 @@ namespace VNLib.Plugins.Extensions.Loading
             => Config(plugin).GetFor(obj);
 
         /// <summary>
-        /// Determines if the current plugin configuration contains the require properties to initialize 
+        /// Determines if the current plugin configuration contains the required properties to initialize 
         /// the type
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="plugin"></param>
-        /// <returns>True if the plugin config contains the require configuration property</returns>
+        /// <returns>True if the plugin config contains the required configuration property</returns>
         public static bool HasConfigForType<T>(this PluginBase plugin)
             => Config(plugin).HasForType(typeof(T));
 
         /// <summary>
-        /// Determines if the current plugin configuration contains the require properties to initialize 
+        /// Determines if the current plugin configuration contains the required properties to initialize 
         /// the type
         /// </summary>
         /// <param name="plugin"></param>
         /// <param name="type">The type to get the configuration for</param>
-        /// <returns>True if the plugin config contains the require configuration property</returns>
+        /// <returns>True if the plugin config contains the required configuration property</returns>
         public static bool HasConfigForType(this PluginBase plugin, Type type)
             => Config(plugin).HasForType(type);
 
@@ -173,7 +171,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// and deserializes it into the desired type. 
         /// <para>
         /// If the type inherits <see cref="IOnConfigValidation"/> the <see cref="IOnConfigValidation.OnValidate"/>
-        /// method is invoked, and exceptions are warpped in <see cref="ConfigurationValidationException"/>
+        /// method is invoked, and exceptions are wrapped in <see cref="ConfigurationValidationException"/>
         /// </para>
         /// <para>
         /// If the type inherits <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync(PluginBase)"/>
@@ -182,7 +180,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// </summary>
         /// <typeparam name="TConfig">The configuration type</typeparam>
         /// <param name="plugin"></param>
-        /// <returns>The deserialzed configuration element</returns>
+        /// <returns>The deserialized configuration element</returns>
         /// <exception cref="ConfigurationValidationException"></exception>
         public static TConfig GetConfigElement<TConfig>(this PluginBase plugin)
             => Config(plugin).GetElement<TConfig>();
@@ -192,7 +190,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// and deserializes it into the desired type. 
         /// <para>
         /// If the type inherits <see cref="IOnConfigValidation"/> the <see cref="IOnConfigValidation.OnValidate"/>
-        /// method is invoked, and exceptions are warpped in <see cref="ConfigurationValidationException"/>
+        /// method is invoked, and exceptions are wrapped in <see cref="ConfigurationValidationException"/>
         /// </para>
         /// <para>
         /// If the type inherits <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync(PluginBase)"/>
@@ -202,7 +200,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <typeparam name="TConfig">The configuration type</typeparam>
         /// <param name="plugin"></param>
         /// <param name="elementName">The configuration element name override</param>
-        /// <returns>The deserialzed configuration element</returns>
+        /// <returns>The deserialized configuration element</returns>
         /// <exception cref="ConfigurationValidationException"></exception>
         public static TConfig GetConfigElement<TConfig>(this PluginBase plugin, string elementName)
             => Config(plugin).GetElement<TConfig>(elementName);
@@ -217,7 +215,7 @@ namespace VNLib.Plugins.Extensions.Loading
             => Config(plugin).TryGetS3();
 
         /// <summary>
-        /// Trys to get the optional assets directory from the plugin configuration
+        /// Tries to get the optional assets directory from the plugin configuration
         /// </summary>
         /// <param name="plugin"></param>
         /// <returns>The absolute path to the assets directory if defined, null otherwise</returns>
@@ -289,7 +287,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <typeparam name="T"></typeparam>
         /// <param name="config"></param>
         /// <param name="property">The name of the property to get</param>
-        /// <returns>The property value deserialzied into the desired object</returns>
+        /// <returns>The property value deserialized into the desired object</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ConfigurationException"></exception>
         public static T GetRequiredProperty<T>(this IConfigScope config, string property)
@@ -334,7 +332,6 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <summary>
         /// Attempts to get a configuration property from the specified configuration scope
         /// and deserializes the json type.
-        /// output value
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="config"></param>
@@ -355,7 +352,6 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <summary>
         /// Attempts to get a configuration property from the specified configuration scope
         /// and returns the string value if found, or null if not found.
-        /// output value
         /// </summary>
         /// <param name="config"></param>
         /// <param name="property">The name of the configuration element to get</param>
@@ -375,7 +371,6 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <summary>
         /// Attempts to get a configuration property from the specified configuration scope
         /// and returns the int32 value if found, or null if not found.
-        /// output value
         /// </summary>
         /// <param name="config"></param>
         /// <param name="property">The name of the configuration element to get</param>
@@ -395,7 +390,6 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <summary>
         /// Attempts to get a configuration property from the specified configuration scope
         /// and returns the uint32 value if found, or null if not found.
-        /// output value
         /// </summary>
         /// <param name="config"></param>
         /// <param name="property">The name of the configuration element to get</param>
@@ -415,7 +409,6 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <summary>
         /// Attempts to get a configuration property from the specified configuration scope
         /// and returns the boolean value if found, or null if not found.
-        /// output value
         /// </summary>
         /// <param name="config"></param>
         /// <param name="property">The name of the configuration element to get</param>

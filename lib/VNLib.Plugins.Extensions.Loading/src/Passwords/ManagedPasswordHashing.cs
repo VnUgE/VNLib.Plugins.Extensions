@@ -34,14 +34,12 @@ using VNLib.Utils.Logging;
 using VNLib.Plugins.Essentials.Accounts;
 
 /*
- *   BACKWARDS COMPATIBILITY NOTE:
- *     This class was originally exposed in the NLib.Plugins.Extensions.Loading
+ *   TODO:
+ *     This class was originally exposed in the VNLib.Plugins.Extensions.Loading
  *     even though the file has been moved to the Passwords directory. To maintain 
  *     backwards compatibility with existing user code, the namespace has not been changed.
  */
-#pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace VNLib.Plugins.Extensions.Loading
-#pragma warning restore IDE0130 // Namespace does not match folder structure
 {
 
     /// <summary>

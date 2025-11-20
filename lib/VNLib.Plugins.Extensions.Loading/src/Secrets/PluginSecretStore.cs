@@ -56,7 +56,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
         private static IKvVaultClient? LoadVaultClient(PluginBase plugin)
         {
-            IConfigScope? customVaultConf = plugin.TryGetConfig(CUSTOM_KV_CONFIG);
+            IConfigScope? customVaultConf = plugin.Config().TryGet(CUSTOM_KV_CONFIG);
             KvVaultConfig? kvVaultConfig = customVaultConf?.Deserialize<KvVaultConfig>();
 
             //No custom config, load HCP by default
@@ -74,7 +74,7 @@ namespace VNLib.Plugins.Extensions.Loading
         private static HCVaultClient? LoadHcpVault(PluginBase plugin)
         {
             //Get vault config
-            IConfigScope? conf = plugin.TryGetConfig(VAULT_OBJECT_NAME);
+            IConfigScope? conf = plugin.Config().TryGet(VAULT_OBJECT_NAME);
 
             if (conf is null)
             {

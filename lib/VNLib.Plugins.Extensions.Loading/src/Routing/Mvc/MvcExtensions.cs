@@ -80,7 +80,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
         private static IEndpoint[] GetStaticEndpointsForController<T>(PluginBase plugin, T controller)
           where T : IHttpController
         {
-            IConfigScope? config = plugin.TryGetConfigForType<T>();
+            IConfigScope? config = plugin.Config().TryGetForType<T>();
             ILogProvider logger = RoutingExtensions.ConfigureLogger<T>(plugin, config);
 
             StaticRouteHandler[] staticRoutes = GetStaticRoutes(controller, config);

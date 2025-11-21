@@ -53,7 +53,10 @@ namespace VNLib.Plugins.Extensions.Sql
             MySqlConnectionStringBuilder sb;
 
             //See if the user suggested a raw connection string
-            if (config.TryGetProperty("connection_string", ps => ps.GetString(), out string? conString))
+            if (
+                config.TryGetProperty("connection_string", ps => ps.GetString(), out string? conString) &&
+                !string.IsNullOrEmpty(conString)
+            )
             {
                 sb = new(conString);
 
@@ -63,8 +66,6 @@ namespace VNLib.Plugins.Extensions.Sql
                     using ISecretResult? password = await pwd.FetchSecretAsync();
                     sb.Password = password?.Result.ToString();
                 }
-
-                return conString!;
             }
             else if (config.TryGetValue("json", out JsonElement value))
             {

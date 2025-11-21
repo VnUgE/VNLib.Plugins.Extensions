@@ -192,7 +192,7 @@ namespace VNLib.Plugins.Extensions.Loading
             //Get the pepper from secret storage
             IAsyncLazy<byte[]> pepper = plugin
                 .Secrets()
-                .GetSecretAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
+                .GetAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
                 .ToBase64Bytes()
                 .AsLazy();
 

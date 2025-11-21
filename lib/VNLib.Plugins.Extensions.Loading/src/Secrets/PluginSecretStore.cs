@@ -109,17 +109,37 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         ///<inheritdoc/>
-        public readonly Task<ISecretResult?> TryGetSecretAsync(string secretName, CancellationToken cancellation = default)
+        public readonly Task<ISecretResult?> TryGetAsync(string secretName, CancellationToken cancellation = default)
         {
             IOnDemandSecret secret = GetOnDemandSecret(secretName);
             return secret.FetchSecretAsync(cancellation);
         }
 
         ///<inheritdoc/>
-        public readonly ISecretResult? TryGetSecret(string secretName)
+        public readonly ISecretResult? TryGet(string secretName)
         {
             IOnDemandSecret secret = GetOnDemandSecret(secretName);
             return secret.FetchSecret();
+        }
+
+        /// <summary>
+        /// <para>
+        /// Gets a required secret from the "secrets" element. 
+        /// </para>
+        /// <para>
+        /// Secrets elements are merged from the host config and plugin local config 'secrets' element.
+        /// before searching. The plugin config takes precedence over the host config.
+        /// </para>
+        /// </summary>
+        /// <param name="secretName">The name of the secret propery to get</param>
+        /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        public async Task<ISecretResult> GetAsync(string secretName)
+        {
+            ISecretResult? res = await TryGetAsync(secretName).ConfigureAwait(false);
+
+            return res ?? throw new KeyNotFoundException($"Missing required secret {secretName}");
         }
 
         ///<inheritdoc/>
@@ -128,6 +148,34 @@ namespace VNLib.Plugins.Extensions.Loading
             ArgumentException.ThrowIfNullOrWhiteSpace(secretName);
             return new OnDemandSecret(_plugin, secretName, GetVaultClient);
         }
+
+
+        /// <summary>
+        /// <para>
+        /// Gets a required secret from the "secrets" element. 
+        /// </para>
+        /// <para>
+        /// Secrets elements are merged from the host config and plugin local config 'secrets' element.
+        /// before searching. The plugin config takes precedence over the host config.
+        /// </para>
+        /// </summary>
+        /// <param name="secretName">The name of the secret propery to get</param>
+        /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        [Obsolete("Use GetAsync instead")]
+        public Task<ISecretResult> GetSecretAsync(string secretName)
+            => GetAsync(secretName);
+
+        ///<inheritdoc/>
+        [Obsolete("Use TryGetAsync instead")]
+        public readonly Task<ISecretResult?> TryGetSecretAsync(string secretName, CancellationToken cancellation = default)
+            => TryGetAsync(secretName, cancellation);
+
+        ///<inheritdoc/>
+        [Obsolete("Use TryGet instead")]
+        public readonly ISecretResult? TryGetSecret(string secretName)
+            => TryGet(secretName);       
 
         ///<inheritdoc/>
         public override bool Equals(object? obj) => obj is PluginSecretStore store && Equals(store);

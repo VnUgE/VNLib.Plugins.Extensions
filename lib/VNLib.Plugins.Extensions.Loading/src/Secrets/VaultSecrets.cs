@@ -88,31 +88,9 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             return plugin
                 .Secrets()
-                .TryGetSecretAsync(secretName);
+                .TryGetAsync(secretName);
         }
-
-        /// <summary>
-        /// <para>
-        /// Gets a required secret from the "secrets" element. 
-        /// </para>
-        /// <para>
-        /// Secrets elements are merged from the host config and plugin local config 'secrets' element.
-        /// before searching. The plugin config takes precedence over the host config.
-        /// </para>
-        /// </summary>
-        /// <param name="secrets"></param>
-        /// <param name="secretName">The name of the secret propery to get</param>
-        /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
-        public static async Task<ISecretResult> GetSecretAsync(this PluginSecretStore secrets, string secretName)
-        {
-            ISecretResult? res = await secrets
-                .TryGetSecretAsync(secretName)
-                .ConfigureAwait(false);
-            
-            return res ?? throw new KeyNotFoundException($"Missing required secret {secretName}");
-        }
+      
 
         /// <summary>
         /// Gets the Secret value as a byte buffer

@@ -110,7 +110,7 @@ namespace VNLib.Plugins.Extensions.Loading
              * assembly, otherwise search all plugins directories
              */
 
-            string? assetDir = plugin.Config().GetAssetsPath();
+            string? assetDir = plugin.Config().TryGetAssetsPath();
 
             searchDirs = assetDir is null
                 ? plugin.Config().GetPluginSearchDirs()

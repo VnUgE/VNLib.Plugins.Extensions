@@ -246,9 +246,15 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <returns></returns>
         public static int MaxLength(this DataColumn column)
         {
-            return column.ExtendedProperties.ContainsKey(MAX_LEN_BYPASS_KEY)
-                ? (int)column.ExtendedProperties[MAX_LEN_BYPASS_KEY]
-                : column.MaxLength;
+            if (column.ExtendedProperties.ContainsKey(MAX_LEN_BYPASS_KEY))
+            {
+                object? value = column.ExtendedProperties[MAX_LEN_BYPASS_KEY];
+                if (value is int length)
+                {
+                    return length;
+                }
+            }
+            return column.MaxLength;
         }
 
         internal static void SetTimeStamp(this DataColumn column)

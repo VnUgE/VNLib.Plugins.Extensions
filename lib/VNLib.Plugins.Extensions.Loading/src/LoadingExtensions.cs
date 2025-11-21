@@ -154,7 +154,8 @@ namespace VNLib.Plugins.Extensions.Loading
             this PluginBase plugin,
             string assemblyName,
             SearchOption dirSearchOption = SearchOption.AllDirectories,
-            AssemblyLoadContext? explictAlc = null)
+            AssemblyLoadContext? explictAlc = null
+        )
         {
             //Get the file path for the assembly
             string asmFile = GetAssetFilePath(plugin, assemblyName, dirSearchOption)
@@ -245,13 +246,15 @@ namespace VNLib.Plugins.Extensions.Loading
             if (concreteTypes.Length == 0)
             {
                 throw new ConcreteTypeNotFoundException(
-                    $"Failed to load implemenation of abstract type {abstractType} because no concrete implementations were found in this assembly");
+                    $"Failed to load implemenation of abstract type {abstractType} because no concrete implementations were found in this assembly"
+                );
             }
 
             if (concreteTypes.Length > 1)
             {
                 throw new ConcreteTypeAmbiguousMatchException(
-                    $"Failed to load implemenation of abstract type {abstractType} because multiple concrete implementations were found in this assembly");
+                    $"Failed to load implemenation of abstract type {abstractType} because multiple concrete implementations were found in this assembly"
+                );
             }
 
             //Get the only concrete type

@@ -60,7 +60,7 @@ namespace VNLib.Plugins.Extensions.Loading
             :base(assemblyPath, parentContext)
         {
             //Init lazy type loader
-            _instance = new(LoadTypeFromAssembly<T>);            
+            _instance = new(LoadTypeFromAssembly<T>);
             //Register dispose
             _reg = unloadToken.Register(Dispose);
         }
@@ -77,10 +77,12 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="AmbiguousMatchException"></exception>
         public TDelegate? TryGetMethod<TDelegate>(string methodName) where TDelegate : Delegate
         {
+            T resource = Resource!; // Guaranteed not null after instance is loaded
+
             //get the type info of the actual resource
-            return Resource.GetType()
+            return resource.GetType()
                 .GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance)
-                ?.CreateDelegate<TDelegate>(Resource);
+                ?.CreateDelegate<TDelegate>(resource);
         }
 
         private void Dispose(bool disposing)

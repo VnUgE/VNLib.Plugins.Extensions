@@ -291,11 +291,13 @@ namespace VNLib.Plugins.Extensions.Loading
             ArgumentNullException.ThrowIfNull(transformer);
 
             //Transform with task transformer
+#pragma warning disable CS8632 // Nullable annotation used in non-nullable context (project has nullable enabled)
             static async Task<TResult> Run(Task<ISecretResult?> tr, Func<ISecretResult, Task<TResult>> transformer)
             {
                 using ISecretResult res = await tr.ConfigureAwait(false);
                 return res == null ? default : await transformer(res).ConfigureAwait(false);
             }
+#pragma warning restore CS8632
 
             return Run(result, transformer).AsLazy();
         }

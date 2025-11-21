@@ -38,8 +38,9 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration.Tests
         public void NotEqualTest()
         {
             Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.NotEqual(5, 5, nameof(NotEqualTest)));
-            Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.NotEqual<string>(null, "test", nameof(NotEqualTest)));
-            Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.NotEqual<string>("test", null, nameof(NotEqualTest)));
+            // Test: Validate.NotEqual should handle null values
+            Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.NotEqual<string>(null!, "test", nameof(NotEqualTest)));
+            Assert.ThrowsExactly<ConfigurationValidationException>(() => Validate.NotEqual<string>("test", null!, nameof(NotEqualTest)));
             
             Validate.NotEqual(5, 10, nameof(NotEqualTest));
             Validate.NotEqual("test1", "test2", nameof(NotEqualTest));

@@ -299,7 +299,11 @@ namespace VNLib.Plugins.Extensions.Loading
                 // If the memory can be locked, it was locked, so we need to unlock it before disposing
                 if (MemoryUtil.MemoryLockSupported)
                 {
+
+#pragma warning disable CA1416 // Validate platform compatibility
                     bool unlocked = MemoryUtil.UnlockMemory(_secretBuffer);
+#pragma warning restore CA1416 // Validate platform compatibility
+
                     Debug.Assert(unlocked);
                 }
 
@@ -321,8 +325,12 @@ namespace VNLib.Plugins.Extensions.Loading
                     //Attempt to lock the memory to prevent it from being swapped out to disk (not supported on all platforms)
                     if (MemoryUtil.MemoryLockSupported)
                     {
-                        //Lock the memory to prevent it from being swapped out to disk
+                        // Lock the memory to prevent it from being swapped out to disk
+                        // When supported == true this call is supported on the current platform
+
+#pragma warning disable CA1416 // Validate platform compatibility
                         locked = MemoryUtil.LockMemory(handle);
+#pragma warning restore CA1416 // Validate platform compatibility
                     }
 
                     MemoryUtil.CopyArray(

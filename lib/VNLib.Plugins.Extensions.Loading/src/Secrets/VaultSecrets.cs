@@ -58,7 +58,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// </para>
         /// </summary>
         /// <param name="plugin"></param>
-        /// <param name="secretName">The name of the secret propery to get</param>
+        /// <param name="secretName">The name of the secret property to get</param>
         /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
@@ -290,8 +290,9 @@ namespace VNLib.Plugins.Extensions.Loading
             ArgumentNullException.ThrowIfNull(result);
             ArgumentNullException.ThrowIfNull(transformer);
 
-            //Transform with task transformer
-#pragma warning disable CS8632 // Nullable annotation used in non-nullable context (project has nullable enabled)
+            // Suppress nullable reference warning for the default(TResult) return in the lambda
+            // The lambda correctly handles null case by returning default when ISecretResult is null
+#pragma warning disable CS8632 // Nullable annotation used in non-nullable context
             static async Task<TResult> Run(Task<ISecretResult?> tr, Func<ISecretResult, Task<TResult>> transformer)
             {
                 using ISecretResult res = await tr.ConfigureAwait(false);

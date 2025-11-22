@@ -131,7 +131,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// before searching. The plugin config takes precedence over the host config.
         /// </para>
         /// </summary>
-        /// <param name="secretName">The name of the secret propery to get</param>
+        /// <param name="secretName">The name of the secret property to get</param>
         /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
@@ -159,7 +159,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// before searching. The plugin config takes precedence over the host config.
         /// </para>
         /// </summary>
-        /// <param name="secretName">The name of the secret propery to get</param>
+        /// <param name="secretName">The name of the secret property to get</param>
         /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>

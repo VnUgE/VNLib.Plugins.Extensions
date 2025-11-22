@@ -103,8 +103,10 @@ namespace VNLib.Plugins.Extensions.Sql
                     sb.Port = port;
                 }
 
-                if (config.TryGetProperty("ssl_mode", out string? sslMode)
-                    && Enum.TryParse(sslMode, true, out MySqlSslMode mode))
+                if (
+                    config.TryGetProperty("ssl_mode", out string? sslMode) && 
+                    Enum.TryParse(sslMode, true, out MySqlSslMode mode)
+                )
                 {
                     sb.SslMode = mode;
                 }
@@ -264,8 +266,8 @@ namespace VNLib.Plugins.Extensions.Sql
             private static void AddConstraints(StringBuilder builder, DataTable table)
             {
                 DataColumn[] primaryKeys = table.Columns.OfType<DataColumn>()
-                .Where(static c => c.IsPrimaryKey())
-                .ToArray();
+                    .Where(static c => c.IsPrimaryKey())
+                    .ToArray();
 
                 if (primaryKeys.Length > 0)
                 {

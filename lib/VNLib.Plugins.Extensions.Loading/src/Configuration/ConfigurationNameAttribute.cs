@@ -50,7 +50,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
         /// <summary>
         /// When true or not configured, signals that the type requires a configuration scope
-        /// when loaded. When false, and configuration is not found, signals to the service loading
+        /// when loaded. When false and configuration is not found, signals to the service loading
         /// system to continue without configuration
         /// </summary>
         public bool Required { get; init; } = true;

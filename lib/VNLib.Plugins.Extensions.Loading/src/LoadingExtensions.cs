@@ -110,10 +110,10 @@ namespace VNLib.Plugins.Extensions.Loading
              * assembly, otherwise search all plugins directories
              */
 
-            string? assetDir = plugin.GetAssetsPath();
+            string? assetDir = plugin.Config().TryGetAssetsPath();
 
             searchDirs = assetDir is null
-                ? plugin.GetPluginSearchDirs()
+                ? plugin.Config().GetPluginSearchDirs()
                 : ([assetDir]);
 
             /*
@@ -154,7 +154,8 @@ namespace VNLib.Plugins.Extensions.Loading
             this PluginBase plugin,
             string assemblyName,
             SearchOption dirSearchOption = SearchOption.AllDirectories,
-            AssemblyLoadContext? explictAlc = null)
+            AssemblyLoadContext? explictAlc = null
+        )
         {
             //Get the file path for the assembly
             string asmFile = GetAssetFilePath(plugin, assemblyName, dirSearchOption)
@@ -245,13 +246,15 @@ namespace VNLib.Plugins.Extensions.Loading
             if (concreteTypes.Length == 0)
             {
                 throw new ConcreteTypeNotFoundException(
-                    $"Failed to load implemenation of abstract type {abstractType} because no concrete implementations were found in this assembly");
+                    $"Failed to load implemenation of abstract type {abstractType} because no concrete implementations were found in this assembly"
+                );
             }
 
             if (concreteTypes.Length > 1)
             {
                 throw new ConcreteTypeAmbiguousMatchException(
-                    $"Failed to load implemenation of abstract type {abstractType} because multiple concrete implementations were found in this assembly");
+                    $"Failed to load implemenation of abstract type {abstractType} because multiple concrete implementations were found in this assembly"
+                );
             }
 
             //Get the only concrete type
@@ -417,10 +420,10 @@ namespace VNLib.Plugins.Extensions.Loading
             _ = exported ?? throw new TypeLoadException($"The desired external asset type {typeof(T).Name} is not exported as part of the assembly {manLib.Assembly.FullName}");
 
             //Try to get a configuration for the exported type
-            if (plugin.HasConfigForType(exported))
+            if (plugin.Config().HasForType(exported))
             {
                 //Get the config for the type and create the service
-                return (T)CreateService(plugin, exported, plugin.GetConfigForType(exported));
+                return (T)CreateService(plugin, exported, plugin.Config().GetForType(exported));
             }
 
             //Create new instance of the desired type
@@ -563,7 +566,7 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             return CreateService<T>(
                 plugin,
-                config: plugin.TryGetConfigForType<T>()
+                config: plugin.Config().TryGetForType<T>()
             );
         }
 
@@ -591,7 +594,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ConcreteTypeAmbiguousMatchException"></exception>
         public static T CreateService<T>(this PluginBase plugin, string configName)
         {
-            IConfigScope config = plugin.GetConfig(configName);
+            IConfigScope config = plugin.Config().Get(configName);
             return CreateService<T>(plugin, config);
         }
 
@@ -661,9 +664,9 @@ namespace VNLib.Plugins.Extensions.Loading
             try
             {
                 //Determine configuration requirments
-                if (ConfigurationExtensions.ConfigurationRequired(serviceType) && config == null)
+                if (PluginConfigStore.ConfigurationRequired(serviceType) && config == null)
                 {
-                    ConfigurationExtensions.ThrowConfigNotFoundForType(serviceType);
+                    PluginConfigStore.ThrowConfigNotFoundForType(serviceType);
                 }
 
                 service = InvokeServiceConstructor(serviceType, plugin, config);

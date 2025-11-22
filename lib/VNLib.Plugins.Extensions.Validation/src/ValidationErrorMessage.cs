@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Validation
@@ -29,8 +29,9 @@ namespace VNLib.Plugins.Extensions.Validation
     public class ValidationErrorMessage
     {
         [JsonPropertyName("property")]
-        public string PropertyName { get; set; }
+        public required string PropertyName { get; init; }
+
         [JsonPropertyName("message")]
-        public string ErrorMessage { get; set; }
+        public required string ErrorMessage { get; init; }
     }
 }

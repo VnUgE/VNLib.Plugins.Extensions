@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql
@@ -84,7 +84,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         private static IRuntimeDbProvider LoadDbProvider(PluginBase plugin)
         {
             //Get the sql configuration scope
-            IConfigScope sqlConf = plugin.GetConfig(SQL_CONFIG_KEY);
+            IConfigScope sqlConf = plugin.Config().Get(SQL_CONFIG_KEY);
 
             //Get the provider dll path
             string dllPath = sqlConf.GetRequiredProperty(SQL_PROVIDER_DLL_KEY, k => k.GetString()!);

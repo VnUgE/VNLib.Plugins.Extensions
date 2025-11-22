@@ -126,7 +126,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
         private static void InitEndpointSettings<T>(PluginBase plugin, T endpoint) where T : IEndpoint
         {
             //Load optional config
-            IConfigScope? config = plugin.TryGetConfigForType<T>();
+            IConfigScope? config = plugin.Config().TryGetForType<T>();
 
             EndpointPathAttribute? pathAttr = typeof(T).GetCustomAttribute<EndpointPathAttribute>();
 

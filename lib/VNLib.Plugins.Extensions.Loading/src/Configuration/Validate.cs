@@ -35,6 +35,7 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration
     /// </summary>
     public sealed class Validate
     {
+#pragma warning disable CS8763 // Compiler limitation: cannot express [DoesNotReturnIf] with normal return path
         /// <summary>
         /// Ensures the object is not null and not an empty string,
         /// otherwise a <see cref="ConfigurationValidationException"/> is raised
@@ -63,6 +64,7 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration
         /// <param name="condition">The condition to assert.</param>
         /// <param name="message">The message to include in the exception if the assertion fails.</param>
         /// <exception cref="ConfigurationValidationException">Thrown when <paramref name="condition"/> is false.</exception>
+
         public static void Assert([DoesNotReturnIf(false)] bool condition, string message)
         {
             if (!condition)
@@ -70,6 +72,7 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration
                 throw new ConfigurationValidationException(message);
             }
         }
+#pragma warning restore CS8763
 
         /// <summary>
         /// Throws a <see cref="ConfigurationValidationException"/> if <paramref name="a"/> is equal to <paramref name="b"/>, or if either is null.

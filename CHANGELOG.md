@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2025-11-22
+
+### Added
+
+- Add PluginConfigStore struct-based configuration manager - (loading) [76d0fd0](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=76d0fd014e9766c2cf17b2d31c93d0cffb04cd4e)
+
+### Changed
+
+- Update vnlib.core to v0.1.4 - (deps) [8766e46](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=8766e46d7e5569307f8d5ba6c574e6361253c0d2)
+- Update FluentValidation to v12.1.0 - (deps) [9c9a259](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=9c9a2596223ba76494e16354faa4eb24e43e020d)
+- Update EntityFrameworkCore to version 8.0.22 - (deps) [8b5a9b6](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=8b5a9b6f9930db2e5cdc91274e33f3541c6a09cb)
+- Update Microsoft.EntityFrameworkCore.Sqlite to 8.0.22 - (deps) [cd61acd](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=cd61acd48390a0b1434589f3c113dd476c38e806)
+- Update EF Core SQLServer package to version 8.0.22 - (deps) [2771f1b](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=2771f1b55ca81328f87274eb4b34d585b75dbcf2)
+- Migrate ConfigurationExtensions to new store api and move file to Configuration from top-level. - (loading) [32ea95d](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=32ea95d3f6ae4f61d675f4c015ebde2a0c2090f5)
+- Obsolete `GetSecretAsync()` and `TryGetSecretAsync()` extension methods. - (loading) [d47e800](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=d47e800145e60d5f98f90917dd559169ccc43e63)
+- Obsolete `[Try]GetSecret[Async]()` in favor of `Secrets().[Try]Get[Async]()` secrets helper functions - (loading) [ab51d7c](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=ab51d7cad36305e29a24c7b1af804d910313f349)
+
+### Fixed
+
+- Scaffold empty unit testing classes for extension libraries - [8e49c3c](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=8e49c3c861984e3114abd1b2459aa2dd5509d8e5)
+- Add dynamic SQL library loading smoke tests - [2ce86c3](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=2ce86c35165a09ca2895d6ecdd1b8587ca5806ff)
+- Flush all connection pools when plugin unloads - (sqlite) [eeb4b87](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=eeb4b87d764611c755009b15f40829b156f097d9)
+- Add null check ot `CreateScope()` logging extension method - (loading) [33aa57e](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=33aa57eda49d95f00f30675ee7340dadcadec0c7)
+- Added tests for new pluging configuration loading api and existing apis. - (loading) [d4b7874](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=d4b7874e2b7e6462a0f0cc228ed3d68389016e32)
+- Fix null max length column field in DbCommandHelpers for db creation - (sql) [f51155d](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=f51155da68738e25e4c9c6b5f9e9242eebd655d2)
+- Fix mysql connection string password assignment - (mysql) [654f304](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=654f304cc6a3e17616da6e209220871915860ef1)
+
 ## [0.1.3] - 2025-10-03
 
 ### Changed
@@ -101,6 +128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Endpoint initialization - [3f6a803](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=3f6a80306935afbd9cc74bd2bec83977a2ae12ae)
 - Fix unexpected raw secret erasure - [4237750](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=42377501eb066f99c8e9d3f4a89b7595329e519b)
 
+[0.1.4]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.4&id2=v0.1.3
 [0.1.3]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.3&id2=v0.1.2
 [0.1.2]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2&id2=v0.1.2-rc.8
 [0.1.2-rc.8]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2-rc.8&id2=v0.1.2-rc.7

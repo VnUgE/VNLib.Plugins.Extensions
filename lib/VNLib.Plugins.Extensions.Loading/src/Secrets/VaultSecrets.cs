@@ -58,10 +58,11 @@ namespace VNLib.Plugins.Extensions.Loading
         /// </para>
         /// </summary>
         /// <param name="plugin"></param>
-        /// <param name="secretName">The name of the secret propery to get</param>
+        /// <param name="secretName">The name of the secret property to get</param>
         /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
+        [Obsolete("Use PluginSecretStore.GetSecretAsync instead")]
         public static async Task<ISecretResult> GetSecretAsync(this PluginBase plugin, string secretName)
         {
             ISecretResult? res = await TryGetSecretAsync(plugin, secretName).ConfigureAwait(false);
@@ -82,35 +83,14 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The element from the configuration file with the given name, or null if the configuration or property does not exist</returns>
         /// <exception cref="KeyNotFoundException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
+        [Obsolete("Use PluginSecretStore.TryGetSecretAsync instead")]
         public static Task<ISecretResult?> TryGetSecretAsync(this PluginBase plugin, string secretName)
         {
             return plugin
                 .Secrets()
-                .TryGetSecretAsync(secretName);
+                .TryGetAsync(secretName);
         }
-
-        /// <summary>
-        /// <para>
-        /// Gets a required secret from the "secrets" element. 
-        /// </para>
-        /// <para>
-        /// Secrets elements are merged from the host config and plugin local config 'secrets' element.
-        /// before searching. The plugin config takes precedence over the host config.
-        /// </para>
-        /// </summary>
-        /// <param name="secrets"></param>
-        /// <param name="secretName">The name of the secret propery to get</param>
-        /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
-        public static async Task<ISecretResult> GetSecretAsync(this PluginSecretStore secrets, string secretName)
-        {
-            ISecretResult? res = await secrets
-                .TryGetSecretAsync(secretName)
-                .ConfigureAwait(false);
-            
-            return res ?? throw new KeyNotFoundException($"Missing required secret {secretName}");
-        }
+      
 
         /// <summary>
         /// Gets the Secret value as a byte buffer
@@ -310,12 +290,15 @@ namespace VNLib.Plugins.Extensions.Loading
             ArgumentNullException.ThrowIfNull(result);
             ArgumentNullException.ThrowIfNull(transformer);
 
-            //Transform with task transformer
+            // Suppress nullable reference warning for the default(TResult) return in the lambda
+            // The lambda correctly handles null case by returning default when ISecretResult is null
+#pragma warning disable CS8632 // Nullable annotation used in non-nullable context
             static async Task<TResult> Run(Task<ISecretResult?> tr, Func<ISecretResult, Task<TResult>> transformer)
             {
                 using ISecretResult res = await tr.ConfigureAwait(false);
                 return res == null ? default : await transformer(res).ConfigureAwait(false);
             }
+#pragma warning restore CS8632
 
             return Run(result, transformer).AsLazy();
         }

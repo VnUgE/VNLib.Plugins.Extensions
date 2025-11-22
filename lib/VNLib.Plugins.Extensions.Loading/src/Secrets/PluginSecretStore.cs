@@ -56,7 +56,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
         private static IKvVaultClient? LoadVaultClient(PluginBase plugin)
         {
-            IConfigScope? customVaultConf = plugin.TryGetConfig(CUSTOM_KV_CONFIG);
+            IConfigScope? customVaultConf = plugin.Config().TryGet(CUSTOM_KV_CONFIG);
             KvVaultConfig? kvVaultConfig = customVaultConf?.Deserialize<KvVaultConfig>();
 
             //No custom config, load HCP by default
@@ -74,7 +74,7 @@ namespace VNLib.Plugins.Extensions.Loading
         private static HCVaultClient? LoadHcpVault(PluginBase plugin)
         {
             //Get vault config
-            IConfigScope? conf = plugin.TryGetConfig(VAULT_OBJECT_NAME);
+            IConfigScope? conf = plugin.Config().TryGet(VAULT_OBJECT_NAME);
 
             if (conf is null)
             {
@@ -109,17 +109,37 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         ///<inheritdoc/>
-        public readonly Task<ISecretResult?> TryGetSecretAsync(string secretName, CancellationToken cancellation = default)
+        public readonly Task<ISecretResult?> TryGetAsync(string secretName, CancellationToken cancellation = default)
         {
             IOnDemandSecret secret = GetOnDemandSecret(secretName);
             return secret.FetchSecretAsync(cancellation);
         }
 
         ///<inheritdoc/>
-        public readonly ISecretResult? TryGetSecret(string secretName)
+        public readonly ISecretResult? TryGet(string secretName)
         {
             IOnDemandSecret secret = GetOnDemandSecret(secretName);
             return secret.FetchSecret();
+        }
+
+        /// <summary>
+        /// <para>
+        /// Gets a required secret from the "secrets" element. 
+        /// </para>
+        /// <para>
+        /// Secrets elements are merged from the host config and plugin local config 'secrets' element.
+        /// before searching. The plugin config takes precedence over the host config.
+        /// </para>
+        /// </summary>
+        /// <param name="secretName">The name of the secret property to get</param>
+        /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        public async Task<ISecretResult> GetAsync(string secretName)
+        {
+            ISecretResult? res = await TryGetAsync(secretName).ConfigureAwait(false);
+
+            return res ?? throw new KeyNotFoundException($"Missing required secret {secretName}");
         }
 
         ///<inheritdoc/>
@@ -128,6 +148,34 @@ namespace VNLib.Plugins.Extensions.Loading
             ArgumentException.ThrowIfNullOrWhiteSpace(secretName);
             return new OnDemandSecret(_plugin, secretName, GetVaultClient);
         }
+
+
+        /// <summary>
+        /// <para>
+        /// Gets a required secret from the "secrets" element. 
+        /// </para>
+        /// <para>
+        /// Secrets elements are merged from the host config and plugin local config 'secrets' element.
+        /// before searching. The plugin config takes precedence over the host config.
+        /// </para>
+        /// </summary>
+        /// <param name="secretName">The name of the secret property to get</param>
+        /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ObjectDisposedException"></exception>
+        [Obsolete("Use GetAsync instead")]
+        public Task<ISecretResult> GetSecretAsync(string secretName)
+            => GetAsync(secretName);
+
+        ///<inheritdoc/>
+        [Obsolete("Use TryGetAsync instead")]
+        public readonly Task<ISecretResult?> TryGetSecretAsync(string secretName, CancellationToken cancellation = default)
+            => TryGetAsync(secretName, cancellation);
+
+        ///<inheritdoc/>
+        [Obsolete("Use TryGet instead")]
+        public readonly ISecretResult? TryGetSecret(string secretName)
+            => TryGet(secretName);       
 
         ///<inheritdoc/>
         public override bool Equals(object? obj) => obj is PluginSecretStore store && Equals(store);

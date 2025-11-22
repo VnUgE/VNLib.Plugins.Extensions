@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql.Mysql
@@ -53,7 +53,10 @@ namespace VNLib.Plugins.Extensions.Sql
             MySqlConnectionStringBuilder sb;
 
             //See if the user suggested a raw connection string
-            if (config.TryGetProperty("connection_string", ps => ps.GetString(), out string? conString))
+            if (
+                config.TryGetProperty("connection_string", ps => ps.GetString(), out string? conString) &&
+                !string.IsNullOrEmpty(conString)
+            )
             {
                 sb = new(conString);
 
@@ -63,8 +66,6 @@ namespace VNLib.Plugins.Extensions.Sql
                     using ISecretResult? password = await pwd.FetchSecretAsync();
                     sb.Password = password?.Result.ToString();
                 }
-
-                return conString!;
             }
             else if (config.TryGetValue("json", out JsonElement value))
             {
@@ -102,8 +103,10 @@ namespace VNLib.Plugins.Extensions.Sql
                     sb.Port = port;
                 }
 
-                if (config.TryGetProperty("ssl_mode", out string? sslMode)
-                    && Enum.TryParse(sslMode, true, out MySqlSslMode mode))
+                if (
+                    config.TryGetProperty("ssl_mode", out string? sslMode) && 
+                    Enum.TryParse(sslMode, true, out MySqlSslMode mode)
+                )
                 {
                     sb.SslMode = mode;
                 }
@@ -158,7 +161,7 @@ namespace VNLib.Plugins.Extensions.Sql
             string connString = await BuildConnStringAsync();
 
             //Build the options using the mysql extension method
-            DbContextOptionsBuilder b = new();;
+            DbContextOptionsBuilder b = new();
             b.UseMySql(connString, ServerVersion.AutoDetect(connString));
 
             //Write debug loggin to the debug log if the user has it enabled or the plugin is in debug mode
@@ -263,8 +266,8 @@ namespace VNLib.Plugins.Extensions.Sql
             private static void AddConstraints(StringBuilder builder, DataTable table)
             {
                 DataColumn[] primaryKeys = table.Columns.OfType<DataColumn>()
-                .Where(static c => c.IsPrimaryKey())
-                .ToArray();
+                    .Where(static c => c.IsPrimaryKey())
+                    .ToArray();
 
                 if (primaryKeys.Length > 0)
                 {

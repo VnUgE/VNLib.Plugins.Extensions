@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -42,6 +42,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The scoped log provider instance</returns>
         public static ILogProvider CreateScope(this ILogProvider log, string scopeName)
         {
+            ArgumentNullException.ThrowIfNull(scopeName);
             return new ScopeLogProvider(log, scopeName);
         }
 

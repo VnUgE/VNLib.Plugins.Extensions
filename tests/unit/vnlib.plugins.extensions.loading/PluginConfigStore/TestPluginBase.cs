@@ -38,12 +38,24 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
 
         public TestPluginBase(object pluginConfig, object hostConfig)
         {
+            /*
+             * This config object must match the expected PluginBase.cs
+             * expected json structure:
+             * {  
+             *  "host": { ... },
+             *  "plugin": { ... }
+             *  }
+             *  
+             *  Ensure the "host" and "plugin" properties are up-to-date
+             *  with PluginBase.cs.
+             */
             object config = new
             {
                 host = hostConfig,
                 plugin = pluginConfig
             };
 
+            // The host runtime invokes InitConfig with the binary json data.
             byte[] configData = JsonSerializer.SerializeToUtf8Bytes(config);
 
             InitConfig(configData);

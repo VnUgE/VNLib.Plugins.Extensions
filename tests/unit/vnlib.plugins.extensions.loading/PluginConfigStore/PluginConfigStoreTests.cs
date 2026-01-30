@@ -487,7 +487,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
             string[] dirs = plugin.Config().TryGetPluginSearchDirs();
 
             Assert.IsNotNull(dirs);
-            Assert.AreEqual(1, dirs.Length);
+            Assert.HasCount(1, dirs);
             Assert.IsTrue(dirs[0].EndsWith("plugin\\dir") || dirs[0].EndsWith("plugin/dir"));
         }
 
@@ -508,7 +508,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
             string[] dirs = plugin.Config().TryGetPluginSearchDirs();
 
             Assert.IsNotNull(dirs);
-            Assert.AreEqual(2, dirs.Length);
+            Assert.HasCount(2, dirs);
         }
 
         [TestMethod]
@@ -520,7 +520,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
             string[] dirs = plugin.Config().TryGetPluginSearchDirs();
 
             Assert.IsNotNull(dirs);
-            Assert.AreEqual(0, dirs.Length);
+            Assert.IsEmpty(dirs);
         }
 
         [TestMethod]

@@ -44,11 +44,12 @@ namespace VNLib.Plugins.Extensions.Validation
 
         public static readonly Regex OnlyAlphaRegx = new(@"^[a-zA-Z\s]*$", RegexOptions.Compiled);
         public static readonly Regex OnlyNumericRegx = new(@"^[0-9]*$", RegexOptions.Compiled);
-        public static readonly Regex OnlyAlphaNumRegx = new(@"^[a-zA-Z0-9\s]*$", RegexOptions.Compiled);
-
-        public static readonly Regex PasswordRegx = new(@"^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$ %^&*-])", RegexOptions.Compiled);
+        public static readonly Regex OnlyAlphaNumRegx = new(@"^[a-zA-Z0-9\s]*$", RegexOptions.Compiled);       
         public static readonly Regex IllegalRegx = new(@"[\r\n\t\a\b\e\f|^~`<>{}]", RegexOptions.Compiled);
         public static readonly Regex SpecialCharactersRegx = new(@"[\r\n\t\a\b\e\f#?!@$%^&*\+\-\~`|<>\{}]", RegexOptions.Compiled);
+
+        [Obsolete("Password requirements should be set by app developer")]
+        public static readonly Regex PasswordRegx = new(@"^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$ %^&*-])", RegexOptions.Compiled);
 
 
         /// <summary>
@@ -183,7 +184,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <typeparam name="T"></typeparam>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static IRuleBuilderOptions<T, string> Password<T>(this IRuleBuilder<T, string> builder)
+        [Obsolete("Password requirements should be set by app developer")]
         public static IRuleBuilderOptions<T, string?> Password<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static str => str == null || PasswordRegx.IsMatch(str))

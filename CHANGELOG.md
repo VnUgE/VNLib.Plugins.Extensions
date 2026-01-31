@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2026-01-31
+
+### Added
+
+- Support nullable strings for validator extension functions - (validation) [2da96a7](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=2da96a7b8f0001bb0e9e9ce7416332f9aa34c43c)
+
+### Changed
+
+- Update mstest packages to v4+ and refactor analyzer recomendations - (deps) [512f653](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=512f653b38e60428f304cf3c54a3181da14a6649)
+- Update vnlib.core to v0.1.5 - (deps) [6e4b239](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=6e4b2392535d21c5a63d7ace935b362c7218f121)
+- Update FluentValidation to version 12.1.1 - (deps) [1aa460d](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=1aa460d696b1c168d5bc35bca7a7f93969953840)
+- Update Dotnet EF Core to 8.0.23 - (deps) [6954191](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=6954191d55b0cf8a62a6f5a5b8c5fd868a49270f)
+- Update Dotnet EF Core SQL Server to 8.0.23 - (deps) [339c3ac](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=339c3ac2ad1bbea35ace6ac7ee29b7ba8aec1707)
+- Update Dotnet EFCore.Sqlite to version 8.0.23 - (deps) [04b8149](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=04b814990a0e16f2257104875fedc6b31013a010)
+- Obsolete `Password()` validator extension method - (validation) [4fd16f7](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=4fd16f7b373546b1720f5a276957ef97e0b81a07)
+
 ## [0.1.4] - 2025-11-22
 
 ### Added
@@ -128,6 +144,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Endpoint initialization - [3f6a803](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=3f6a80306935afbd9cc74bd2bec83977a2ae12ae)
 - Fix unexpected raw secret erasure - [4237750](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=42377501eb066f99c8e9d3f4a89b7595329e519b)
 
+[0.1.5]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.5&id2=v0.1.4
 [0.1.4]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.4&id2=v0.1.3
 [0.1.3]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.3&id2=v0.1.2
 [0.1.2]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.2&id2=v0.1.2-rc.8

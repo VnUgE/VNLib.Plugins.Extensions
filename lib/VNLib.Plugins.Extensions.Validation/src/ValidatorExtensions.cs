@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Validation
@@ -68,7 +68,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <typeparam name="T"></typeparam>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static IRuleBuilderOptions<T, string> PhoneNumber<T>(this IRuleBuilder<T, string> builder)
+        public static IRuleBuilderOptions<T, string?> PhoneNumber<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static phone => phone?.Length > 0 && PhoneRegex.IsMatch(phone))
                           .WithMessage("{PropertyValue} is not a valid phone number.");
@@ -93,19 +93,19 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <typeparam name="T"></typeparam>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static IRuleBuilderOptions<T, string> SpecialCharacters<T>(this IRuleBuilder<T, string> builder)
+        public static IRuleBuilderOptions<T, string?> SpecialCharacters<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static str => str == null || !SpecialCharactersRegx.IsMatch(str))
                           .WithMessage("{PropertyName} contains illegal characters");
         }
         /// <summary>
-        /// Checks a string against <see cref="Statics.IllegalChars"/>.
+        /// Checks a string against <see cref="IllegalRegx"/>.
         /// If the string is null or empty, it is allowed.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static IRuleBuilderOptions<T, string> IllegalCharacters<T>(this IRuleBuilder<T, string> builder)
+        public static IRuleBuilderOptions<T, string?> IllegalCharacters<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static str => str == null || !IllegalRegx.IsMatch(str))
                           .WithMessage("{PropertyName} contains illegal characters");
@@ -116,7 +116,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <typeparam name="T"></typeparam>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static IRuleBuilderOptions<T, string> Alpha<T>(this IRuleBuilder<T, string> builder)
+        public static IRuleBuilderOptions<T, string?> Alpha<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static str => str == null || AlphaRegx.IsMatch(str))
                           .WithMessage("{PropertyName} requires at least one a-Z character.");
@@ -149,7 +149,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <typeparam name="T"></typeparam>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static IRuleBuilderOptions<T, string> NumericOnly<T>(this IRuleBuilder<T, string> builder)
+        public static IRuleBuilderOptions<T, string?> NumericOnly<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static str => str == null || OnlyNumericRegx.IsMatch(str))
                           .WithMessage("{PropertyName} can only be a number 0-9.");
@@ -160,7 +160,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <typeparam name="T"></typeparam>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static IRuleBuilderOptions<T, string> AlphaNumeric<T>(this IRuleBuilder<T, string> builder)
+        public static IRuleBuilderOptions<T, string?> AlphaNumeric<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static str => str == null || AlphaNumRegx.IsMatch(str))
                           .WithMessage("{PropertyName} must contain at least one alpha-numeric character.");
@@ -171,7 +171,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <typeparam name="T"></typeparam>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static IRuleBuilderOptions<T, string> AlphaNumericOnly<T>(this IRuleBuilder<T, string> builder)
+        public static IRuleBuilderOptions<T, string?> AlphaNumericOnly<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static str => str == null || OnlyAlphaNumRegx.IsMatch(str))
                           .WithMessage("{PropertyName} can only contain alpha numeric characters.");
@@ -184,6 +184,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <param name="builder"></param>
         /// <returns></returns>
         public static IRuleBuilderOptions<T, string> Password<T>(this IRuleBuilder<T, string> builder)
+        public static IRuleBuilderOptions<T, string?> Password<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static str => str == null || PasswordRegx.IsMatch(str))
                           .WithMessage("{PropertyName} does not meet password requirements.");

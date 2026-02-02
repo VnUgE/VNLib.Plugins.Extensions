@@ -2,10 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <AssemblyName>VNLib.Plugins.Extensions.Sql.MySQL</AssemblyName>
     <RootNamespace>VNLib.Plugins.Extensions.Sql</RootNamespace>
-    <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <!--Enable dynamic loading-->
     <EnableDynamicLoading>true</EnableDynamicLoading>  
   </PropertyGroup>

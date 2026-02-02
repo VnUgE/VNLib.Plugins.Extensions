@@ -1,7 +1,7 @@
 version: 43
 properties:
 - name: deps_core_version
-  value: master/v0.1.4
+  value: master/v0.1.5
   archived: false
 jobs:
 - name: Git Mirror Push
@@ -11,8 +11,8 @@ jobs:
     remoteUrl: https://github.com/VnUgE/VNLib.Plugins.Extensions.git
     userName: VnUgE
     passwordSecret: github-access-token
-    force: false
-    condition: SUCCESSFUL
+    force: true
+    condition: ALWAYS
     optional: false
   - type: PushRepository
     name: Codeberg push sync
@@ -20,7 +20,7 @@ jobs:
     userName: VnUgE
     passwordSecret: codeberg-access-token
     force: true
-    condition: SUCCESSFUL
+    condition: ALWAYS
     optional: false
   triggers:
   - type: TagCreateTrigger
@@ -30,6 +30,7 @@ jobs:
   maxRetries: 3
   retryDelay: 30
   timeout: 3600
+
 - name: Unit Testing
   jobExecutor: windows
   steps:
@@ -44,8 +45,7 @@ jobs:
     interpreter:
       type: DefaultInterpreter
       commands: |
-        cd @project_name@
-        task -t Module.Taskfile.yaml test
+        vnbuild test --include @project_name@ --verbose
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -57,6 +57,7 @@ jobs:
   maxRetries: 3
   retryDelay: 30
   timeout: 14400
+
 - name: Staging build
   jobExecutor: windows
   steps:
@@ -96,6 +97,7 @@ jobs:
   maxRetries: 3
   retryDelay: 30
   timeout: 14400
+
 - name: Publish master
   jobExecutor: publish-agents
   steps:
@@ -148,6 +150,7 @@ jobs:
   maxRetries: 3
   retryDelay: 30
   timeout: 14400
+
 stepTemplates:
 - name: init deps
   steps:

@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -26,6 +26,8 @@
 using System;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+
+using VNLib.Utils.Resources;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
@@ -101,13 +103,12 @@ namespace VNLib.Plugins.Extensions.Loading
         private sealed class AsyncLazy<T> : IAsyncLazy<T>
         {
             private readonly Task<T> _task;
-
-            private T _result;
+            private readonly LazyInitializer<T> _result;
 
             public AsyncLazy(Task<T> task)
             {
                 _task = task ?? throw new ArgumentNullException(nameof(task));
-                _ = task.ContinueWith(SetResult, TaskScheduler.Default);
+                _result = new(() => _task.Result);
             }
 
             ///<inheritdoc/>
@@ -118,13 +119,28 @@ namespace VNLib.Plugins.Extensions.Loading
             {
                 get
                 {
-                    if (_task.IsCompletedSuccessfully)
+                    /* Lazy initializer provides good concurrency and caching
+                     * for the result once it's available. 
+                     * 
+                     * If the result is already cached, return it. 
+                     * If the task is complete but the result is not loaded, then 
+                     * trigger a concurrent load of the result.
+                     * 
+                     * Otherwise the task is faulted or not completed, so handle 
+                     * those cases.
+                     */
+
+                    if (_result.IsLoaded)
                     {
-                        return _result;
+                        return _result.Instance;
                     }
-                    else if(_task.IsFaulted)
+                    else if (_task.IsCompletedSuccessfully)
                     {
-                        //Compress and raise exception from result
+                        return _result.Instance;
+                    }
+                    else if (_task.IsFaulted)
+                    {
+                        // Compress and raise exception from result
                         return _task.GetAwaiter().GetResult();
                     }
                     else
@@ -132,24 +148,14 @@ namespace VNLib.Plugins.Extensions.Loading
                         throw new InvalidOperationException("The asynchronous operation has not completed.");
                     }
                 }
-            }
-
-            /*
-             * Only set the result if the task completed successfully.
-             */
-            private void SetResult(Task<T> task)
-            {
-                if (task.IsCompletedSuccessfully)
-                {
-                    _result = task.Result;
-                }
-            }
+            }           
 
             ///<inheritdoc/>
             public TaskAwaiter<T> GetAwaiter() => _task.GetAwaiter();
 
             ///<inheritdoc/>
             public Task<T> AsTask() => _task;
+
         }
 #nullable enable
 

@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2025 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -140,10 +140,10 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <param name="assemblyName">The name of the assembly (ex: 'file.dll') to search for</param>
         /// <param name="dirSearchOption">Directory/file search option</param>
         /// <param name="explictAlc">
-        /// Explicitly define an <see cref="AssemblyLoadContext"/> to load the assmbly, and it's dependencies
+        /// Explicitly define an <see cref="AssemblyLoadContext"/> to load the assembly, and it's dependencies
         /// into. If null, uses the plugin's alc.
         /// </param>
-        /// <returns>The <see cref="AssemblyLoader{T}"/> managing the loaded assmbly in the current AppDomain</returns>
+        /// <returns>The <see cref="AssemblyLoader{T}"/> managing the loaded assembly in the current AppDomain</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="FileNotFoundException"></exception>
         /// <remarks>
@@ -181,10 +181,10 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <param name="assemblyName">The name of the assembly (ex: 'file.dll') to search for</param>
         /// <param name="dirSearchOption">Directory/file search option</param>
         /// <param name="explictAlc">
-        /// Explicitly define an <see cref="AssemblyLoadContext"/> to load the assmbly, and it's dependencies
+        /// Explicitly define an <see cref="AssemblyLoadContext"/> to load the assembly, and it's dependencies
         /// into. If null, uses the plugin's alc.
         /// </param>
-        /// <returns>The <see cref="AssemblyLoader{T}"/> managing the loaded assmbly in the current AppDomain</returns>
+        /// <returns>The <see cref="AssemblyLoader{T}"/> managing the loaded assembly in the current AppDomain</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="FileNotFoundException"></exception>
         /// <remarks>
@@ -226,7 +226,7 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// Gets a single type implemenation of the abstract type from the current assembly. If multiple
+        /// Gets a single type implementation of the abstract type from the current assembly. If multiple
         /// concrete types are found, an exception is raised, if no concrete types are found, an exception
         /// is raised.
         /// </summary>
@@ -246,14 +246,14 @@ namespace VNLib.Plugins.Extensions.Loading
             if (concreteTypes.Length == 0)
             {
                 throw new ConcreteTypeNotFoundException(
-                    $"Failed to load implemenation of abstract type {abstractType} because no concrete implementations were found in this assembly"
+                    $"Failed to load implementation of abstract type {abstractType} because no concrete implementations were found in this assembly"
                 );
             }
 
             if (concreteTypes.Length > 1)
             {
                 throw new ConcreteTypeAmbiguousMatchException(
-                    $"Failed to load implemenation of abstract type {abstractType} because multiple concrete implementations were found in this assembly"
+                    $"Failed to load implementation of abstract type {abstractType} because multiple concrete implementations were found in this assembly"
                 );
             }
 
@@ -476,11 +476,11 @@ namespace VNLib.Plugins.Extensions.Loading
         /// Gets or inializes a singleton service of the desired type.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
+        /// If the type derives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, System.Threading.CancellationToken)"/>
+        /// If the type derives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, System.Threading.CancellationToken)"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// </summary>
@@ -500,11 +500,11 @@ namespace VNLib.Plugins.Extensions.Loading
         /// Gets or inializes a singleton service of the desired type.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
+        /// If the type derives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
+        /// If the type derives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// </summary>
@@ -542,15 +542,15 @@ namespace VNLib.Plugins.Extensions.Loading
         /// information from the type.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
+        /// If the type derives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
+        /// If the type derives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IDisposable"/> the <see cref="IDisposable.Dispose"/> method is called once when 
+        /// If the type derives <see cref="IDisposable"/> the <see cref="IDisposable.Dispose"/> method is called once when 
         /// the plugin is unloaded.
         /// </para>
         /// </summary>
@@ -575,11 +575,11 @@ namespace VNLib.Plugins.Extensions.Loading
         /// Creates and configures a new instance of the desired type, with the configuration property name
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
+        /// If the type derives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
+        /// If the type derives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// </summary>
@@ -603,11 +603,11 @@ namespace VNLib.Plugins.Extensions.Loading
         /// Creates and configures a new instance of the desired type, with the specified configuration scope
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
+        /// If the type derives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
+        /// If the type derives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// </summary>
@@ -628,11 +628,11 @@ namespace VNLib.Plugins.Extensions.Loading
         /// Creates and configures a new instance of the desired type, with the specified configuration scope
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
+        /// If the type derives <see cref="IAsyncConfigurable"/> the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// <para>
-        /// If the type derrives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
+        /// If the type derives <see cref="IAsyncBackgroundWork"/> the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/>
         /// method is called once when the instance is loaded, and observed on the plugin scheduler.
         /// </para>
         /// </summary>
@@ -834,3 +834,4 @@ namespace VNLib.Plugins.Extensions.Loading
         }
     }
 }
+

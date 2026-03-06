@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -182,7 +182,7 @@ namespace VNLib.Plugins.Extensions.Loading
             }
             catch (Exception ex)
             {
-                throw new HCVaultException("Failed to retreive secret from Hashicorp Vault server, see inner exception", ex);
+                throw new HCVaultException("Failed to retrieve secret from Hashicorp Vault server, see inner exception", ex);
             }
         }
 
@@ -191,16 +191,16 @@ namespace VNLib.Plugins.Extensions.Loading
         public ISecretResult? ReadSecret(string path, string mountPoint, string secretName)
         {
             /*
-             * Since this method will syncrhonously block the calling thread, a new 
+             * Since this method will synchronously block the calling thread, a new 
              * task must be created to ignore the current async context and run the 
-             * funciton in an new context to block safely without causing a deadlock.
+             * function in a new context to block safely without causing a deadlock.
              */
 
             Task<ISecretResult?> asAsync = Task.Run(() => ReadSecretAsync(path, mountPoint, secretName));
 
             if (!asAsync.Wait(ClientDefaultTimeout))
             {
-                throw new TimeoutException("Failed to retreive the secret from the vault in the configured timeout period");
+                throw new TimeoutException("Failed to retrieve the secret from the vault in the configured timeout period");
             }
 
             return asAsync.Result;
@@ -383,3 +383,4 @@ namespace VNLib.Plugins.Extensions.Loading
         }
     }
 }
+

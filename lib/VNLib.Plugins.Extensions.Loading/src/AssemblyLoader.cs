@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -134,9 +134,9 @@ namespace VNLib.Plugins.Extensions.Loading
         /// will be loaded into the specified context. If no context is specified the current assemblie's load
         /// context is captured.
         /// </summary>
-        /// <param name="assemblyName">The name of the assmbly within the current plugin directory</param>
+        /// <param name="assemblyName">The name of the assembly within the current plugin directory</param>
         /// <param name="unloadToken">The plugin unload token</param>
-        /// <param name="loadContext">The assembly load context to load the assmbly into</param>
+        /// <param name="loadContext">The assembly load context to load the assembly into</param>
         /// <exception cref="FileNotFoundException"></exception>
         internal static AssemblyLoader<T> Load(string assemblyName, AssemblyLoadContext loadContext, CancellationToken unloadToken)
         {
@@ -154,3 +154,4 @@ namespace VNLib.Plugins.Extensions.Loading
         }
     }
 }
+

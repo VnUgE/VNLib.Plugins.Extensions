@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -32,7 +32,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
 {
 
     /// <summary>
-    /// A deletage to form a method signature for shedulable interval callbacks
+    /// A delegate to form a method signature for schedulable interval callbacks
     /// </summary>
     /// <param name="log">The plugin's default log provider</param>
     /// <param name="pluginExitToken">The plugin's exit token</param>
@@ -40,7 +40,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
     public delegate Task AsyncSchedulableCallback(ILogProvider log, CancellationToken pluginExitToken);
 
     /// <summary>
-    /// Provides event schedueling extensions for plugins
+    /// Provides event scheduling extensions for plugins
     /// </summary>
     public static class EventManagment
     {      
@@ -49,7 +49,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         /// Schedules an asynchronous event interval for the current plugin, that is active until canceled or until the plugin unloads
         /// </summary>
         /// <param name="plugin"></param>
-        /// <param name="asyncCallback">An asyncrhonous callback method.</param>
+        /// <param name="asyncCallback">An asynchronous callback method.</param>
         /// <param name="interval">The event interval</param>
         /// <param name="immediate">A value that indicates if the callback should be run as soon as possible</param>
         /// <exception cref="ObjectDisposedException"></exception>
@@ -86,7 +86,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
                 }
             }
 
-            //Run callback immediatly if requested
+            // Run callback immediately if requested
             if (immediate)
             {
                 await RunCallbackAsync(plugin, callback);

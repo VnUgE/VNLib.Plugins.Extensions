@@ -161,7 +161,7 @@ namespace VNLib.Plugins.Extensions.Sql
             const int MAX_VARIABLE_SIZE = 8000;
 
             ///<inheritdoc/>
-            public void BuildCreateStatment(StringBuilder builder, DataTable table)
+            public void BuildCreateStatement(StringBuilder builder, DataTable table)
             {
                 builder.AppendLine("IF OBJECT_ID(N'[dbo].[@tableName]', N'U') IS NULL");
                 builder.AppendLine("CREATE TABLE [dbo].[@tableName] (");

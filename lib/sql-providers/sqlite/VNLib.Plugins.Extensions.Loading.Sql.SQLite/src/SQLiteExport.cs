@@ -151,7 +151,7 @@ namespace VNLib.Plugins.Extensions.Sql
 
         internal sealed class SqlLiteDb : IDBCommandGenerator
         {
-            public void BuildCreateStatment(StringBuilder builder, DataTable table)
+            public void BuildCreateStatement(StringBuilder builder, DataTable table)
             {
                 builder.AppendLine("CREATE TABLE IF NOT EXISTS @tableName (");
 

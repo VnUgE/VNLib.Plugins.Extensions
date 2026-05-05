@@ -89,7 +89,8 @@ namespace VNLib.Plugins.Extensions.Loading.Events
             // Run callback immediately if requested
             if (immediate)
             {
-                await RunCallbackAsync(plugin, callback);
+                await RunCallbackAsync(plugin, callback)
+                    .ConfigureAwait(false);
             }
 
             //Timer loop
@@ -98,7 +99,8 @@ namespace VNLib.Plugins.Extensions.Loading.Events
                 try
                 {
                     //await delay and wait for plugin cancellation
-                    await Task.Delay(interval, plugin.UnloadToken);
+                    await Task.Delay(interval, plugin.UnloadToken)
+                        .ConfigureAwait(false);
                 }
                 catch (TaskCanceledException)
                 {
@@ -106,7 +108,8 @@ namespace VNLib.Plugins.Extensions.Loading.Events
                     break;
                 }
 
-                await RunCallbackAsync(plugin, callback);
+                await RunCallbackAsync(plugin, callback)
+                    .ConfigureAwait(false);
             }
         }
 

@@ -175,7 +175,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
 
             static async Task<ISecretResult?> GetResultFromFileAsync(string filePath, CancellationToken ct)
             {
-                byte[] fileData = await File.ReadAllBytesAsync(filePath, ct);
+                byte[] fileData = await File.ReadAllBytesAsync(filePath, ct).ConfigureAwait(false);
                 return GetResultFromFileData(fileData);
             }
         }

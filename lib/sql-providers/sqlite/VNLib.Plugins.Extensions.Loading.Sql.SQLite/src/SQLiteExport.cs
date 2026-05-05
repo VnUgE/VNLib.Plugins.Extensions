@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2025 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql.SQLite
@@ -67,7 +67,10 @@ namespace VNLib.Plugins.Extensions.Sql
                 //If the user did not provide a password, try to get it from secret storage
                 if (string.IsNullOrWhiteSpace(sb.Password))
                 {
-                    using ISecretResult? secret = await pwd.FetchSecretAsync();
+                    using ISecretResult? secret = await pwd.FetchSecretAsync()
+                                                    .ConfigureAwait(false);
+
+
                     sb.Password = secret?.Result.ToString();
                 }
             }
@@ -83,13 +86,16 @@ namespace VNLib.Plugins.Extensions.Sql
                 sb = value.Deserialize<SqliteConnectionStringBuilder>(opt)!;
 
                 //Get the password from the secret manager
-                using ISecretResult? secret = await pwd.FetchSecretAsync();
+                using ISecretResult? secret = await pwd.FetchSecretAsync()
+                                                .ConfigureAwait(false);
+
                 sb.Password = secret?.Result.ToString();
             }
             else
             {
                 //Get the password from the secret manager
-                using ISecretResult? secret = await pwd.FetchSecretAsync();
+                using ISecretResult? secret = await pwd.FetchSecretAsync()
+                                                .ConfigureAwait(false);
 
                 // Build connection strin
                 sb = new()
@@ -111,7 +117,8 @@ namespace VNLib.Plugins.Extensions.Sql
         public async Task<Func<DbConnection>> GetDbConnectionAsync()
         {
             //Store local copy of the connection string, probably not the best idea because of the password, but best for now
-            string connString = await BuildConnStringAsync();
+            string connString = await BuildConnStringAsync()
+                                    .ConfigureAwait(false);
 
             return () => new SqliteConnection(connString);
         }
@@ -120,7 +127,8 @@ namespace VNLib.Plugins.Extensions.Sql
         public async Task<DbContextOptions> GetDbOptionsAsync()
         {
             //Get the connection string from the configuration
-            string connString = await BuildConnStringAsync();
+            string connString = await BuildConnStringAsync()
+                                    .ConfigureAwait(false);
 
             DbContextOptionsBuilder b = new();
             b.UseSqlite(connString);

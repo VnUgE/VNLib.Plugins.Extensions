@@ -161,13 +161,16 @@ namespace VNLib.Plugins.Extensions.Loading
 
             try
             {
-                using HttpResponseMessage response = await _client.SendAsync(ms, HttpCompletionOption.ResponseHeadersRead);
+                using HttpResponseMessage response = await _client.SendAsync(ms, HttpCompletionOption.ResponseHeadersRead)
+                                                        .ConfigureAwait(false);
 
-                //Check if an error occured in the response 
-                await ProcessVaultErrorResponseAsync(secretName, response);
+                //Check if an error occurred in the response 
+                await ProcessVaultErrorResponseAsync(secretName, response)
+                    .ConfigureAwait(false);
 
                 //Read the response async
-                using SecretResponse res = await ReadSecretResponse(response.Content);
+                using SecretResponse res = await ReadSecretResponse(response.Content)
+                    .ConfigureAwait(false);
 
                 return FromResponse(res, secretName);
             }
@@ -212,7 +215,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
             try
             {
-                await content.CopyToAsync(response.StreamData);
+                await content.CopyToAsync(response.StreamData).ConfigureAwait(false);
 
                 response.ResetStream();
 
@@ -327,9 +330,11 @@ namespace VNLib.Plugins.Extensions.Loading
             {
                 //Read stream async and deserialize async
                 using Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                VaultErrorMessage? errs = await JsonSerializer.DeserializeAsync<VaultErrorMessage>(stream);
+                VaultErrorMessage? errs = await JsonSerializer.DeserializeAsync<VaultErrorMessage>(stream)
+                    .ConfigureAwait(false);
 
-                await ExceptionFromVaultErrors(secretName, response.StatusCode, errs);
+                await ExceptionFromVaultErrors(secretName, response.StatusCode, errs)
+                    .ConfigureAwait(false);
             }
         }
 

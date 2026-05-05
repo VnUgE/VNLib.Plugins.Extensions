@@ -312,7 +312,8 @@ namespace VNLib.Plugins.Extensions.Loading
             plugin.ThrowIfUnloaded();
 
             //Optional delay
-            await Task.Delay(delayMs);
+            await Task.Delay(delayMs)
+                .ConfigureAwait(false);
 
             //If plugin unloads during delay, bail
             if (plugin.UnloadToken.IsCancellationRequested)

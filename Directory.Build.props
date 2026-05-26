@@ -13,11 +13,15 @@
         CS0618: Errors when using obsolete APIs.
         CS9113: Unread function parameters
         IDE0251: Apply readonly modifier to parameters
+        CA2007: ConfigureAwait must be used when awaiting a task
       -->
-      <WarningsAsErrors>CS0618;IDE0251;</WarningsAsErrors>
+      <WarningsAsErrors>CS0618;IDE0251;CA2007;</WarningsAsErrors>
       
       <!-- Ignore underscores in public constant fields -->
       <NoWarn>CS1591;MSTEST0001</NoWarn>
+
+      <!-- Enable werror for the entire solution -->
+      <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
 
    </PropertyGroup>
 </Project>

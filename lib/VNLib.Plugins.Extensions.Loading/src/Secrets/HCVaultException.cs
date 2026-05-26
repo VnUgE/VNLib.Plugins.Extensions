@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -27,14 +27,29 @@ using System.Net.Http;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
+    /// <summary>
+    /// The exception that is thrown when a Hashicorp Vault operation fails.
+    /// </summary>
     public sealed class HCVaultException : HttpRequestException
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HCVaultException"/> class.
+        /// </summary>
         public HCVaultException()
         { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HCVaultException"/> class with a specified error message.
+        /// </summary>
+        /// <param name="message">The error message that describes the exception.</param>
         public HCVaultException(string message) : base(message)
         { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HCVaultException"/> class with a specified error message and a reference to the inner exception.
+        /// </summary>
+        /// <param name="message">The error message that describes the exception.</param>
+        /// <param name="innerException">The exception that is the cause of the current exception.</param>
         public HCVaultException(string message, Exception innerException) : base(message, innerException)
         { }
     }

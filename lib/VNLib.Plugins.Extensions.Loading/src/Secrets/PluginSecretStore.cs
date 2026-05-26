@@ -36,9 +36,9 @@ using static VNLib.Plugins.Extensions.Loading.Secrets.PluginSecretConstants;
 namespace VNLib.Plugins.Extensions.Loading
 {
     /// <summary>
-    /// A secret store for a plugin that can be used to fetch secrets from plugin configuration
+    /// Provides a secret store for a plugin that can be used to fetch secrets from plugin configuration.
     /// </summary>
-    /// <param name="plugin">The plugin instance to get secrets from</param>
+    /// <param name="plugin">The plugin instance to get secrets from.</param>
     public readonly struct PluginSecretStore(PluginBase plugin) : IEquatable<PluginSecretStore>
     {
         internal const int HCVaultDefaultKvVersion = 2;
@@ -46,12 +46,11 @@ namespace VNLib.Plugins.Extensions.Loading
         private readonly PluginBase _plugin = plugin;
 
         /// <summary>
-        /// Gets the ambient vault client for the current plugin
-        /// if the configuration is loaded, null otherwise
+        /// Gets the ambient <see cref="IKvVaultClient"/> for the current plugin if the configuration is loaded.
         /// </summary>
-        /// <returns>The ambient <see cref="IKvVaultClient"/> if loaded, null otherwise</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
+        /// <returns>The ambient <see cref="IKvVaultClient"/> if configuration is loaded; otherwise, <see langword="null" />.</returns>
+        /// <exception cref="KeyNotFoundException">The vault configuration is missing required keys.</exception>
+        /// <exception cref="ObjectDisposedException">The plugin has been disposed.</exception>
         public IKvVaultClient? GetVaultClient() => LoadingExtensions.GetOrCreateSingleton(_plugin, LoadVaultClient);
 
         private static IKvVaultClient? LoadVaultClient(PluginBase plugin)
@@ -98,11 +97,13 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// Checks if a named secret is set in the plugin configuration. 
-        /// It does not check if the secret has a value only if it's defined.
+        /// Checks whether a named secret is defined in the plugin configuration.
         /// </summary>
-        /// <param name="secretName">The name of the secret to search for</param>
-        /// <returns>True if the system configuration has a key set for the secret name within the secret configuration element</returns>
+        /// <remarks>
+        /// This method does not check if the secret has a value, only if it is defined.
+        /// </remarks>
+        /// <param name="secretName">The name of the secret to search for.</param>
+        /// <returns><see langword="true" /> if the configuration contains a definition for the specified secret name; otherwise, <see langword="false" />.</returns>
         public readonly bool IsSet(string secretName)
         {
             return OnDemandSecret.IsSecretDefined(_plugin, secretName);
@@ -123,18 +124,18 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// <para>
         /// Gets a required secret from the "secrets" element. 
-        /// </para>
+        /// </summary>
+        /// <remarks>
         /// <para>
-        /// Secrets elements are merged from the host config and plugin local config 'secrets' element.
+        /// Secrets elements are merged from the host config and plugin local config 'secrets' element
         /// before searching. The plugin config takes precedence over the host config.
         /// </para>
-        /// </summary>
-        /// <param name="secretName">The name of the secret property to get</param>
-        /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
+        /// </remarks>
+        /// <param name="secretName">The name of the secret property to get.</param>
+        /// <returns>The secret result for the specified name.</returns>
+        /// <exception cref="KeyNotFoundException">The specified secret was not found.</exception>
+        /// <exception cref="ObjectDisposedException">The plugin has been disposed.</exception>
         public async Task<ISecretResult> GetAsync(string secretName)
         {
             ISecretResult? res = await TryGetAsync(secretName).ConfigureAwait(false);
@@ -151,18 +152,18 @@ namespace VNLib.Plugins.Extensions.Loading
 
 
         /// <summary>
-        /// <para>
         /// Gets a required secret from the "secrets" element. 
-        /// </para>
+        /// </summary>
+        /// <remarks>
         /// <para>
-        /// Secrets elements are merged from the host config and plugin local config 'secrets' element.
+        /// Secrets elements are merged from the host config and plugin local config 'secrets' element
         /// before searching. The plugin config takes precedence over the host config.
         /// </para>
-        /// </summary>
-        /// <param name="secretName">The name of the secret property to get</param>
-        /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
+        /// </remarks>
+        /// <param name="secretName">The name of the secret property to get.</param>
+        /// <returns>The secret result for the specified name.</returns>
+        /// <exception cref="KeyNotFoundException">The specified secret was not found.</exception>
+        /// <exception cref="ObjectDisposedException">The plugin has been disposed.</exception>
         [Obsolete("Use GetAsync instead")]
         public Task<ISecretResult> GetSecretAsync(string secretName)
             => GetAsync(secretName);

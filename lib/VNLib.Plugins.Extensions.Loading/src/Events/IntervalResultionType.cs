@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -25,24 +25,24 @@
 namespace VNLib.Plugins.Extensions.Loading.Events
 {
     /// <summary>
-    /// The configurable event interval resulution type
+    /// Defines the resolution type for configurable event intervals.
     /// </summary>
     public enum IntervalResultionType
     {
         /// <summary>
-        /// Specifies event interval resolution in milliseconds
+        /// Specifies event interval resolution in milliseconds.
         /// </summary>
         Milliseconds,
         /// <summary>
-        /// Specifies event interval resolution in seconds
+        /// Specifies event interval resolution in seconds.
         /// </summary>
         Seconds,
         /// <summary>
-        /// Specifies event interval resolution in minutes
+        /// Specifies event interval resolution in minutes.
         /// </summary>
         Minutes,
         /// <summary>
-        /// Specifies event interval resolution in hours
+        /// Specifies event interval resolution in hours.
         /// </summary>
         Hours
     }

@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2025 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -181,14 +181,17 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         }
 
         /// <summary>
-        /// Gets a secret at the given vault url (in the form of "vault://[mount-name]/[secret-path]?secret=[secret_name]")
+        /// Gets a secret from the vault at the specified URL path.
         /// </summary>
-        /// <param name="vaultPath">The raw vault url to lookup</param>
-        /// <param name="async"></param>
-        /// <returns>The string of the object at the specified vault path</returns>
-        /// <exception cref="UriFormatException"></exception>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
+        /// <remarks>
+        /// The URL format is <c>vault://[mount-name]/[secret-path]?secret=[secret_name]</c>.
+        /// </remarks>
+        /// <param name="vaultPath">The raw vault URL to look up.</param>
+        /// <param name="async">A value that indicates whether to fetch the secret asynchronously.</param>
+        /// <returns>The secret result from the vault, or <see langword="null" /> if not found.</returns>
+        /// <exception cref="UriFormatException">The vault path format is invalid.</exception>
+        /// <exception cref="KeyNotFoundException">The vault client is not configured.</exception>
+        /// <exception cref="ObjectDisposedException">The plugin has been disposed.</exception>
         private ValueTask<ISecretResult?> GetSecretFromVault(ReadOnlySpan<char> vaultPath, bool async)
         {
             ArgumentNullException.ThrowIfNull(plugin);
@@ -285,12 +288,14 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         }
 
         /// <summary>
-        /// Attempts to quickly check if a secret has been defined in the system configuration.
-        /// It does not check if the value exists from whatever store it is defined in.
+        /// Determines whether a secret is defined in the system configuration.
         /// </summary>
-        /// <param name="plugin">The plugin to check</param>
-        /// <param name="secretName">The name of the secret to search for</param>
-        /// <returns>True of the host or plugin configuration contains a named element with the secret</returns>
+        /// <remarks>
+        /// This method does not check if the value exists from whatever store it is defined in.
+        /// </remarks>
+        /// <param name="plugin">The plugin to check.</param>
+        /// <param name="secretName">The name of the secret to search for.</param>
+        /// <returns><see langword="true" /> if the host or plugin configuration contains a definition for the secret; otherwise, <see langword="false" />.</returns>
         internal static bool IsSecretDefined(PluginBase plugin, string secretName)
         {
             /*

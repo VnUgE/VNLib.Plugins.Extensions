@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -28,15 +28,27 @@ namespace VNLib.Plugins.Extensions.Loading
 {
 
     /// <summary>
-    /// An exception raised when a configuration validation exception has occured
+    /// The exception that is thrown when a configuration validation error occurs.
     /// </summary>
     public class ConfigurationValidationException : ConfigurationException
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConfigurationValidationException"/> class with a specified error message.
+        /// </summary>
+        /// <param name="message">The error message that describes the exception.</param>
         public ConfigurationValidationException(string message) : base(message)
         { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConfigurationValidationException"/> class with a specified error message and a reference to the inner exception.
+        /// </summary>
+        /// <param name="message">The error message that describes the exception.</param>
+        /// <param name="innerException">The exception that is the cause of the current exception.</param>
         public ConfigurationValidationException(string message, Exception innerException) : base(message, innerException)
         { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConfigurationValidationException"/> class.
+        /// </summary>
         public ConfigurationValidationException()
         { }
     }

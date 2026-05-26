@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2025 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -29,20 +29,20 @@ using System.Collections.Generic;
 namespace VNLib.Plugins.Extensions.Loading
 {
     /// <summary>
-    /// A top-level scoped configuration element
+    /// Represents a top-level scoped configuration element.
     /// </summary>
     public interface IConfigScope : IReadOnlyDictionary<string, JsonElement>
     {
         /// <summary>
-        /// The root level name of the configuration element
+        /// Gets the root-level name of the configuration element.
         /// </summary>
         string ScopeName { get; }
 
         /// <summary>
-        /// Json deserialzes the current config scope to the desired type
+        /// Deserializes the current config scope to the specified type.
         /// </summary>
-        /// <typeparam name="T">The type to deserialze the current config to</typeparam>
-        /// <returns>The instance created from the current scope</returns>
+        /// <typeparam name="T">The type to deserialize the current config to.</typeparam>
+        /// <returns>The instance created from the current scope.</returns>
         T Deserialize<T>();
 
         /// <summary>

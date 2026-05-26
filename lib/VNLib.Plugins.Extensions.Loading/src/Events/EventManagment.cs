@@ -32,28 +32,28 @@ namespace VNLib.Plugins.Extensions.Loading.Events
 {
 
     /// <summary>
-    /// A delegate to form a method signature for schedulable interval callbacks
+    /// Represents an asynchronous callback for scheduled interval events.
     /// </summary>
-    /// <param name="log">The plugin's default log provider</param>
-    /// <param name="pluginExitToken">The plugin's exit token</param>
-    /// <returns>A task the represents the asynchronous work</returns>
+    /// <param name="log">The plugin's default log provider.</param>
+    /// <param name="pluginExitToken">The plugin's exit token.</param>
+    /// <returns>A task that represents the asynchronous work.</returns>
     public delegate Task AsyncSchedulableCallback(ILogProvider log, CancellationToken pluginExitToken);
 
     /// <summary>
-    /// Provides event scheduling extensions for plugins
+    /// Provides event scheduling extensions for plugins.
     /// </summary>
     public static class EventManagment
     {      
 
         /// <summary>
-        /// Schedules an asynchronous event interval for the current plugin, that is active until canceled or until the plugin unloads
+        /// Schedules an asynchronous event interval for the current plugin, that is active until canceled or until the plugin unloads.
         /// </summary>
-        /// <param name="plugin"></param>
-        /// <param name="asyncCallback">An asynchronous callback method.</param>
-        /// <param name="interval">The event interval</param>
-        /// <param name="immediate">A value that indicates if the callback should be run as soon as possible</param>
-        /// <exception cref="ObjectDisposedException"></exception>
-        /// <remarks>If exceptions are raised during callback execution, they are written to the plugin's default log provider</remarks>
+        /// <param name="plugin">The plugin instance to schedule the interval for.</param>
+        /// <param name="asyncCallback">The asynchronous callback method to invoke on each interval.</param>
+        /// <param name="interval">The time interval between callback invocations.</param>
+        /// <param name="immediate"><see langword="true"/> to run the callback immediately; otherwise, <see langword="false"/>.</param>
+        /// <exception cref="ObjectDisposedException">The plugin has been disposed.</exception>
+        /// <remarks>If exceptions are raised during callback execution, they are written to the plugin's default log provider.</remarks>
         public static void ScheduleInterval(this PluginBase plugin, AsyncSchedulableCallback asyncCallback, TimeSpan interval, bool immediate = false)
         {
             plugin.ThrowIfUnloaded();
@@ -114,15 +114,15 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         }
 
         /// <summary>
-        /// Registers an <see cref="IIntervalScheduleable"/> type's event handler for 
-        /// raising timed interval events
+        /// Registers an <see cref="IIntervalSchedulable"/> type's event handler for
+        /// raising timed interval events.
         /// </summary>
-        /// <param name="plugin"></param>
-        /// <param name="scheduleable">The instance to schedule for timeouts</param>
-        /// <param name="interval">The timeout interval</param>
-        /// <param name="immediate">A value that indicates if the callback should be run as soon as possible</param>
-        /// <exception cref="ObjectDisposedException"></exception>
-        /// <remarks>If exceptions are raised during callback execution, they are written to the plugin's default log provider</remarks>
+        /// <param name="plugin">The plugin instance to schedule the interval for.</param>
+        /// <param name="schedulable">The schedulable instance to register for interval events.</param>
+        /// <param name="interval">The time interval between invocations.</param>
+        /// <param name="immediate"><see langword="true"/> to run the callback immediately; otherwise, <see langword="false"/>.</param>
+        /// <exception cref="ObjectDisposedException">The plugin has been disposed.</exception>
+        /// <remarks>If exceptions are raised during callback execution, they are written to the plugin's default log provider.</remarks>
         public static void ScheduleInterval(this PluginBase plugin, IIntervalScheduleable scheduleable, TimeSpan interval, bool immediate = false)
         {
             ArgumentNullException.ThrowIfNull(scheduleable);

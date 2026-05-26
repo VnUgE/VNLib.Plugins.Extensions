@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -27,12 +27,12 @@ using System;
 namespace VNLib.Plugins.Extensions.Loading
 {
     /// <summary>
-    /// The result of a secret fetch operation
+    /// Represents the result of a secret fetch operation.
     /// </summary>
     public interface ISecretResult : IDisposable
     {
         /// <summary>
-        /// The protected raw result value
+        /// Gets the protected raw result value.
         /// </summary>
         ReadOnlySpan<char> Result { get; }
     }

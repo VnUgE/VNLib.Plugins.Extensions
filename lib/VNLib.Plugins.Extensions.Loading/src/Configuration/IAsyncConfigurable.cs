@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -27,16 +27,18 @@ using System.Threading.Tasks;
 namespace VNLib.Plugins.Extensions.Loading
 {
     /// <summary>
-    /// Allows for asynchronous service configuration during service creation, that 
-    /// will be observed on the plugin
+    /// Allows asynchronous service configuration during plugin creation.
     /// </summary>
     public interface IAsyncConfigurable
     {
         /// <summary>
-        /// Configures the service for use. Exceptions will be written to the 
-        /// plugin's default log provider
+        /// Configures the service for use.
         /// </summary>
-        /// <returns>A task that completes when the service has been loaded successfully</returns>
+        /// <param name="plugin">The plugin instance requesting configuration.</param>
+        /// <returns>A task that completes when the service has been loaded successfully.</returns>
+        /// <remarks>
+        /// Exceptions will be written to the plugin's default log provider.
+        /// </remarks>
         Task ConfigureServiceAsync(PluginBase plugin);
     }
 }

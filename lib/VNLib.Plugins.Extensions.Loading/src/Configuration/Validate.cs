@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2025 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -31,19 +31,18 @@ using VNLib.Utils.IO;
 namespace VNLib.Plugins.Extensions.Loading.Configuration
 {
     /// <summary>
-    /// A class that allows for easy configuration validation
+    /// Provides configuration validation helper methods.
     /// </summary>
     public sealed class Validate
     {
 #pragma warning disable CS8763 // Compiler limitation: cannot express [DoesNotReturnIf] with normal return path
         /// <summary>
-        /// Ensures the object is not null and not an empty string,
-        /// otherwise a <see cref="ConfigurationValidationException"/> is raised
+        /// Asserts that the specified object is not <see langword="null" /> and not an empty string.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="obj">The object to test</param>
-        /// <param name="message">The message to display to the user on loading</param>
-        /// <exception cref="ConfigurationValidationException"></exception>
+        /// <typeparam name="T">The reference type to validate.</typeparam>
+        /// <param name="obj">The object to test.</param>
+        /// <param name="message">The message to display to the user on loading.</param>
+        /// <exception cref="ConfigurationValidationException">The object is <see langword="null" /> or an empty string.</exception>
         [DoesNotReturn]
         public static void NotNull<T>(T? obj, string message) where T : class
         {
@@ -59,11 +58,11 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration
         }
         
         /// <summary>
-        /// Throws a <see cref="ConfigurationValidationException"/> if the specified condition is false.
+        /// Asserts that the specified condition is <see langword="true" />.
         /// </summary>
         /// <param name="condition">The condition to assert.</param>
         /// <param name="message">The message to include in the exception if the assertion fails.</param>
-        /// <exception cref="ConfigurationValidationException">Thrown when <paramref name="condition"/> is false.</exception>
+        /// <exception cref="ConfigurationValidationException"><paramref name="condition" /> is <see langword="false" />.</exception>
 
         public static void Assert([DoesNotReturnIf(false)] bool condition, string message)
         {
@@ -75,13 +74,13 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration
 #pragma warning restore CS8763
 
         /// <summary>
-        /// Throws a <see cref="ConfigurationValidationException"/> if <paramref name="a"/> is equal to <paramref name="b"/>, or if either is null.
+        /// Asserts that two objects are not equal and neither is <see langword="null" />.
         /// </summary>
         /// <typeparam name="T">The type of the objects to compare.</typeparam>
         /// <param name="a">The first object to compare.</param>
         /// <param name="b">The second object to compare.</param>
-        /// <param name="message">The message to include in the exception if the objects are equal or null.</param>
-        /// <exception cref="ConfigurationValidationException">Thrown when <paramref name="a"/> is equal to <paramref name="b"/>, or either is null.</exception>
+        /// <param name="message">The message to include in the exception if the objects are equal or <see langword="null" />.</param>
+        /// <exception cref="ConfigurationValidationException"><paramref name="a" /> is equal to <paramref name="b" />, or either is <see langword="null" />.</exception>
         public static void NotEqual<T>(T a, T b, string message)
         {
             if (a is null || b is null)
@@ -96,14 +95,14 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration
         }
 
         /// <summary>
-        /// Throws a <see cref="ConfigurationValidationException"/> if <paramref name="value"/> is not within the inclusive range defined by <paramref name="min"/> and <paramref name="max"/>.
+        /// Asserts that a value is within the specified inclusive range.
         /// </summary>
-        /// <typeparam name="T">A type that implements <see cref="IComparable{T}"/>.</typeparam>
+        /// <typeparam name="T">A type that implements <see cref="IComparable{T}" />.</typeparam>
         /// <param name="value">The value to validate.</param>
         /// <param name="min">The minimum allowed value (inclusive).</param>
         /// <param name="max">The maximum allowed value (inclusive).</param>
         /// <param name="message">The message to include in the exception if validation fails.</param>
-        /// <exception cref="ConfigurationValidationException">Thrown when <paramref name="value"/> is outside the specified range.</exception>
+        /// <exception cref="ConfigurationValidationException"><paramref name="value" /> is outside the specified range.</exception>
         public static void Range2<T>(T value, T min, T max, string message)
              where T : IComparable<T>
         {
@@ -115,27 +114,25 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration
         }
 
         /// <summary>
-        /// Throws a <see cref="ConfigurationValidationException"/> if <paramref name="value"/> is not within the inclusive range defined by <paramref name="min"/> and <paramref name="max"/>.
-        /// The exception message includes the parameter name and the invalid value.
+        /// Asserts that a value is within the specified inclusive range, including the parameter name in the exception message.
         /// </summary>
-        /// <typeparam name="T">A type that implements <see cref="IComparable{T}"/>.</typeparam>
+        /// <typeparam name="T">A type that implements <see cref="IComparable{T}" />.</typeparam>
         /// <param name="value">The value to validate.</param>
         /// <param name="min">The minimum allowed value (inclusive).</param>
         /// <param name="max">The maximum allowed value (inclusive).</param>
         /// <param name="paramName">The name of the parameter being validated (automatically supplied).</param>
-        /// <exception cref="ConfigurationValidationException">Thrown when <paramref name="value"/> is outside the specified range.</exception>
+        /// <exception cref="ConfigurationValidationException"><paramref name="value" /> is outside the specified range.</exception>
         public static void Range<T>(T value, T min, T max, [CallerArgumentExpression(nameof(value))] string? paramName = null)
             where T : IComparable<T>
         {
             Range2(value, min, max, $"Value for {paramName} must be between {min} and {max}. Value: {value}");
         }
 
-
         /// <summary>
-        /// Throws a <see cref="ConfigurationValidationException"/> if the file at <paramref name="path"/> does not exist.
+        /// Asserts that a file exists at the specified path.
         /// </summary>
         /// <param name="path">The path to the file to check.</param>
-        /// <exception cref="ConfigurationValidationException">Thrown when the file does not exist at the specified path.</exception>
+        /// <exception cref="ConfigurationValidationException">The file does not exist at the specified path.</exception>
         public static void FileExists(string path)
         {
             if (!FileOperations.FileExists(path))

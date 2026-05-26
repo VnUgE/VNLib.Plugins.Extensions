@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -27,17 +27,29 @@ using System;
 namespace VNLib.Plugins.Extensions.Loading
 {
     /// <summary>
-    /// Raised when a concrete type is found but is ambiguous because more than one 
+    /// The exception that is thrown when a concrete type is ambiguous because more than one
     /// type implements the desired abstract type.
     /// </summary>
     public sealed class ConcreteTypeAmbiguousMatchException : ConcreteTypeException
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConcreteTypeAmbiguousMatchException"/> class with a specified error message.
+        /// </summary>
+        /// <param name="message">The error message that describes the exception.</param>
         public ConcreteTypeAmbiguousMatchException(string message) : base(message)
         { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConcreteTypeAmbiguousMatchException"/> class with a specified error message and a reference to the inner exception.
+        /// </summary>
+        /// <param name="message">The error message that describes the exception.</param>
+        /// <param name="innerException">The exception that is the cause of the current exception.</param>
         public ConcreteTypeAmbiguousMatchException(string message, Exception innerException) : base(message, innerException)
         { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConcreteTypeAmbiguousMatchException"/> class.
+        /// </summary>
         public ConcreteTypeAmbiguousMatchException()
         { }
     }

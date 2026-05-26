@@ -79,7 +79,7 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         /// <summary>
         /// Gets the underlying <see cref="IUserManager"/> that was dynamically loaded.
         /// </summary>
-        /// <returns>The user manager instance</returns>
+        /// <value>The dynamically loaded user manager instance.</value>
         public IUserManager InternalManager { get; }
 
         ///<inheritdoc/>
@@ -119,19 +119,34 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         }
 
         ///<inheritdoc/>
-        public Task<IUser> CreateUserAsync(IUserCreationRequest creation, string? userId, IPasswordHashingProvider? hashProvider, CancellationToken cancellation = default)
+        public Task<IUser> CreateUserAsync(
+            IUserCreationRequest creation,
+            string? userId,
+            IPasswordHashingProvider? hashProvider,
+            CancellationToken cancellation = default
+        )
         {
             return InternalManager.CreateUserAsync(creation, userId, hashProvider, cancellation);
         }
 
         ///<inheritdoc/>
-        public Task<ERRNO> ValidatePasswordAsync(IUser user, PrivateString password, IPasswordHashingProvider? hashProvider, CancellationToken cancellation = default)
+        public Task<ERRNO> ValidatePasswordAsync(
+            IUser user,
+            PrivateString password,
+            IPasswordHashingProvider? hashProvider,
+            CancellationToken cancellation = default
+        )
         {
             return InternalManager.ValidatePasswordAsync(user, password, hashProvider, cancellation);
         }
 
         ///<inheritdoc/>
-        public Task<ERRNO> UpdatePasswordAsync(IUser user, PrivateString newPass, IPasswordHashingProvider? hashProvider, CancellationToken cancellation = default)
+        public Task<ERRNO> UpdatePasswordAsync(
+            IUser user,
+            PrivateString newPass,
+            IPasswordHashingProvider? hashProvider,
+            CancellationToken cancellation = default
+        )
         {
             return InternalManager.UpdatePasswordAsync(user, newPass, hashProvider, cancellation);
         }

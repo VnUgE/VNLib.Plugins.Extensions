@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -27,8 +27,7 @@ using System;
 namespace VNLib.Plugins.Extensions.Loading.Events
 {
     /// <summary>
-    /// When added to a method schedules it as a callback on a specified interval when 
-    /// the plugin is loaded, and stops when unloaded
+    /// Schedules the annotated method as a callback on a specified interval when the plugin is loaded.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class AsyncIntervalAttribute : Attribute
@@ -36,14 +35,13 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         internal readonly TimeSpan Interval;
 
         /// <summary>
-        /// Initializes a new <see cref="AsyncIntervalAttribute"/> with allowing 
-        /// a configurable
+        /// Initializes a new instance of the <see cref="AsyncIntervalAttribute"/> class.
         /// </summary>
         public AsyncIntervalAttribute()
         {}
 
         /// <summary>
-        /// Gets or sets the interval in seconds. Choose only ONE internval resolution
+        /// Gets or sets the interval in seconds.
         /// </summary>
         public int Seconds
         {
@@ -52,7 +50,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         }
 
         /// <summary>
-        /// Gets or sets the interval in milliseconds. Choose only ONE internval resolution
+        /// Gets or sets the interval in milliseconds.
         /// </summary>
         public int MilliSeconds
         {
@@ -61,7 +59,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         }
 
         /// <summary>
-        /// Gets or sets the interval in minutes. Choose only ONE internval resolution
+        /// Gets or sets the interval in minutes.
         /// </summary>
         public int Minutes
         {
@@ -70,7 +68,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         }
 
         /// <summary>
-        /// Gets or sets the interval in hours. Choose only ONE internval resolution
+        /// Gets or sets the interval in hours.
         /// </summary>
         public int Hours
         {

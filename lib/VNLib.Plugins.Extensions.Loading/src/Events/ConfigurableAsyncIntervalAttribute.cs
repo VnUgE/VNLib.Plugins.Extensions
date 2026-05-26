@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -30,7 +30,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
     /// When added to a method schedules it as a callback on a specified interval when 
     /// the plugin is loaded, and stops when unloaded
     /// </summary>
-    [Obsolete("Depricated in favor of more verbose IIntervaleSchedulable apis")]
+    [Obsolete("Deprecated in favor of more verbose IIntervalSchedulable apis")]
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class ConfigurableAsyncIntervalAttribute : Attribute
     {
@@ -40,17 +40,17 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         public string IntervalPropertyName { get; }
 
         /// <summary>
-        /// The time resoltion for the event interval
+        /// The time resolution for the event interval
         /// </summary>
-        public IntervalResultionType Resolution { get; }
+        public IntervalResolutionType Resolution { get; }
 
         /// <summary>
         /// Initializes a <see cref="ConfigurableAsyncIntervalAttribute"/> with the specified
         /// interval property name
         /// </summary>
         /// <param name="intervalPropertyName">The configuration property name for the event interval</param>
-        /// <param name="resolution">The time resoltion for the event interval</param>
-        public ConfigurableAsyncIntervalAttribute(string intervalPropertyName, IntervalResultionType resolution)
+        /// <param name="resolution">The time resolution for the event interval</param>
+        public ConfigurableAsyncIntervalAttribute(string intervalPropertyName, IntervalResolutionType resolution)
         {
             IntervalPropertyName = intervalPropertyName;
             Resolution = resolution;

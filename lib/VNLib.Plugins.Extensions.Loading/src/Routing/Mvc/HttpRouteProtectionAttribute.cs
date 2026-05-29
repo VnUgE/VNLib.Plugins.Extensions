@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -25,9 +25,6 @@
 using System;
 using System.Net;
 
-using VNLib.Plugins.Essentials.Accounts;
-using VNLib.Plugins.Essentials.Sessions;
-
 namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
 {
     /// <summary>
@@ -38,17 +35,19 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
     /// Authentication enforcement is handled separately by the accounts plugin.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-    public sealed class HttpRouteProtectionAttribute(AuthorzationCheckLevel authLevel) : Attribute
+    public sealed class HttpRouteProtectionAttribute : Attribute
     {
         /// <summary>
-        /// Defines the allowed session types for this endpoint
+        /// Initializes a new instance of the <see cref="HttpRouteProtectionAttribute"/> class.
         /// </summary>
-        public SessionType SessionType { get; init; } = SessionType.Web;
+        public HttpRouteProtectionAttribute()
+        { }
 
         /// <summary>
-        /// The minimum authorization level required to access the endpoint
+        /// Gets or sets the required session type identifier string, or <see langword="null" /> to allow any session type.
         /// </summary>
-        public AuthorzationCheckLevel AuthLevel { get; } = authLevel;
+        public string? RequiredSessionTypeId { get; init; }
+
 
         /// <summary>
         /// Gets or sets the HTTP status code to return when the client is not authorized.

@@ -24,9 +24,9 @@
 
 using System;
 using System.IO;
-using System.Threading;
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Threading;
 
 using VNLib.Utils.IO;
 using VNLib.Utils.Resources;
@@ -35,16 +35,12 @@ namespace VNLib.Plugins.Extensions.Loading
 {
 
     /// <summary>
-    /// <para>
-    /// Represents a disposable assembly loader wrapper for 
-    /// exporting a single type from a loaded assembly
-    /// </para>
-    /// <para>
-    /// If the loaded type implements <see cref="IDisposable"/> the 
-    /// dispose method is called when the loader is disposed
-    /// </para>
+    /// Represents a disposable assembly loader wrapper for exporting a single type from a loaded assembly.
     /// </summary>
-    /// <typeparam name="T">The exported type to manage</typeparam>
+    /// <typeparam name="T">The exported type to manage.</typeparam>
+    /// <remarks>
+    /// If the loaded type implements <see cref="IDisposable"/>, the dispose method is called when the loader is disposed.
+    /// </remarks>
     public sealed class AssemblyLoader<T> : ManagedLibrary, IDisposable
     {
         private readonly CancellationTokenRegistration _reg;
@@ -52,7 +48,7 @@ namespace VNLib.Plugins.Extensions.Loading
         private bool disposedValue;
 
         /// <summary>
-        /// The instance of the loaded type
+        /// Gets the instance of the loaded type.
         /// </summary>
         public T Resource => _instance.Instance;
 
@@ -67,14 +63,13 @@ namespace VNLib.Plugins.Extensions.Loading
       
 
         /// <summary>
-        /// Creates a method delegate for the given method name from
-        /// the instance wrapped by the current loader
+        /// Creates a method delegate for the specified method name from the instance wrapped by the current loader.
         /// </summary>
-        /// <typeparam name="TDelegate"></typeparam>
-        /// <param name="methodName">The name of the method to recover</param>
-        /// <returns>The delegate method wrapper if found, null otherwise</returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="AmbiguousMatchException"></exception>
+        /// <typeparam name="TDelegate">The delegate type to create.</typeparam>
+        /// <param name="methodName">The name of the method to recover.</param>
+        /// <returns>The delegate method wrapper if found; otherwise, <see langword="null"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="methodName"/> is <see langword="null"/>.</exception>
+        /// <exception cref="AmbiguousMatchException">More than one matching method is found.</exception>
         public TDelegate? TryGetMethod<TDelegate>(string methodName) where TDelegate : Delegate
         {
             T resource = Resource!; // Guaranteed not null after instance is loaded
@@ -109,7 +104,7 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// Cleans up any unused internals
+        /// Cleans up any unused internals.
         /// </summary>
         ~AssemblyLoader()
         {
@@ -119,9 +114,11 @@ namespace VNLib.Plugins.Extensions.Loading
 
        
         /// <summary>
-        /// Disposes the assembly loader and cleans up resources. If the <typeparamref name="T"/> 
-        /// inherits <see cref="IDisposable"/> the intrance is disposed.
+        /// Disposes the assembly loader and cleans up resources.
         /// </summary>
+        /// <remarks>
+        /// If <typeparamref name="T"/> implements <see cref="IDisposable"/>, the instance is disposed.
+        /// </remarks>
         public void Dispose()
         {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
@@ -130,14 +127,16 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// Creates a new loader for the desired assembly. The assembly and its dependencies
-        /// will be loaded into the specified context. If no context is specified the current assemblie's load
-        /// context is captured.
+        /// Creates a new loader for the desired assembly.
         /// </summary>
-        /// <param name="assemblyName">The name of the assembly within the current plugin directory</param>
-        /// <param name="unloadToken">The plugin unload token</param>
-        /// <param name="loadContext">The assembly load context to load the assembly into</param>
-        /// <exception cref="FileNotFoundException"></exception>
+        /// <remarks>
+        /// The assembly and its dependencies are loaded into the specified context.
+        /// If no context is specified, the current assembly's load context is captured.
+        /// </remarks>
+        /// <param name="assemblyName">The name of the assembly within the current plugin directory.</param>
+        /// <param name="unloadToken">A plugin unload token.</param>
+        /// <param name="loadContext">The assembly load context to load the assembly into.</param>
+        /// <exception cref="FileNotFoundException">The specified assembly file cannot be found.</exception>
         internal static AssemblyLoader<T> Load(string assemblyName, AssemblyLoadContext loadContext, CancellationToken unloadToken)
         {
             ArgumentNullException.ThrowIfNull(loadContext);

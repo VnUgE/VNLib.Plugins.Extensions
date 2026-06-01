@@ -32,7 +32,7 @@ using FluentValidation.Results;
 namespace VNLib.Plugins.Extensions.Validation
 {
     /// <summary>
-    /// Defines extenstion methods for <see cref="IRuleBuilder{T, TProperty}"/>
+    /// Defines extension methods for <see cref="IRuleBuilder{T, TProperty}"/>
     /// </summary>
     public static class ValidatorExtensions
     {
@@ -74,6 +74,7 @@ namespace VNLib.Plugins.Extensions.Validation
             return builder.Must(static phone => phone?.Length > 0 && PhoneRegex.IsMatch(phone))
                           .WithMessage("{PropertyValue} is not a valid phone number.");
         }
+
         /// <summary>
         /// Tests the the property against <see cref="PhoneRegex"/> 
         /// to determine if the string matches the proper phone number form, or allows emtpy strings
@@ -99,6 +100,7 @@ namespace VNLib.Plugins.Extensions.Validation
             return builder.Must(static str => str == null || !SpecialCharactersRegx.IsMatch(str))
                           .WithMessage("{PropertyName} contains illegal characters");
         }
+
         /// <summary>
         /// Checks a string against <see cref="IllegalRegx"/>.
         /// If the string is null or empty, it is allowed.
@@ -111,6 +113,7 @@ namespace VNLib.Plugins.Extensions.Validation
             return builder.Must(static str => str == null || !IllegalRegx.IsMatch(str))
                           .WithMessage("{PropertyName} contains illegal characters");
         }
+
         /// <summary>
         /// Makes sure a field contains at least 1 character a-Z
         /// </summary>
@@ -122,6 +125,7 @@ namespace VNLib.Plugins.Extensions.Validation
             return builder.Must(static str => str == null || AlphaRegx.IsMatch(str))
                           .WithMessage("{PropertyName} requires at least one a-Z character.");
         }
+
         /// <summary>
         /// Determines if all characters are only a-Z (allows whitespace)
         /// </summary>
@@ -133,6 +137,7 @@ namespace VNLib.Plugins.Extensions.Validation
             return builder.Must(static str => str == null || OnlyAlphaRegx.IsMatch(str))
                           .WithMessage("{PropertyName} can only be a alpha character from a-Z.");
         }
+
         /// <summary>
         /// Makes sure a field contains at least 1 numeral
         /// </summary>
@@ -144,6 +149,7 @@ namespace VNLib.Plugins.Extensions.Validation
             return builder.Must(static str => str == null || NumericRegx.IsMatch(str))
                           .WithMessage("{PropertyName} requires at least one number.");
         }
+
         /// <summary>
         /// Determines if all characters are only 0-9 (not whitespace is allowed)
         /// </summary>
@@ -155,6 +161,7 @@ namespace VNLib.Plugins.Extensions.Validation
             return builder.Must(static str => str == null || OnlyNumericRegx.IsMatch(str))
                           .WithMessage("{PropertyName} can only be a number 0-9.");
         }
+
         /// <summary>
         /// Makes sure the field contains at least 1 alpha numeric character (whitespace included)
         /// </summary>
@@ -166,6 +173,7 @@ namespace VNLib.Plugins.Extensions.Validation
             return builder.Must(static str => str == null || AlphaNumRegx.IsMatch(str))
                           .WithMessage("{PropertyName} must contain at least one alpha-numeric character.");
         }
+
         /// <summary>
         /// Determines if all characters are only alpha-numeric (whitespace allowed)
         /// </summary>
@@ -177,7 +185,7 @@ namespace VNLib.Plugins.Extensions.Validation
             return builder.Must(static str => str == null || OnlyAlphaNumRegx.IsMatch(str))
                           .WithMessage("{PropertyName} can only contain alpha numeric characters.");
         }
-        /// <summary>
+       
         /// Tests the string against the password regular expression to determine if the 
         /// value meets the basic password requirements
         /// </summary>

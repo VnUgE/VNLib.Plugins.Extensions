@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -27,17 +27,28 @@ using System;
 namespace VNLib.Plugins.Extensions.Loading
 {
     /// <summary>
-    /// Base class for concrete type loading exceptions. Raised when searching 
-    /// for a concrete type fails.
+    /// The base class for exceptions that occur during concrete type resolution.
     /// </summary>
     public class ConcreteTypeException : TypeLoadException
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConcreteTypeException"/> class.
+        /// </summary>
         public ConcreteTypeException() : base()
         { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConcreteTypeException"/> class with a specified error message.
+        /// </summary>
+        /// <param name="message">The error message that describes the exception.</param>
         public ConcreteTypeException(string? message) : base(message)
         { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConcreteTypeException"/> class with a specified error message and a reference to the inner exception.
+        /// </summary>
+        /// <param name="message">The error message that describes the exception.</param>
+        /// <param name="innerException">The exception that is the cause of the current exception.</param>
         public ConcreteTypeException(string? message, Exception? innerException) : base(message, innerException)
         { }
     }

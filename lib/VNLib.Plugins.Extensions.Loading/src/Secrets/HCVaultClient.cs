@@ -53,8 +53,7 @@ namespace VNLib.Plugins.Extensions.Loading
 {
 
     /// <summary>
-    /// A concret implementation of a Hashicorp Vault client instance used to 
-    /// retrieve key-value secrets from a server
+    /// Represents a concrete implementation of a <see cref="IKvVaultClient"/> that retrieves key-value secrets from a Hashicorp Vault server.
     /// </summary>
     public sealed class HCVaultClient : VnDisposeable, IKvVaultClient
     {
@@ -101,16 +100,16 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// Creates a new Hashicorp vault client with the given server address, token, and KV storage version
+        /// Creates a new Hashicorp vault client with the given server address, token, and KV storage version.
         /// </summary>
-        /// <param name="serverAddress">The vault server address</param>
-        /// <param name="token">The vault token used to connect to the vault server</param>
-        /// <param name="kvVersion">The hc vault Key value store version (must be 1 or 2)</param>
-        /// <param name="trustCert">A value that tells the HTTP client to trust the Vault server's certificate even if it's not valid</param>
-        /// <param name="heap">Heap instance to allocate internal buffers from</param>
-        /// <returns>The new client instance</returns>
-        /// <exception cref="ArgumentException"></exception>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <param name="serverAddress">The vault server address.</param>
+        /// <param name="token">The vault token used to connect to the vault server.</param>
+        /// <param name="kvVersion">The Hashicorp Vault key-value store version (must be 1 or 2).</param>
+        /// <param name="trustCert"><see langword="true" /> to trust the vault server's certificate even if it is not valid; otherwise, <see langword="false" />.</param>
+        /// <param name="heap">The heap instance to allocate internal buffers from.</param>
+        /// <returns>A new <see cref="HCVaultClient"/> instance.</returns>
+        /// <exception cref="ArgumentException">The KV storage version is not supported.</exception>
+        /// <exception cref="ArgumentNullException">A required argument is null.</exception>
         public static HCVaultClient Create(string serverAddress, string token, int kvVersion, bool trustCert, IUnmanagedHeap heap)
         {
             ArgumentException.ThrowIfNullOrEmpty(serverAddress);
@@ -126,16 +125,15 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// Creates a new Hashicorp vault client from the default Vault environment 
-        /// variables VAULT_ADDR and VAULT_TOKEN. From client documentation
+        /// Creates a new <see cref="HCVaultClient"/> from the default Vault environment variables.
         /// </summary>
-        /// <param name="kvVersion">The hc vault Key value store version (must be 1 or 2)</param>
-        /// <param name="trustCert">A value that tells the HTTP client to trust the Vault server's certificate even if it's not valid</param>
-        /// <param name="heap">Heap instance to allocate internal buffers from</param>
-        /// <returns>The new client instance</returns>
-        /// <exception cref="ArgumentException"></exception>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="KeyNotFoundException"></exception>
+        /// <param name="kvVersion">The Hashicorp Vault key-value store version (must be 1 or 2).</param>
+        /// <param name="trustCert"><see langword="true" /> to trust the vault server's certificate even if it is not valid; otherwise, <see langword="false" />.</param>
+        /// <param name="heap">The heap instance to allocate internal buffers from.</param>
+        /// <returns>A new <see cref="HCVaultClient"/> instance.</returns>
+        /// <exception cref="ArgumentException">The KV storage version is not supported.</exception>
+        /// <exception cref="ArgumentNullException">A required environment variable is not set.</exception>
+        /// <exception cref="KeyNotFoundException">A required vault environment variable is missing.</exception>
         public static HCVaultClient CreateFromEnv(int kvVersion, bool trustCert, IUnmanagedHeap heap)
         {
             string? address = Environment.GetEnvironmentVariable("VAULT_ADDR");
@@ -358,9 +356,9 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             /// <summary>
-            /// Gets a <see cref="JsonDocument"/> from the response data
+            /// Gets a <see cref="JsonDocument"/> from the response data.
             /// </summary>
-            /// <returns></returns>
+            /// <returns>A <see cref="JsonDocument"/> parsed from the response data.</returns>
             public JsonDocument AsJson()
             {
                 //read the data as a raw span then parse it as json
@@ -369,7 +367,7 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             /// <summary>
-            /// Resets the stream to the beginning
+            /// Resets the stream to the beginning.
             /// </summary>
             public void ResetStream() => StreamData.Seek(0, SeekOrigin.Begin);
 

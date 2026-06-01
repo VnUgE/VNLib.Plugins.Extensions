@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -28,29 +28,26 @@ using System.Threading.Tasks;
 namespace VNLib.Plugins.Extensions.Loading
 {
     /// <summary>
-    /// A secret that can be fetched from it's backing store when needed
-    /// to avoid storing sensitive information in memory long term
+    /// Represents a secret that can be fetched from its backing store on demand to avoid storing sensitive information in memory long term.
     /// </summary>
     public interface IOnDemandSecret
     {
         /// <summary>
-        /// The name of the secret that will be fetched on demand
+        /// Gets the name of the secret to fetch on demand.
         /// </summary>
         string SecretName { get; }
 
         /// <summary>
-        /// Fetches the secret value from the backing store
-        /// synchronously
+        /// Fetches the secret value from the backing store synchronously.
         /// </summary>
-        /// <returns>The secret value if found, null otherwise</returns>
+        /// <returns>The secret result if found; otherwise, <see langword="null" />.</returns>
         ISecretResult? FetchSecret();
 
         /// <summary>
-        /// Fetches the secret value from the backing store
-        /// asynchronously
+        /// Fetches the secret value from the backing store asynchronously.
         /// </summary>
-        /// <param name="cancellation">An optionall canceallation token to cancel the operation</param>
-        /// <returns>A task that completes with the value of the secret if it exists</returns>
+        /// <param name="cancellation">An optional <see cref="CancellationToken"/> to cancel the operation.</param>
+        /// <returns>A task that completes with the secret result if found; otherwise, <see langword="null" />.</returns>
         Task<ISecretResult?> FetchSecretAsync(CancellationToken cancellation = default);
     }
 }

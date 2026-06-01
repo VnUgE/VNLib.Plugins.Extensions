@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -25,39 +25,41 @@
 using System;
 using System.Net;
 
-using VNLib.Plugins.Essentials.Accounts;
-using VNLib.Plugins.Essentials.Sessions;
-
 namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
 {
     /// <summary>
-    /// When applied to a method, this attribute will require the client to have a valid
-    /// authorization in order to access the endpoint.
+    /// Requires the client connection to satisfy the configured session checks before accessing the endpoint.
     /// </summary>
-    /// <param name="authLevel">The protection authorization level</param>
+    /// <remarks>
+    /// Session checks include requiring a session to be set, optional session type match, and optional new-session gate.
+    /// Authentication enforcement is handled separately by the accounts plugin.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-    public sealed class HttpRouteProtectionAttribute(AuthorzationCheckLevel authLevel) : Attribute
+    public sealed class HttpRouteProtectionAttribute : Attribute
     {
         /// <summary>
-        /// Defines the allowed session types for this endpoint
+        /// Initializes a new instance of the <see cref="HttpRouteProtectionAttribute"/> class.
         /// </summary>
-        public SessionType SessionType { get; init; } = SessionType.Web;
+        public HttpRouteProtectionAttribute()
+        { }
 
         /// <summary>
-        /// The minimum authorization level required to access the endpoint
+        /// Gets or sets the required session type identifier string, or <see langword="null" /> to allow any session type.
         /// </summary>
-        public AuthorzationCheckLevel AuthLevel { get; } = authLevel;
+        public string? RequiredSessionTypeId { get; init; }
+
 
         /// <summary>
-        /// The status code to return when the client is not authorized
+        /// Gets or sets the HTTP status code to return when the client is not authorized.
         /// </summary>
         public HttpStatusCode ErrorCode { get; init; } = HttpStatusCode.Unauthorized;
 
         /// <summary>
-        /// If true allows connections with newly initalized sessions. This is a protection
-        /// because allowing new sessions allows connections with ensuring the same 
-        /// session has been reused and verified.
+        /// Gets a value that indicates whether connections with newly initialized sessions are allowed.
         /// </summary>
+        /// <remarks>
+        /// Disallowing new sessions ensures the same session has been reused and verified.
+        /// </remarks>
         public bool AllowNewSession { get; init; }
     }
 }

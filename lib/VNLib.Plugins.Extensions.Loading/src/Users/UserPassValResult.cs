@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -30,22 +30,22 @@ using VNLib.Plugins.Essentials.Users;
 namespace VNLib.Plugins.Extensions.Loading.Users
 {
     /// <summary>
-    /// Result codes for <see cref="IUserManager.ValidatePasswordAsync(IUser, PrivateString, PassValidateFlags, CancellationToken)"/>
+    /// Defines result codes for password validation.
     /// </summary>
     public static class UserPassValResult
     {
         /// <summary>
-        /// The passwords matched
+        /// Indicates the passwords matched.
         /// </summary>
         public const int Success = 1;
 
         /// <summary>
-        /// Failed because the user did not have a password stored
+        /// Indicates the user did not have a password stored.
         /// </summary>
         public const int Null = 0;
 
         /// <summary>
-        /// Failed because the passwords did not match
+        /// Indicates the passwords did not match.
         /// </summary>
         public const int Failed = -1;
     }

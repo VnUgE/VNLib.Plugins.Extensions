@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2025 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -30,27 +30,25 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
 {
 
     /// <summary>
-    /// Attribute to define a static http endpoint for a controller. A static route is a 
-    /// route that is configured at startup and does not do any type of dynamic pattern
-    /// matching.
-    /// <para>
-    /// Values in the <see cref="Path"/> property may include configuration substitution in the 
-    /// form of {{ var_name }}/my-api, which will be replaced at startup with the configured value.
-    /// </para>
+    /// Defines a static HTTP endpoint for a controller.
     /// </summary>
-    /// <param name="path">The static route path, may include configuration substitution variables</param>
-    /// <param name="method">The method (or methods) allowed to be filtered by this endpoint</param>
+    /// <remarks>
+    /// A static route is configured at startup and does not perform dynamic pattern matching.
+    /// Values in the <see cref="Path"/> property may include configuration substitution in the
+    /// form of <c>{{ var_name }}</c>, which will be replaced at startup with the configured value.
+    /// </remarks>
+    /// <param name="path">The static route path, which may include configuration substitution variables.</param>
+    /// <param name="method">The HTTP method or methods allowed for this endpoint.</param>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public sealed class HttpStaticRouteAttribute(string path, HttpMethod method) : Attribute
     {
         /// <summary>
-        /// The path of the endpoint
+        /// Gets the path of the endpoint.
         /// </summary>
         public string Path { get; } = path;
 
         /// <summary>
-        /// The http method of the endpoint. You may set more than one method
-        /// for a given endpoint
+        /// Gets the HTTP method of the endpoint. More than one method may be set for a given endpoint.
         /// </summary>
         public HttpMethod Method { get; } = method;
     }

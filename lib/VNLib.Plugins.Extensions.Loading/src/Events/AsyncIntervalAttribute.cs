@@ -72,7 +72,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         /// </summary>
         public int Hours
         {
-            get => (int)Interval.TotalMinutes;
+            get => (int)Interval.TotalHours;
             init => Interval = TimeSpan.FromHours(value);
         }
     }

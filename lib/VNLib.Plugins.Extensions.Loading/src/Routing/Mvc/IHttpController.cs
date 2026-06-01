@@ -43,7 +43,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
         /// </summary>
         /// <param name="entity">The request entity to pre-process.</param>
         /// <returns><see langword="true" /> if the request should continue processing; otherwise, <see langword="false" />.</returns>
-        virtual bool PreProccess(HttpEntity entity) => true;
+        virtual bool PreProcess(HttpEntity entity) => true;
     }
   
 }

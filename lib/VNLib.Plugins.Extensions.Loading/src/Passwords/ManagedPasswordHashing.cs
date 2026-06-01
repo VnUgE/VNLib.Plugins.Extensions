@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Copyright (c) 2025 Vaughn Nugent
 * 
 * Library: VNLib
@@ -41,14 +41,18 @@ using VNLib.Plugins.Essentials.Accounts;
  */
 namespace VNLib.Plugins.Extensions.Loading
 {
+    // TODO: Centralize configuration element name
+    // TODO: Centralize password hashing secret element
 
     /// <summary>
     /// A plugin configurable <see cref="IPasswordHashingProvider"/> managed implementation. Users may load custom 
     /// assemblies backing instances of this class or configure the <see cref="Argon2HashProvider"/> implementation
     /// </summary>
-    [ConfigurationName(LoadingExtensions.PASSWORD_HASHING_KEY, Required = false)]
+    [ConfigurationName("passwords", Required = false)]
     public sealed class ManagedPasswordHashing : IPasswordHashingProvider
     {
+        const string PASSWORD_HASHING_KEY = "passwords";
+
         public ManagedPasswordHashing(PluginBase plugin, IConfigScope? config)
         {
             PasswordConfigJson conf = config?.Deserialize<PasswordConfigJson>() ?? new();
@@ -62,7 +66,8 @@ namespace VNLib.Plugins.Extensions.Loading
             if (!string.IsNullOrWhiteSpace(conf.CustomLibAsmPath))
             {
                 //Load the custom assembly
-                Passwords = plugin.CreateServiceExternal<IPasswordHashingProvider>(conf.CustomLibAsmPath);
+                Passwords = plugin.Deps()
+                    .LoadExternal<IPasswordHashingProvider>(conf.CustomLibAsmPath);
 
                 plugin.Log.Verbose("Loading custom password hashing assembly: {path}", conf.CustomLibAsmPath);
             }
@@ -152,7 +157,8 @@ namespace VNLib.Plugins.Extensions.Loading
                             );
 
                             //Dynamically loaded lib must be disposed manually
-                            _ = plugin.RegisterForUnload(lib.Dispose);
+                            _ = plugin.Tasks()
+                                .RegisterForUnload(lib.Dispose);
 
                             //Create passwords with the configuration and library
                             passwords = Argon2HashProvider.Create(lib, pepper, in costParams);
@@ -184,7 +190,7 @@ namespace VNLib.Plugins.Extensions.Loading
         private static ISecretProvider? LoadPasswordPepper(PluginBase plugin, bool useMlock)
         {
             //If no secret was set for the password hashing key, return null
-            if (!plugin.Secrets().IsSet(LoadingExtensions.PASSWORD_HASHING_KEY))
+            if (!plugin.Secrets().IsSet(PASSWORD_HASHING_KEY))
             {
                 return null;
             }
@@ -192,7 +198,7 @@ namespace VNLib.Plugins.Extensions.Loading
             //Get the pepper from secret storage
             IAsyncLazy<byte[]> pepper = plugin
                 .Secrets()
-                .GetAsync(LoadingExtensions.PASSWORD_HASHING_KEY)
+                .GetAsync(PASSWORD_HASHING_KEY)
                 .ToBase64Bytes()
                 .AsLazy();
 

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 *
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql.Tests
@@ -21,11 +21,6 @@
 * You should have received a copy of the GNU Affero General Public License
 * along with this program. If not, see https://www.gnu.org/licenses/.
 */
-
-using System;
-using System.Data.Common;
-
-using Microsoft.EntityFrameworkCore;
 
 using VNLib.Utils.Logging;
 
@@ -53,7 +48,9 @@ namespace VNLib.Plugins.Extensions.Loading.Sql.Tests.Loading
                 this.GetContextOptionsAsync()
             );
 
-            this.ExportService(_service, ExportFlags.None);
+            this.Host()
+                .Services()
+                .Export(_service, ExportFlags.None);
 
             Log.Information("SqlProviderLoadTestPlugin loaded.");
         }

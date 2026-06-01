@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -28,25 +28,22 @@ using VNLib.Plugins.Essentials.Endpoints;
 namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
 {
     /// <summary>
-    /// The base interface type for all http controllers, which
-    /// are responsible for handling http requests.
+    /// The base interface for all HTTP controllers, which handle HTTP requests.
     /// </summary>
     public interface IHttpController
     {
         /// <summary>
-        /// Gets the protection settings for all routes within
-        /// this controller.
+        /// Gets the protection settings for all routes within this controller.
         /// </summary>
-        /// <returns>The endpoint protection settings for all routes</returns>
+        /// <returns>The endpoint protection settings for all routes.</returns>
         ProtectionSettings GetProtectionSettings();
 
         /// <summary>
-        /// Allows pre-processing of the http entity before
-        /// the request is processed by routing handlers
+        /// Allows pre-processing of the HTTP entity before the request is processed by routing handlers.
         /// </summary>
-        /// <param name="entity">The request entity to pre-process</param>
-        /// <returns>A value that indicates if the request should continue processing or return</returns>
-        virtual bool PreProccess(HttpEntity entity) => true;
+        /// <param name="entity">The request entity to pre-process.</param>
+        /// <returns><see langword="true" /> if the request should continue processing; otherwise, <see langword="false" />.</returns>
+        virtual bool PreProcess(HttpEntity entity) => true;
     }
   
 }

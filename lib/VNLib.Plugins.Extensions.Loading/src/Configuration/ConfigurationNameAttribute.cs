@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2025 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -33,26 +33,24 @@ using System;
 namespace VNLib.Plugins.Extensions.Loading
 {
     /// <summary>
-    /// Specifies a configuration variable name in the plugin's configuration 
-    /// containing data specific to the type
+    /// Specifies a configuration variable name in the plugin's configuration containing data specific to the type.
     /// </summary>
-    /// <remarks>
-    /// Initializes a new <see cref="ConfigurationNameAttribute"/>
-    /// </remarks>
-    /// <param name="configVarName">The name of the configuration variable for the class</param>
+    /// <param name="configVarName">The name of the configuration variable for the class.</param>
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class ConfigurationNameAttribute(string configVarName) : Attribute
     {
         /// <summary>
-        /// 
+        /// Gets the configuration variable name for the class.
         /// </summary>
         public string ConfigVarName { get; } = configVarName;
 
         /// <summary>
-        /// When true or not configured, signals that the type requires a configuration scope
-        /// when loaded. When false and configuration is not found, signals to the service loading
-        /// system to continue without configuration
+        /// Gets a value that indicates whether the type requires a configuration scope when loaded.
         /// </summary>
+        /// <remarks>
+        /// When <see langword="true" /> and configuration is not found, the service loading system
+        /// will fail. When <see langword="false" /> and configuration is not found, loading continues without configuration.
+        /// </remarks>
         public bool Required { get; init; } = true;
     }
 }

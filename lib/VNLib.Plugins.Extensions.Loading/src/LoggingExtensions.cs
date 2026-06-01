@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2025 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -29,17 +29,17 @@ using VNLib.Utils.Logging;
 namespace VNLib.Plugins.Extensions.Loading
 {
     /// <summary>
-    /// Provides advanced QOL features for event logging
+    /// Provides advanced quality-of-life features for event logging.
     /// </summary>
     public static class LoggingExtensions
     {
         /// <summary>
-        /// Creates a new <see cref="ILogProvider"/> that scopes all log messages to the specified name
-        /// when writing messages
+        /// Creates a new <see cref="ILogProvider"/> that scopes all log messages to the specified name when writing messages.
         /// </summary>
-        /// <param name="log"></param>
-        /// <param name="scopeName">The name of the scope to print log values to</param>
-        /// <returns>The scoped log provider instance</returns>
+        /// <param name="log">The log provider to create a scope for.</param>
+        /// <param name="scopeName">The name of the scope to prepend to log messages.</param>
+        /// <returns>A scoped <see cref="ILogProvider"/> instance that prefixes messages with the specified scope name.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="scopeName"/> is <see langword="null"/>.</exception>
         public static ILogProvider CreateScope(this ILogProvider log, string scopeName)
         {
             ArgumentNullException.ThrowIfNull(scopeName);

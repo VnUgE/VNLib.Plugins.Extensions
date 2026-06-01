@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -29,36 +29,34 @@ using System.Threading.Tasks;
 namespace VNLib.Plugins.Extensions.Loading.Secrets
 {
     /// <summary>
-    /// A secret client interace for reading secrets from a vault server
+    /// Represents a client interface for reading key-value secrets from a vault server.
     /// </summary>
     public interface IKvVaultClient
     {
         /// <summary>
-        /// Reads a single KeyValue secret from the vault server asyncrhonously and returns the result
-        /// or null if the secret does not exist
+        /// Reads a single key-value secret from the vault server asynchronously.
         /// </summary>
-        /// <param name="path">The path to the item within the store</param>
-        /// <param name="mountPoint">The vault mount points</param>
-        /// <param name="secretName">The name of the secret within the property array to retrieve</param>
-        /// <returns>The secret wrapper if found, null otherwise</returns>
-        /// <exception cref="ArgumentException"></exception>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="HCVaultException"></exception>
-        /// <exception cref="HttpRequestException"></exception>
+        /// <param name="path">The path to the item within the store.</param>
+        /// <param name="mountPoint">The vault mount point.</param>
+        /// <param name="secretName">The name of the secret within the property array to retrieve.</param>
+        /// <returns>The secret result if found; otherwise, <see langword="null" />.</returns>
+        /// <exception cref="ArgumentException">A required argument is invalid.</exception>
+        /// <exception cref="ArgumentNullException">A required argument is null.</exception>
+        /// <exception cref="HCVaultException">A vault operation failed.</exception>
+        /// <exception cref="HttpRequestException">The HTTP request to the vault server failed.</exception>
         Task<ISecretResult?> ReadSecretAsync(string path, string mountPoint, string secretName);
 
         /// <summary>
-        /// Reads a single KeyValue secret from the vault server syncrhonously and returns the result
-        /// or null if the secret does not exist
+        /// Reads a single key-value secret from the vault server synchronously.
         /// </summary>
-        /// <param name="path">The path to the item within the store</param>
-        /// <param name="mountPoint">The vault mount points</param>
-        /// <param name="secretName">The name of the secret within the property array to retrieve</param>
-        /// <returns>The secret wrapper if found, null otherwise</returns>
-        /// <exception cref="ArgumentException"></exception>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="HCVaultException"></exception>
-        /// <exception cref="HttpRequestException"></exception>
+        /// <param name="path">The path to the item within the store.</param>
+        /// <param name="mountPoint">The vault mount point.</param>
+        /// <param name="secretName">The name of the secret within the property array to retrieve.</param>
+        /// <returns>The secret result if found; otherwise, <see langword="null" />.</returns>
+        /// <exception cref="ArgumentException">A required argument is invalid.</exception>
+        /// <exception cref="ArgumentNullException">A required argument is null.</exception>
+        /// <exception cref="HCVaultException">A vault operation failed.</exception>
+        /// <exception cref="HttpRequestException">The HTTP request to the vault server failed.</exception>
         ISecretResult? ReadSecret(string path, string mountPoint, string secretName);
     }
 }

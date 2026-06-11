@@ -1,11 +1,11 @@
-﻿/*
-* Copyright (c) 2022 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: IIntervalScheduleable.cs 
+* File: IntervalResolutionType.cs 
 *
-* IIntervalScheduleable.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
+* IntervalResolutionType.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
 * VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
@@ -22,24 +22,28 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-using System.Threading;
-using System.Threading.Tasks;
-
-using VNLib.Utils.Logging;
-
 namespace VNLib.Plugins.Extensions.Loading.Events
 {
     /// <summary>
-    /// Exposes a type for asynchronous event schelueling
+    /// Defines the resolution type for configurable event intervals.
     /// </summary>
-    public interface IIntervalScheduleable
+    public enum IntervalResolutionType
     {
         /// <summary>
-        /// A method that is called when the interval time has elapsed
+        /// Specifies event interval resolution in milliseconds.
         /// </summary>
-        /// <param name="log">The plugin default log provider</param>
-        /// <param name="cancellationToken">A token that may cancel an operations if the plugin becomes unloaded</param>
-        /// <returns>A task that resolves when the async operation completes</returns>
-        Task OnIntervalAsync(ILogProvider log, CancellationToken cancellationToken);
+        Milliseconds,
+        /// <summary>
+        /// Specifies event interval resolution in seconds.
+        /// </summary>
+        Seconds,
+        /// <summary>
+        /// Specifies event interval resolution in minutes.
+        /// </summary>
+        Minutes,
+        /// <summary>
+        /// Specifies event interval resolution in hours.
+        /// </summary>
+        Hours
     }
 }

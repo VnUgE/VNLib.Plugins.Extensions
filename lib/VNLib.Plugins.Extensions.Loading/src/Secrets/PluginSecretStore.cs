@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2025 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -51,7 +51,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The ambient <see cref="IKvVaultClient"/> if configuration is loaded; otherwise, <see langword="null" />.</returns>
         /// <exception cref="KeyNotFoundException">The vault configuration is missing required keys.</exception>
         /// <exception cref="ObjectDisposedException">The plugin has been disposed.</exception>
-        public IKvVaultClient? GetVaultClient() => LoadingExtensions.GetOrCreateSingleton(_plugin, LoadVaultClient);
+        public IKvVaultClient? GetVaultClient() => _plugin.Deps().GetOrCreateSingleton(LoadVaultClient);
 
         private static IKvVaultClient? LoadVaultClient(PluginBase plugin)
         {
@@ -66,7 +66,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
             //Try to get the custom assembly path, otherwise load HCP
             return !string.IsNullOrWhiteSpace(kvVaultConfig.CustomAssemblyPath)
-                ? plugin.CreateServiceExternal<IKvVaultClient>(kvVaultConfig.CustomAssemblyPath)
+                ? plugin.Deps().LoadExternal<IKvVaultClient>(kvVaultConfig.CustomAssemblyPath)
                 : LoadHcpVault(plugin);
         }
 
@@ -124,7 +124,7 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// Gets a required secret from the "secrets" element. 
+        /// Gets a required secret from the "secrets" element.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -152,7 +152,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
 
         /// <summary>
-        /// Gets a required secret from the "secrets" element. 
+        /// Gets a required secret from the "secrets" element.
         /// </summary>
         /// <remarks>
         /// <para>

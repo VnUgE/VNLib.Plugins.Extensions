@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -31,6 +31,10 @@ using VNLib.Hashing;
 using VNLib.Utils;
 using VNLib.Utils.Memory;
 using VNLib.Utils.Logging;
+using VNLib.Utils.Extensions;
+using VNLib.Plugins.Extensions.Loading.Secrets;
+
+// TODO remove after core v0.2.0 release
 using VNLib.Plugins.Essentials.Accounts;
 
 /*

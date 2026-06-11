@@ -37,6 +37,7 @@ using Microsoft.Data.Sqlite;
 using VNLib.Utils;
 using VNLib.Utils.Logging;
 using VNLib.Plugins.Extensions.Loading;
+using VNLib.Plugins.Extensions.Loading.Secrets;
 using VNLib.Plugins.Extensions.Loading.Sql;
 using VNLib.Plugins.Extensions.Loading.Sql.DatabaseBuilder;
 

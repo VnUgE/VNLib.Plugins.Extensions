@@ -34,6 +34,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
 {
+    using Loading.Secrets;
 
     [TestClass]
     public class PluginSecretStoreTests
@@ -424,7 +425,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
-            using ISecretResult result = await plugin.Secrets().GetAsync("foo");
+            using ISecretResult result = await plugin.Secrets().GetAsync("foo", CancellationToken.None);
 
             Assert.IsNotNull(result);
             Assert.AreEqual("bar", result.Result.ToString());

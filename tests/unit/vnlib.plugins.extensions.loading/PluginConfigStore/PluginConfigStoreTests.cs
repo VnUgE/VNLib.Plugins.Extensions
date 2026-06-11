@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Tests
@@ -28,6 +28,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
 {
+
     using static PluginConfigExtensions;
 
     [TestClass]

@@ -36,6 +36,7 @@ using MySqlConnector;
 
 using VNLib.Utils.Logging;
 using VNLib.Plugins.Extensions.Loading;
+using VNLib.Plugins.Extensions.Loading.Secrets;
 using VNLib.Plugins.Extensions.Loading.Sql;
 using VNLib.Plugins.Extensions.Loading.Sql.DatabaseBuilder;
 

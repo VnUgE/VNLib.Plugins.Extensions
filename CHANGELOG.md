@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Add `ISecretReader` abstraction with built-in `env://`, `file://`, and `vault://` scheme readers for extensible secret resolution - (secrets)
+- Add `PluginSecretStore.TryGet()`, `GetOnDemandSecret()`, `IsSet()`, and `CancellationToken`-overloaded `GetAsync()`/`TryGetAsync()` methods - (secrets)
+
+### Changed
+
+- **BREAKING** Move secret types (`ISecretResult`, `SecretResult`, `HCVaultException`, `IOnDemandSecret`, `IKvVaultClient`, `HCVaultClient`) to `VNLib.Plugins.Extensions.Loading.Secrets` namespace - (secrets)
+- Mark `PluginSecretLoading.GetSecretAsync()`, `TryGetSecretAsync()`, `TryGetSecret()`, and `TryGetSecretAsync()` as `[Obsolete]` - (secrets)
+- Update copyright year to 2026 - (housekeeping)
+
 ## [0.1.5] - 2026-01-31
 
 ### Added

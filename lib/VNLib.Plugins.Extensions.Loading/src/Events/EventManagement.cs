@@ -124,7 +124,7 @@ namespace VNLib.Plugins.Extensions.Loading.Events
         /// <param name="immediate"><see langword="true"/> to run the callback immediately; otherwise, <see langword="false"/>.</param>
         /// <exception cref="ObjectDisposedException">The plugin has been disposed.</exception>
         /// <remarks>If exceptions are raised during callback execution, they are written to the plugin's default log provider.</remarks>
-        public static void ScheduleInterval(this PluginBase plugin, IIntervalScheduleable schedulable, TimeSpan interval, bool immediate = false)
+        public static void ScheduleInterval(this PluginBase plugin, IIntervalSchedulable schedulable, TimeSpan interval, bool immediate = false)
         {
             ArgumentNullException.ThrowIfNull(schedulable);
             ScheduleInterval(plugin, schedulable.OnIntervalAsync, interval, immediate);

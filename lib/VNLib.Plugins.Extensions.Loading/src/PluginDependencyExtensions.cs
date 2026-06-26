@@ -176,19 +176,9 @@ namespace VNLib.Plugins.Extensions.Loading
 
             /// <summary>
             /// Creates and configures a new instance of the desired type, attempting to capture the 
-            /// configuration information from the plugin configuration store.
+            /// configuration information from the plugin configuration store from the type information.
             /// </summary>
-            /// <param name="serviceType">The service type to instantiate.</param>
-            /// <returns>A new instance of the configured service.</returns>
-            /// <exception cref="KeyNotFoundException">when the required configuration key is not found for the service type.</exception>
-            /// <exception cref="ObjectDisposedException">when the plugin has been unloaded.</exception>
-            /// <exception cref="EntryPointNotFoundException">when the service constructor cannot be resolved.</exception>
-            /// <exception cref="ConcreteTypeNotFoundException">when no concrete implementation of the abstract service type is found.</exception>
-            /// <exception cref="ConcreteTypeAmbiguousMatchException">when multiple concrete implementations of the abstract service type are found.</exception>
-            /// <remarks>
-            /// <para>If the type derives <see cref="IAsyncConfigurable"/>, the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
-            /// <para>If the type derives <see cref="IAsyncBackgroundWork"/>, the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
-            /// </remarks>
+            /// <inheritdoc cref="Create(Type, IConfigScope?)"/>
             public readonly object Create(Type serviceType)
             {
                 return Create(
@@ -202,33 +192,14 @@ namespace VNLib.Plugins.Extensions.Loading
             /// </summary>
             /// <typeparam name="T">The service type to instantiate.</typeparam>
             /// <param name="config">A configuration scope to pass directly to the new instance, or <see langword="null"/> if no configuration is required.</param>
-            /// <returns>A new instance of the configured service.</returns>
-            /// <exception cref="KeyNotFoundException">when the required configuration key is not found for the service type.</exception>
-            /// <exception cref="ObjectDisposedException">when the plugin has been unloaded.</exception>
-            /// <exception cref="EntryPointNotFoundException">when the service constructor cannot be resolved.</exception>
-            /// <exception cref="ConcreteTypeNotFoundException">when no concrete implementation of the abstract service type is found.</exception>
-            /// <exception cref="ConcreteTypeAmbiguousMatchException">when multiple concrete implementations of the abstract service type are found.</exception>
-            /// <remarks>
-            /// <para>If the type derives <see cref="IAsyncConfigurable"/>, the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
-            /// <para>If the type derives <see cref="IAsyncBackgroundWork"/>, the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
-            /// </remarks>
+            /// <inheritdoc cref="Create(Type, IConfigScope?)"/>
             public readonly T Create<T>(IConfigScope? config) => (T)Create(typeof(T), config);
 
             /// <summary>
             /// Creates and configures a new instance of the desired type with the specified configuration property name.
             /// </summary>
-            /// <typeparam name="T">The service type to instantiate.</typeparam>
             /// <param name="configName">A configuration element name to pass to the new instance.</param>
-            /// <returns>A new instance of the configured service.</returns>
-            /// <exception cref="KeyNotFoundException">when the required configuration key is not found for the service type.</exception>
-            /// <exception cref="ObjectDisposedException">when the plugin has been unloaded.</exception>
-            /// <exception cref="EntryPointNotFoundException">when the service constructor cannot be resolved.</exception>
-            /// <exception cref="ConcreteTypeNotFoundException">when no concrete implementation of the abstract service type is found.</exception>
-            /// <exception cref="ConcreteTypeAmbiguousMatchException">when multiple concrete implementations of the abstract service type are found.</exception>
-            /// <remarks>
-            /// <para>If the type derives <see cref="IAsyncConfigurable"/>, the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
-            /// <para>If the type derives <see cref="IAsyncBackgroundWork"/>, the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
-            /// </remarks>
+            /// <inheritdoc cref="Create{T}(IConfigScope?)"/>
             public readonly T Create<T>(string configName)
             {
                 IConfigScope config = _plugin.Config().Get(configName);
@@ -239,18 +210,7 @@ namespace VNLib.Plugins.Extensions.Loading
             /// Creates and configures a new instance of the desired type, capturing the configuration 
             /// information from the plugin configuration store.
             /// </summary>
-            /// <typeparam name="T">The service type to instantiate.</typeparam>
-            /// <returns>A new instance of the configured service.</returns>
-            /// <exception cref="KeyNotFoundException">when the required configuration key is not found for the service type.</exception>
-            /// <exception cref="ObjectDisposedException">when the plugin has been unloaded.</exception>
-            /// <exception cref="EntryPointNotFoundException">when the service constructor cannot be resolved.</exception>
-            /// <exception cref="ConcreteTypeNotFoundException">when no concrete implementation of the abstract service type is found.</exception>
-            /// <exception cref="ConcreteTypeAmbiguousMatchException">when multiple concrete implementations of the abstract service type are found.</exception>
-            /// <remarks>
-            /// <para>If the type derives <see cref="IAsyncConfigurable"/>, the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
-            /// <para>If the type derives <see cref="IAsyncBackgroundWork"/>, the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
-            /// <para>If the type derives <see cref="IDisposable"/>, the <see cref="IDisposable.Dispose"/> method is called once when the plugin is unloaded.</para>
-            /// </remarks>
+            /// <inheritdoc cref="Create{T}(IConfigScope?)"/>
             public readonly T Create<T>()
             {
                 return Create<T>(
@@ -263,7 +223,8 @@ namespace VNLib.Plugins.Extensions.Loading
             /// </summary>
             /// <param name="serviceType">The service instance type.</param>
             /// <param name="serviceFactory">A factory method to produce the singleton when not yet cached.</param>
-            /// <returns>The cached or newly created singleton.</returns>
+            /// <returns>An existing instance of a cache singleton, or the newly generated one.</returns>
+            /// <inheritdoc cref="Create(Type)"/>
             public readonly object GetOrCreateSingleton(Type serviceType, Func<PluginBase, object> serviceFactory)
             {
                 //Get local cache
@@ -271,30 +232,12 @@ namespace VNLib.Plugins.Extensions.Loading
                 return pc.GetOrCreateService(serviceType, serviceFactory);
             }
 
-            /// <summary>
-            /// Gets a previously cached service singleton for the desired plugin, or creates 
-            /// a new singleton instance for the plugin using the specified factory.
-            /// </summary>
             /// <typeparam name="T">The service type to get or create.</typeparam>
-            /// <param name="serviceFactory">A factory method to produce the singleton when not yet cached.</param>
-            /// <returns>The cached or newly created singleton.</returns>
+            /// <inheritdoc cref="GetOrCreateSingleton(Type, Func{PluginBase, object})"/>
             public readonly T GetOrCreateSingleton<T>(Func<PluginBase, T> serviceFactory)
                 => (T)GetOrCreateSingleton(typeof(T), p => serviceFactory(p)!);
 
-            /// <summary>
-            /// Gets or initializes a singleton service of the desired type.
-            /// </summary>
-            /// <typeparam name="T">The service type to get or create.</typeparam>
-            /// <returns>A new instance of the configured singleton service.</returns>
-            /// <exception cref="KeyNotFoundException">when the required configuration key is not found for the service type.</exception>
-            /// <exception cref="ObjectDisposedException">when the plugin has been unloaded.</exception>
-            /// <exception cref="EntryPointNotFoundException">when the service constructor cannot be resolved.</exception>
-            /// <exception cref="ConcreteTypeNotFoundException">when no concrete implementation of the abstract service type is found.</exception>
-            /// <exception cref="ConcreteTypeAmbiguousMatchException">when multiple concrete implementations of the abstract service type are found.</exception>
-            /// <remarks>
-            /// <para>If the type derives <see cref="IAsyncConfigurable"/>, the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
-            /// <para>If the type derives <see cref="IAsyncBackgroundWork"/>, the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, System.Threading.CancellationToken)"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
-            /// </remarks>
+            /// <inheritdoc cref="GetOrCreateSingleton{T}(Func{PluginBase, T})"/>
             public readonly T GetOrCreateSingleton<T>()
             {
                 PluginBase plugin = _plugin;
@@ -307,18 +250,8 @@ namespace VNLib.Plugins.Extensions.Loading
             /// <summary>
             /// Gets or initializes a singleton service of the desired type with the specified configuration name.
             /// </summary>
-            /// <typeparam name="T">The service type to get or create.</typeparam>
             /// <param name="configName">A configuration property name that overrides the default configuration lookup.</param>
-            /// <returns>The configured service singleton.</returns>
-            /// <exception cref="KeyNotFoundException">when the required configuration key is not found for the service type.</exception>
-            /// <exception cref="ObjectDisposedException">when the plugin has been unloaded.</exception>
-            /// <exception cref="EntryPointNotFoundException">when the service constructor cannot be resolved.</exception>
-            /// <exception cref="ConcreteTypeNotFoundException">when no concrete implementation of the abstract service type is found.</exception>
-            /// <exception cref="ConcreteTypeAmbiguousMatchException">when multiple concrete implementations of the abstract service type are found.</exception>
-            /// <remarks>
-            /// <para>If the type derives <see cref="IAsyncConfigurable"/>, the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
-            /// <para>If the type derives <see cref="IAsyncBackgroundWork"/>, the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
-            /// </remarks>
+            /// <inheritdoc cref="GetOrCreateSingleton{T}()"/>
             public readonly T GetOrCreateSingleton<T>(string configName)
             {
                 PluginBase plugin = _plugin;
@@ -327,6 +260,58 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 return GetOrCreateSingleton(serviceFactory);
             }
+
+            /// <summary>
+            /// Publishes an existing instance of the desired discovery type to the internal singleton 
+            /// cache for consumer use later in the program lifetime.
+            /// </summary>
+            /// <param name="type">The service type to declare the instance as</param>
+            /// <param name="instance">The service object instance to cache</param>
+            /// <returns>
+            /// The current structure for fluent api chaining.
+            /// </returns>
+            /// <exception cref="ArgumentNullException"></exception>
+            /// <remarks>
+            /// NOTE! If an existing instance of the service type (or derived types) have already been added 
+            /// to cache or created with <see cref="GetOrCreateSingleton{T}()"/> methods, this function silently
+            /// ignores your request. Similarly, calls to <see cref="UseSingleton(Type, object)"/> will suppress 
+            /// the creation of any object with a converging type created with <see cref="GetOrCreateSingleton{T}()"/>
+            /// </remarks>
+            public readonly PluginDependencies UseSingleton(Type type, object instance)
+            {
+                ArgumentNullException.ThrowIfNull(type);
+                ArgumentNullException.ThrowIfNull(instance);
+
+                SingletonCache cache = _singletons.GetValue(_plugin, SingletonCache.Create);
+
+                _ = cache.GetOrCreateService(type, (_) => instance);
+
+                return this;
+            }
+
+            /// <typeparam name="T">The service type to capture at compile time</typeparam>
+            /// <inheritdoc cref="UseSingleton(Type, object)"/>
+            public readonly PluginDependencies UseSingleton<T>(T instance) where T: class
+                => UseSingleton(typeof(T), instance!);
+
+            /// <summary>
+            /// Attempts to retrieve an existing singleton service from the internal cache
+            /// without creating a new instance. 
+            /// </summary>
+            /// <param name="type">The service type to recover from the cache</param>
+            /// <returns>The existing service instance if found</returns>
+            /// <exception cref="ArgumentNullException"></exception>
+            public readonly object? TryGetSingleton(Type type)
+            {
+                ArgumentNullException.ThrowIfNull(type);
+
+                SingletonCache cache = _singletons.GetValue(_plugin, SingletonCache.Create);
+                return cache.TryGetService(type);
+            }
+
+            /// <inheritdoc cref="TryGetSingleton(Type)"/>
+            public readonly T? TryGetSingleton<T>() where T : class
+                => (T?)TryGetSingleton(typeof(T));
 
             /// <summary>
             /// Loads a managed assembly into the current plugin's load context that will unload when disposed
@@ -368,23 +353,8 @@ namespace VNLib.Plugins.Extensions.Loading
                 return AssemblyLoader<T>.Load(asmFile, explicitAlc, _plugin.UnloadToken);
             }
 
-            /// <summary>
-            /// Loads a managed assembly into the current plugin's load context that will unload when disposed
-            /// or when the plugin is unloaded from the host application.
-            /// </summary>
-            /// <param name="assemblyName">The name of the assembly (for example, 'file.dll') to search for.</param>
-            /// <param name="dirSearchOption">A directory and file search option.</param>
-            /// <param name="explicitAlc">
-            /// An explicit <see cref="AssemblyLoadContext"/> to load the assembly and its dependencies into. 
-            /// If <see langword="null"/>, uses the plugin's load context.
-            /// </param>
             /// <returns>A <see cref="ManagedLibrary"/> managing the loaded assembly in the current AppDomain.</returns>
-            /// <exception cref="ArgumentNullException">when <paramref name="assemblyName"/> is <see langword="null"/>.</exception>
-            /// <exception cref="FileNotFoundException">when the specified assembly file cannot be found.</exception>
-            /// <remarks>
-            /// The assembly is searched within the 'assets' directory specified in the plugin config
-            /// or the global plugins ('path' key) directory if an assets directory is not defined.
-            /// </remarks>
+            /// <inheritdoc cref="LoadAssembly{T}(string, SearchOption, AssemblyLoadContext?)"/>
             public readonly ManagedLibrary LoadAssembly(
                 string assemblyName,
                 SearchOption dirSearchOption = SearchOption.AllDirectories,
@@ -581,8 +551,27 @@ namespace VNLib.Plugins.Extensions.Loading
                     .Tasks()
                     .RegisterForUnload(_store.Clear);
             }
+           
+            private Lazy<object>? TryGetLazyServiceInternal(Type serviceType)
+            {
+                return _store
+                       .Where(t => t.Key.IsAssignableTo(serviceType))
+                       .Select(static tk => tk.Value)
+                       .FirstOrDefault();
+            }
 
-            public static SingletonCache Create(PluginBase plugin) => new(plugin);
+            public object? TryGetService(Type serviceType)
+            {
+                Lazy<object>? lazyService;
+
+                lock (_store)
+                {
+                    lazyService = TryGetLazyServiceInternal(serviceType);
+                }
+
+                //Return the service instance
+                return lazyService?.Value;
+            }
 
             /*
              * Service code should not be executed in multiple threads, so no need to lock
@@ -598,10 +587,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 lock (_store)
                 {
-                    lazyService = _store
-                        .Where(t => t.Key.IsAssignableTo(serviceType))
-                        .Select(static tk => tk.Value)
-                        .FirstOrDefault();
+                    lazyService = TryGetLazyServiceInternal(serviceType);
 
                     if (lazyService is null)
                     {
@@ -614,6 +600,8 @@ namespace VNLib.Plugins.Extensions.Loading
                 //Return the service instance
                 return lazyService.Value;
             }
+
+            public static SingletonCache Create(PluginBase plugin) => new(plugin);
         }
     }
 }

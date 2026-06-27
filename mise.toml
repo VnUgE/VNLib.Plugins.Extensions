@@ -21,15 +21,12 @@ DOTNET_SYSTEM_GLOBALIZATION_INVARIANT = "1"
 DOTNET_CLI_TELEMETRY_OPTOUT = "1"
 
 [tasks.run-task]
-dir = '../'
 run = 'task'
 
 [tasks.run-vnbuild]
-dir = '../'
 run = 'vnbuild'
 
 # configure deps in the parent dir to our module
 [tasks.configure-dep]
-dir = '../../'
+dir = '../'
 run = 'task configure-dep'
-

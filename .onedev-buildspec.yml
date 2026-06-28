@@ -138,7 +138,7 @@ jobs:
       type: DefaultInterpreter
       commands: |
         cd @project_name@
-        mise vnbuild-run publish -i @project_name@ --ftp "@secret:ftp_server_address@" --sign
+        mise run-vnbuild publish -i @project_name@ --ftp "@secret:ftp_server_address@" --sign
     envVars:
     - name: FTP_USERNAME
       value: '@secret:ftp_username@'

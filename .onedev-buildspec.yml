@@ -46,7 +46,7 @@ jobs:
       type: DefaultInterpreter
       commands: |
         cd @project_name@
-        mise run-vnbuild test --include @project_name@ --verbose
+        mise ci-vnbuild test --include @project_name@ --verbose
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -74,7 +74,7 @@ jobs:
       type: DefaultInterpreter
       commands: |
         cd @project_name@
-        mise run-vnbuild build --no-delay --include @project_name@ --verbose
+        mise ci-vnbuild build --no-delay --include @project_name@ --verbose
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -85,7 +85,7 @@ jobs:
       type: DefaultInterpreter
       commands: |
         cd @project_name@
-        mise run-vnbuild publish -i @project_name@
+        mise ci-vnbuild publish -i @project_name@
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -116,7 +116,7 @@ jobs:
       type: DefaultInterpreter
       commands: |
         cd @project_name@
-        mise run-task -t Module.Taskfile.yaml tag-current-commit
+        mise ci-task -t Module.Taskfile.yaml tag-current-commit
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -127,7 +127,7 @@ jobs:
       type: DefaultInterpreter
       commands: |
         cd @project_name@
-        mise run-vnbuild build --no-delay --include @project_name@
+        mise ci-vnbuild build --no-delay --include @project_name@
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -138,7 +138,7 @@ jobs:
       type: DefaultInterpreter
       commands: |
         cd @project_name@
-        mise run-vnbuild publish -i @project_name@ --ftp "@secret:ftp_server_address@" --sign
+        mise ci-vnbuild publish -i @project_name@ --ftp "@secret:ftp_server_address@" --sign
     envVars:
     - name: FTP_USERNAME
       value: '@secret:ftp_username@'
@@ -171,7 +171,7 @@ stepTemplates:
         mise trust mise.toml
         mise install
 
-        mise configure-dep -t @project_name@/Module.Taskfile.yaml "DEP_REPO=@server_url@/vnuge/vnlib/VNLib.Core" "DEP_REVISION=@property:deps_core_version@" "DEP_DIR=core"
+        mise ci-configure-dep -t @project_name@/Module.Taskfile.yaml "DEP_REPO=@server_url@/vnuge/vnlib/VNLib.Core" "DEP_REVISION=@property:deps_core_version@" "DEP_DIR=core"
     useTTY: true
     condition: SUCCESSFUL
     optional: false

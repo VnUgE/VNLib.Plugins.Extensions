@@ -29,6 +29,7 @@ using System.Text.Json.Serialization;
 
 using VNLib.Hashing;
 using VNLib.Utils;
+using VNLib.Utils.Async;
 using VNLib.Utils.Memory;
 using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;

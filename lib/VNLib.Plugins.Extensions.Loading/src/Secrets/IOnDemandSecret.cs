@@ -25,7 +25,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace VNLib.Plugins.Extensions.Loading
+namespace VNLib.Plugins.Extensions.Loading.Secrets
 {
     /// <summary>
     /// Represents a secret that can be fetched from its backing store on demand to avoid storing sensitive information in memory long term.

@@ -1,7 +1,7 @@
 version: 43
 properties:
 - name: deps_core_version
-  value: master/v0.1.5
+  value: develop/HEAD
   archived: false
 jobs:
 - name: Git Mirror Push
@@ -35,8 +35,8 @@ jobs:
   jobExecutor: windows
   steps:
   - type: UseTemplateStep
-    name: init deps
-    templateName: init deps
+    name: mise setup-windows
+    templateName: mise setup-windows
     condition: SUCCESSFUL
     optional: false
   - type: CommandStep
@@ -45,7 +45,8 @@ jobs:
     interpreter:
       type: DefaultInterpreter
       commands: |
-        vnbuild test --include @project_name@ --verbose
+        cd @project_name@
+        mise ci-vnbuild test --include @project_name@ --verbose
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -62,8 +63,8 @@ jobs:
   jobExecutor: windows
   steps:
   - type: UseTemplateStep
-    name: init deps
-    templateName: init deps
+    name: mise setup-windows
+    templateName: mise setup-windows
     condition: SUCCESSFUL
     optional: false
   - type: CommandStep
@@ -72,7 +73,8 @@ jobs:
     interpreter:
       type: DefaultInterpreter
       commands: |
-        vnbuild build --no-delay --include @project_name@ --verbose
+        cd @project_name@
+        mise ci-vnbuild build --no-delay --include @project_name@ --verbose
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -82,7 +84,8 @@ jobs:
     interpreter:
       type: DefaultInterpreter
       commands: |
-        vnbuild publish -i @project_name@
+        cd @project_name@
+        mise ci-vnbuild publish -i @project_name@
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -102,8 +105,8 @@ jobs:
   jobExecutor: publish-agents
   steps:
   - type: UseTemplateStep
-    name: init deps
-    templateName: init deps
+    name: mise setup-windows
+    templateName: mise setup-windows
     condition: SUCCESSFUL
     optional: false
   - type: CommandStep
@@ -113,7 +116,7 @@ jobs:
       type: DefaultInterpreter
       commands: |
         cd @project_name@
-        task -t Module.Taskfile.yaml tag-current-commit
+        mise ci-task -t Module.Taskfile.yaml tag-current-commit
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -123,7 +126,8 @@ jobs:
     interpreter:
       type: DefaultInterpreter
       commands: |
-        vnbuild build --no-delay --include @project_name@
+        cd @project_name@
+        mise ci-vnbuild build --no-delay --include @project_name@
     useTTY: true
     condition: SUCCESSFUL
     optional: false
@@ -133,7 +137,8 @@ jobs:
     interpreter:
       type: DefaultInterpreter
       commands: |
-        vnbuild publish -i @project_name@ --ftp "@secret:ftp_server_address@" --sign
+        cd @project_name@
+        mise ci-vnbuild publish -i @project_name@ --ftp "@secret:ftp_server_address@" --sign
     envVars:
     - name: FTP_USERNAME
       value: '@secret:ftp_username@'
@@ -152,7 +157,7 @@ jobs:
   timeout: 14400
 
 stepTemplates:
-- name: init deps
+- name: mise setup-windows
   steps:
   - type: CommandStep
     name: init local deps
@@ -161,7 +166,12 @@ stepTemplates:
       type: DefaultInterpreter
       commands: |
         git clone @server_url@/@project_path@ --branch @branch@ @project_name@
-        task -t @project_name@/Module.Taskfile.yaml configure-dep "DEP_REPO=@server_url@/vnuge/vnlib/VNLib.Core" "DEP_REVISION=@property:deps_core_version@" "DEP_DIR=core"
+
+        cd @project_name@
+        mise trust mise.toml
+        mise install
+
+        mise ci-configure-dep -t @project_name@/Module.Taskfile.yaml "DEP_REPO=@server_url@/vnuge/vnlib/VNLib.Core" "DEP_REVISION=@property:deps_core_version@" "DEP_DIR=core"
     useTTY: true
     condition: SUCCESSFUL
     optional: false

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Tests
@@ -25,12 +25,12 @@
 using System;
 using System.Text.Json;
 
-namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
+namespace VNLib.Plugins.Extensions.Loading.Tests
 {
     /// <summary>
     /// Mock implementation of PluginBase for testing purposes
     /// </summary>
-    internal sealed class TestPluginBase : PluginBase, IDisposable
+    internal class TestPluginBase : PluginBase, IDisposable
     {       
 
         public TestPluginBase(): this(new { }, new { })
@@ -65,7 +65,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
 
         public override string PluginName => "TestPlugin";
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             (this as IPlugin).Unload();
         }

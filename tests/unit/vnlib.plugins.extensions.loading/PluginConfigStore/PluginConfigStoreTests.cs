@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Tests
@@ -23,10 +23,14 @@
 */
 
 using System;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
 {
+
+    using static PluginConfigExtensions;
+
     [TestClass]
     public class PluginConfigStoreTests
     {
@@ -552,7 +556,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
         public void GetConfigurationNameAttribute_WithAttribute_ReturnsAttribute()
         {
             // Verify GetConfigurationNameAttribute retrieves attribute from decorated type
-            ConfigurationNameAttribute? attr = Loading.PluginConfigStore.GetConfigurationNameAttribute(typeof(SimpleConfig));
+            ConfigurationNameAttribute? attr = PluginConfigStore.GetConfigurationNameAttribute(typeof(SimpleConfig));
 
             Assert.IsNotNull(attr);
             Assert.AreEqual("simple_config", attr.ConfigVarName);
@@ -563,7 +567,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
         public void GetConfigurationNameAttribute_NoAttribute_ReturnsNull()
         {
             // Verify GetConfigurationNameAttribute returns null for undecorated type
-            ConfigurationNameAttribute? attr = Loading.PluginConfigStore.GetConfigurationNameAttribute(typeof(NoAttributeConfig));
+            ConfigurationNameAttribute? attr = PluginConfigStore.GetConfigurationNameAttribute(typeof(NoAttributeConfig));
 
             Assert.IsNull(attr);
         }
@@ -573,7 +577,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
         {
             // Verify GetConfigurationNameAttribute validates null type parameter
             Assert.ThrowsExactly<ArgumentNullException>(() => 
-                Loading.PluginConfigStore.GetConfigurationNameAttribute(null!)
+                PluginConfigStore.GetConfigurationNameAttribute(null!)
             );
         }
 
@@ -581,7 +585,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
         public void GetConfigNameForType_WithAttribute_ReturnsName()
         {
             // Verify GetConfigNameForType extracts config property name from attribute
-            string? name = Loading.PluginConfigStore.GetConfigNameForType(typeof(SimpleConfig));
+            string? name = PluginConfigStore.GetConfigNameForType(typeof(SimpleConfig));
 
             Assert.AreEqual("simple_config", name);
         }
@@ -590,7 +594,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
         public void GetConfigNameForType_NoAttribute_ReturnsNull()
         {
             // Verify GetConfigNameForType returns null for undecorated type
-            string? name = Loading.PluginConfigStore.GetConfigNameForType(typeof(NoAttributeConfig));
+            string? name = PluginConfigStore.GetConfigNameForType(typeof(NoAttributeConfig));
 
             Assert.IsNull(name);
         }
@@ -599,7 +603,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
         public void ConfigurationRequired_RequiredTrue_ReturnsTrue()
         {
             // Verify ConfigurationRequired returns true when Required attribute is true
-            bool required = Loading.PluginConfigStore.ConfigurationRequired(typeof(SimpleConfig));
+            bool required = PluginConfigStore.ConfigurationRequired(typeof(SimpleConfig));
 
             Assert.IsTrue(required);
         }
@@ -608,7 +612,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
         public void ConfigurationRequired_RequiredFalse_ReturnsFalse()
         {
             // Verify ConfigurationRequired returns false when Required attribute is false
-            bool required = Loading.PluginConfigStore.ConfigurationRequired(typeof(OptionalConfig));
+            bool required = PluginConfigStore.ConfigurationRequired(typeof(OptionalConfig));
 
             Assert.IsFalse(required);
         }
@@ -617,7 +621,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.PluginConfigStore
         public void ConfigurationRequired_NoAttribute_ReturnsFalse()
         {
             // Verify ConfigurationRequired returns false for undecorated type
-            bool required = Loading.PluginConfigStore.ConfigurationRequired(typeof(NoAttributeConfig));
+            bool required = PluginConfigStore.ConfigurationRequired(typeof(NoAttributeConfig));
 
             Assert.IsFalse(required);
         }

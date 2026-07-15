@@ -7,7 +7,7 @@
 #and the purpose of this taskfile is to package up the output of a build 
 #from the solution file, and package it up into a tgz files for distribution
 
-version: '3'
+version: '3.45'
 
 vars:
   TARGET_FRAMEWORK: '{{ .TARGET_FRAMEWORK | default "net8.0" }}'
@@ -44,7 +44,7 @@ tasks:
 
 
   postbuild_failed:
-    dir: '{{.USER_WORKING_DIR}}'
+    dir: '{{ .USER_WORKING_DIR }}'
     cmds: []
 
 

@@ -27,11 +27,11 @@ using System;
 using VNLib.Utils;
 using VNLib.Utils.Memory;
 
-namespace VNLib.Plugins.Extensions.Loading
+namespace VNLib.Plugins.Extensions.Loading.Secrets
 {
 
     /// <summary>
-    /// Represents the result of a secret fetch operation.
+    /// The result of a secret fetch operation
     /// </summary>
     public sealed class SecretResult : VnDisposeable, ISecretResult
     {
@@ -46,10 +46,11 @@ namespace VNLib.Plugins.Extensions.Loading
         protected override void Free() => MemoryUtil.InitializeBlock(_secretChars);
 
         /// <summary>
-        /// Copies the data from the provided string into a new secret result and erases the original string.
+        /// Copies the data from the provided string into a new secret result
+        /// then erases the original string
         /// </summary>
-        /// <param name="result">The secret string to copy.</param>
-        /// <returns>A new <see cref="SecretResult"/> containing the copied data.</returns>
+        /// <param name="result">The secret string to read</param>
+        /// <returns>The <see cref="SecretResult"/> wrapper</returns>
         internal static SecretResult ToSecret(string? result)
         {
             if (result == null)
@@ -67,10 +68,11 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// Copies the provided span into a new secret result.
+        /// Copies the data from the provided span into a new secret result
+        /// by allocating a new array internally
         /// </summary>
-        /// <param name="secretChars">The character data to copy.</param>
-        /// <returns>A new <see cref="SecretResult"/> containing the copied data.</returns>
+        /// <param name="secretChars">The array of characters to copy</param>
+        /// <returns>The wrapped secret</returns>
         internal static SecretResult ToSecret(ReadOnlySpan<char> secretChars) => new(secretChars.ToArray());
 
         internal static SecretResult ToSecret(char[] result) => new(result);

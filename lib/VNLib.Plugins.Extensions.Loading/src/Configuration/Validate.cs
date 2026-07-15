@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
@@ -25,6 +25,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 using VNLib.Utils.IO;
 
@@ -56,7 +57,7 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration
                 throw new ConfigurationValidationException(message);
             }
         }
-        
+
         /// <summary>
         /// Asserts that the specified condition is <see langword="true" />.
         /// </summary>
@@ -138,6 +139,36 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration
             if (!FileOperations.FileExists(path))
             {
                 throw new ConfigurationValidationException($"Required file: {path} not found");
+            }
+        }
+
+        /// <summary>
+        /// Asserts that a string matches the specified regular expression pattern.
+        /// </summary>
+        /// <param name="value">The string to validate.</param>
+        /// <param name="pattern">The regular expression pattern to match against.</param>
+        /// <param name="message">The message to include in the exception if validation fails.</param>
+        /// <exception cref="ConfigurationValidationException">The string does not match the pattern.</exception>
+        public static void Matches(string value, string pattern, string message)
+        {
+            if (!Regex.IsMatch(value, pattern))
+            {
+                throw new ConfigurationValidationException(message);
+            }
+        }
+
+        /// <summary>
+        /// Asserts that a string matches the specified regular expression.
+        /// </summary>
+        /// <param name="regex">The regular expression to match against.</param>
+        /// <param name="value">The string to validate.</param>
+        /// <param name="message">The message to include in the exception if validation fails.</param>
+        /// <exception cref="ConfigurationValidationException">The string does not match the pattern.</exception>
+        public static void Matches(Regex regex, string value, string message)
+        {
+            if (!regex.IsMatch(value))
+            {
+                throw new ConfigurationValidationException(message);
             }
         }
     }

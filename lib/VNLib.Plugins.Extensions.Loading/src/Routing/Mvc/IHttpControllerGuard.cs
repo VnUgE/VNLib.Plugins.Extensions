@@ -1,11 +1,11 @@
-﻿/*
+/*
 * Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: IHttpController.cs 
+* File: IHttpControllerGuard.cs 
 *
-* IHttpController.cs is part of VNLib.Plugins.Extensions.Loading which is 
+* IHttpControllerGuard.cs is part of VNLib.Plugins.Extensions.Loading which is 
 * part of the larger VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
@@ -23,27 +23,30 @@
 */
 
 using VNLib.Plugins.Essentials;
-using VNLib.Plugins.Essentials.Endpoints;
 
 namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
 {
     /// <summary>
-    /// The base interface for all HTTP controllers, which handle HTTP requests.
+    /// Defines a guard that intercepts incoming requests to an 
+    /// <see cref="IHttpController"/> before route handlers are invoked.
     /// </summary>
-    public interface IHttpController
+    /// <remarks>
+    /// Guards are invoked after the controller's own 
+    /// <see cref="IHttpController.PreProcess(HttpEntity)"/> method returns 
+    /// <see langword="true" />. Multiple guards may be composed and are 
+    /// evaluated in order, short-circuiting on the first guard that returns 
+    /// <see langword="false" />.
+    /// </remarks>
+    public interface IHttpControllerGuard
     {
         /// <summary>
-        /// Gets the protection settings for all routes within this controller.
+        /// Determines whether the request should continue processing.
         /// </summary>
-        /// <returns>The endpoint protection settings for all routes.</returns>
-        ProtectionSettings GetProtectionSettings();
-
-        /// <summary>
-        /// Allows pre-processing of the HTTP entity before the request is processed by routing handlers.
-        /// </summary>
-        /// <param name="entity">The request entity to pre-process.</param>
-        /// <returns><see langword="true" /> if the request should continue processing; otherwise, <see langword="false" />.</returns>
-        virtual bool PreProcess(HttpEntity entity) => true;
+        /// <param name="entity">The request entity to evaluate.</param>
+        /// <returns>
+        /// <see langword="true" /> if the request should continue processing; 
+        /// otherwise, <see langword="false" /> to reject the request.
+        /// </returns>
+        bool PreProcess(HttpEntity entity);
     }
-  
 }

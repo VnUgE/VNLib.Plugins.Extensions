@@ -29,6 +29,7 @@ using System.Text.Json.Serialization;
 
 using VNLib.Hashing;
 using VNLib.Utils;
+using VNLib.Utils.Async;
 using VNLib.Utils.Memory;
 using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;
@@ -36,9 +37,12 @@ using VNLib.Utils.Extensions;
 // TODO: TEMPORARY remove in v0.2.0
 using VNLib.Plugins.Essentials.Accounts;
 using VNLib.Plugins.Extensions.Loading.Configuration;
+using VNLib.Plugins.Extensions.Loading.Secrets;
 
 namespace VNLib.Plugins.Extensions.Loading.Passwords
 {
+    // TODO: Centralize configuration element name
+    // TODO: Centralize password hashing secret element
 
     /// <summary>
     /// Provides a plugin-configurable managed implementation of <see cref="IPasswordHashingProvider"/>.
@@ -172,7 +176,8 @@ namespace VNLib.Plugins.Extensions.Loading.Passwords
                             );
 
                             //Dynamically loaded lib must be disposed manually
-                            _ = plugin.Tasks().RegisterForUnload(lib.Dispose);
+                            _ = plugin.Tasks()
+                                .RegisterForUnload(lib.Dispose);
 
                             argonLib = lib;
 

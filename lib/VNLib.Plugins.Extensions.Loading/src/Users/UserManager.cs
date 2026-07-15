@@ -66,7 +66,7 @@ namespace VNLib.Plugins.Extensions.Loading.Users
         private static IUserManager LoadUserAssembly(PluginBase plugin, string customAsm)
         {
             //Try to load a custom assembly
-            IUserManager externManager = plugin.CreateServiceExternal<IUserManager>(customAsm);
+            IUserManager externManager = plugin.Deps().LoadExternal<IUserManager>(customAsm);
 
             if (plugin.IsDebug())
             {

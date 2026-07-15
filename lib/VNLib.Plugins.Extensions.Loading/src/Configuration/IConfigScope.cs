@@ -44,13 +44,5 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <typeparam name="T">The type to deserialize the current config to.</typeparam>
         /// <returns>The instance created from the current scope.</returns>
         T Deserialize<T>();
-
-        /// <summary>
-        /// Json deserialzes the current config scope to the desired type
-        /// </summary>
-        /// <typeparam name="T">The type to deserialze the current config to</typeparam>
-        /// <returns>The instance created from the current scope</returns>
-        [Obsolete("Use the correct spelling of Deserialize")]
-        public virtual T Deserialze<T>() => Deserialize<T>();
     }
 }

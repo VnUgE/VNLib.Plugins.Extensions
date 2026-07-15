@@ -1,4 +1,4 @@
-version: 43
+version: 46
 properties:
 - name: deps_core_version
   value: master/v0.1.5
@@ -150,6 +150,41 @@ jobs:
   triggers:
   - type: BranchUpdateTrigger
     branches: master
+    userMatch: anyone
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  timeout: 14400
+
+- name: Code Reviews
+  jobExecutor: windows
+  steps:
+  - type: CommandStep
+    name: basic-pr-review
+    runInContainer: false
+    interpreter:
+      type: DefaultInterpreter
+      commands: |
+        git clone @server_url@/@project_path@ --branch @branch@ @project_name@
+        cd @project_name@/ci/agents
+
+        mise trust agents-mise.toml
+        mise go-task pr-new
+    envVars:
+    - name: OCR_LLM_URL
+      value: '@secret:review-llm-url@'
+    - name: OCR_LLM_TOKEN
+      value: '@secret:review-llm-token@'
+    - name: OCR_LLM_MODEL
+      value: vn-ci-review-agent
+    - name: MISE_OVERRIDE_CONFIG_FILENAMES
+      value: agents-mise.toml
+    useTTY: true
+    condition: SUCCESSFUL
+    optional: false
+  triggers:
+  - type: BranchUpdateTrigger
+    branches: -develop -master
     userMatch: anyone
   retryCondition: never
   maxRetries: 3

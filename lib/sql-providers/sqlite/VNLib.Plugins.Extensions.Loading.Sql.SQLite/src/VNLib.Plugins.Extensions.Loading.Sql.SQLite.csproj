@@ -35,19 +35,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.8.2-beta.1">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="ErrorProne.NET.Structs" Version="0.6.1-beta.1">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.24" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.24" />
   </ItemGroup>
-
-  <ItemGroup>
+  
+  <ItemGroup>  
     <ProjectReference Include="..\..\..\..\VNLib.Plugins.Extensions.Loading.Sql\src\VNLib.Plugins.Extensions.Loading.Sql.csproj" />
   </ItemGroup>
 

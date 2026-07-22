@@ -33,12 +33,6 @@ namespace VNLib.Plugins.Extensions.Loading.Sql.Tests.Loading
     {
         /// <inheritdoc/>
         public override string PluginName => nameof(SqlProviderLoadTestPlugin);
-       
-        /// <inheritdoc/>
-        protected override void ProcessHostCommand(string cmd)
-        {
-            // No host commands required for test harness.
-        }
 
         /// <inheritdoc/>
         protected override void OnLoad()

@@ -76,9 +76,5 @@ namespace VNLib.Plugins.Extensions.Loading.Tests
         protected override void OnUnLoad()
         { }
 
-        protected override void ProcessHostCommand(string cmd)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

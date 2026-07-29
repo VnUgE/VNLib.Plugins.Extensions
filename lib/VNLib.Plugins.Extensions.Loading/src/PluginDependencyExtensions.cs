@@ -401,6 +401,9 @@ namespace VNLib.Plugins.Extensions.Loading
                     if (!_assemblyCache.TryGetValue(assemblyDllName, out manLib))
                     {
                         manLib = LoadAssembly<T>(assemblyDllName, search, defaultCtx);
+
+                        // Add to cache store
+                        _assemblyCache.Add(assemblyDllName, manLib);
                     }
                 }
 

@@ -164,7 +164,7 @@ namespace VNLib.Plugins.Extensions.Loading.Configuration
         /// <param name="value">The string to validate.</param>
         /// <param name="message">The message to include in the exception if validation fails.</param>
         /// <exception cref="ConfigurationValidationException">The string does not match the pattern.</exception>
-        public static void Matches(Regex regex, string value, string message)
+        public static void Matches(string value, Regex regex, string message)
         {
             if (!regex.IsMatch(value))
             {

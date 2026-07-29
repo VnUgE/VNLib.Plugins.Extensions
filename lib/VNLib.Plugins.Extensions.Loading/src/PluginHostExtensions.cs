@@ -34,11 +34,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <param name="plugin">The plugin instance to wrap in a <see cref="PluginHostContainer"/>.</param>
         /// <returns>A new <see cref="PluginHostContainer"/> wrapping the provided plugin instance.</returns>
         /// <exception cref="ArgumentNullException">The <paramref name="plugin"/> is <see langword="null"/>.</exception>
-        public static PluginHostContainer Host(this PluginBase plugin)
-        {
-            ArgumentNullException.ThrowIfNull(plugin);
-            return new(plugin);
-        }
+        public static PluginHostContainer Host(this PluginBase plugin) => new(plugin);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PluginHostContainer"/> struct.
@@ -52,6 +48,6 @@ namespace VNLib.Plugins.Extensions.Loading
             /// </summary>
             public readonly PluginBase Plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
         }
-    }   
+    }
 }
 

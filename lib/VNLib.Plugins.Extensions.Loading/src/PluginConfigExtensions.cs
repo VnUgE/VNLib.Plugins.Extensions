@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
@@ -75,11 +75,11 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The property value, or the default value for <typeparamref name="T"/> if the property is not found.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="config"/>, <paramref name="property"/>, or <paramref name="getter"/> is <see langword="null"/>.</exception>
         public static T? GetProperty<T>(this IConfigScope config, string property, Func<JsonElement, T> getter)
-        {
-            //Check null
+        {            
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(getter);
             ArgumentException.ThrowIfNullOrWhiteSpace(property);
+
             return !config.TryGetValue(property, out JsonElement el)
                 ? default
                 : getter(el);
@@ -96,18 +96,17 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ArgumentNullException"><paramref name="config"/>, <paramref name="property"/>, or <paramref name="getter"/> is <see langword="null"/>.</exception>
         /// <exception cref="ConfigurationException">The specified property is not found or the value is <see langword="null"/>.</exception>
         public static T GetRequiredProperty<T>(this IConfigScope config, string property, Func<JsonElement, T> getter)
-        {
-            //Check null
+        {            
             ArgumentNullException.ThrowIfNull(config);
-            ArgumentNullException.ThrowIfNull(property);
             ArgumentNullException.ThrowIfNull(getter);
+            ArgumentException.ThrowIfNullOrWhiteSpace(property);
 
             //Get the property
             bool hasValue = config.TryGetValue(property, out JsonElement el);
             Validate.Assert(hasValue, $"Missing required configuration property '{property}' in config {config.ScopeName}");
 
             T? value = getter(el);
-            Validate.Assert(value is not null, $"Missing required configuration property '{property}' in config {config.ScopeName}");
+            Validate.Assert(value is not null, $"Required configuration property '{property}' returned a null value in config {config.ScopeName}");
 
             //Attempt to validate if the configuration inherits the interface
             PluginConfigStore.TryValidateConfig(value);
@@ -148,8 +147,8 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             //Check null
             ArgumentNullException.ThrowIfNull(config);
-            ArgumentNullException.ThrowIfNull(property);
             ArgumentNullException.ThrowIfNull(getter);
+            ArgumentException.ThrowIfNullOrWhiteSpace(property);
 
             //Get the property
             if (config.TryGetValue(property, out JsonElement el))
@@ -440,7 +439,12 @@ namespace VNLib.Plugins.Extensions.Loading
 
             private readonly void TryConfigureAsync<TConfig>(TConfig config)
             {
-                //If async config, load async
+                /* 
+                 * If the config supports async initialization, schedule it on the
+                 * plugin's task scheduler. The plugin's lifecycle controller observes
+                 * the task, so we don't need to await it here. 
+                 */
+                
                 if (config is IAsyncConfigurable ac)
                 {
                     _ = plugin
@@ -462,17 +466,18 @@ namespace VNLib.Plugins.Extensions.Loading
             public readonly IConfigScope? TryGet(string propName)
             {
                 plugin.ThrowIfUnloaded();
-                //Try to get the element from the plugin config first, or fallback to host
+
+                // Try to get the element from the plugin config first, or fallback to host
                 if
                 (
                     plugin.PluginConfig.TryGetProperty(propName, out JsonElement el) ||
                     plugin.HostConfig.TryGetProperty(propName, out el)
                 )
                 {
-                    //Get the top level config as a dictionary
+                    // Get the top level config as a dictionary
                     return new ConfigScope(el, propName);
                 }
-                //No config found
+                // No config found
                 return null;
             }
 
@@ -773,22 +778,27 @@ namespace VNLib.Plugins.Extensions.Loading
                  */
 
                 if (
-                    !config.TryGetValue("paths", out JsonElement searchPaths) &&
-                    !config.TryGetValue("path", out searchPaths))
+                    !config.TryGetValue("paths", out JsonElement searchPathEl) &&
+                    !config.TryGetValue("path", out searchPathEl))
                 {
                     return [];
                 }
 
-                switch (searchPaths.ValueKind)
+                // Element may be array or a single string
+                switch (searchPathEl.ValueKind)
                 {
                     case JsonValueKind.Array:
-                        return searchPaths.EnumerateArray()
-                            .Select(static p => p.GetString()!)
-                            .Select(Path.GetFullPath)   //Get absolute file paths
+                        return searchPathEl.EnumerateArray()
+                            .Select(static p =>
+                            {
+                                string? path = p.GetString();
+                                Validate.NotNull(path, $"Plugins {PLUGINS_HOST_KEY}.paths array contains a null or empty element");
+                                return Path.GetFullPath(path);
+                            })
                             .ToArray();
 
                     case JsonValueKind.String:
-                        return [Path.GetFullPath(searchPaths.GetString()!)];
+                        return [Path.GetFullPath(searchPathEl.GetString()!)];
 
                     default:
                         return [];

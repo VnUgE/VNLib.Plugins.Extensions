@@ -144,8 +144,8 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             static async Task<ISecretResult> AwaitRequiredSecretAsync(Task<ISecretResult?> resultTask, string secretName)
             {
                 ISecretResult? res = await resultTask.ConfigureAwait(false);
-            return res ?? throw new KeyNotFoundException($"Missing required secret {secretName}");
-        }
+                return res ?? throw new KeyNotFoundException($"Missing required secret {secretName}");
+            }
         }
 
         /// <summary>

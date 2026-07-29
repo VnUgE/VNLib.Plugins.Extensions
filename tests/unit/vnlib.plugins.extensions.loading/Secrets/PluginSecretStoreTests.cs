@@ -496,12 +496,11 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         }
 
         /// <summary>
-        /// Verifies that the <c>file://</c> reader surfaces a <see cref="FileNotFoundException"/>
-        /// when the referenced path does not exist, rather than returning null or wrapping
-        /// the error in a different exception type.
+        /// Verifies that the <c>file://</c> reader returns null when the referenced path 
+        /// does not exist.
         /// </summary>
         [TestMethod]
-        public void TryGet_FromFile_ThrowsFileNotFoundException_WhenFileNotFound()
+        public async Task TryGet_FromFile_ReturnsNull_WhenFileNotFound()
         {
             string missingPath = Path.Combine(Path.GetTempPath(), $"vnlib_missing_{Guid.NewGuid()}.secret");
 
@@ -509,28 +508,10 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
-            Assert.ThrowsExactly<FileNotFoundException>(
-                () => plugin.Secrets().TryGet("foo")
-            );
-        }
-
-        /// <summary>
-        /// Verifies that the async <c>file://</c> reader also surfaces a <see cref="FileNotFoundException"/>
-        /// when the referenced path does not exist.
-        /// </summary>
-        [TestMethod]
-        public async Task TryGetAsync_FromFile_ThrowsFileNotFoundException_WhenFileNotFound()
-        {
-            string missingPath = Path.Combine(Path.GetTempPath(), $"vnlib_missing_{Guid.NewGuid()}.secret");
-
-            var pluginConfig = new { secrets = new { foo = $"file://{missingPath}" } };
-
-            using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
-
-            await Assert.ThrowsExactlyAsync<FileNotFoundException>(
-                () => plugin.Secrets().TryGetAsync("foo")
-            );
-        }
+            // Sync and async
+            Assert.IsNull(plugin.Secrets().TryGet("foo"));
+            Assert.IsNull(await plugin.Secrets().TryGetAsync("foo"));
+        }      
 
         #endregion
 

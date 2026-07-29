@@ -29,6 +29,7 @@ namespace VNLib.Plugins.Extensions.Loading
     /// <summary>
     /// The exception that is thrown when a requested concrete type is not found in the assembly.
     /// </summary>
+    [Obsolete("Dynamic type resolution is no longer supported and will be removed. Use explicit type resolution")]
     public sealed class ConcreteTypeNotFoundException : ConcreteTypeException
     {
         /// <summary>

@@ -92,8 +92,7 @@ namespace VNLib.Plugins.Extensions.Loading
             /// <exception cref="KeyNotFoundException">when the required configuration key is not found for the service type.</exception>
             /// <exception cref="ObjectDisposedException">when the plugin has been unloaded.</exception>
             /// <exception cref="EntryPointNotFoundException">when the service constructor cannot be resolved.</exception>
-            /// <exception cref="ConcreteTypeNotFoundException">when no concrete implementation of the abstract service type is found.</exception>
-            /// <exception cref="ConcreteTypeAmbiguousMatchException">when multiple concrete implementations of the abstract service type are found.</exception>
+            /// <exception cref="NotSupportedException"></exception>
             /// <remarks>
             /// <para>If the type derives <see cref="IAsyncConfigurable"/>, the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
             /// <para>If the type derives <see cref="IAsyncBackgroundWork"/>, the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
@@ -108,8 +107,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 //The requested service is not a class, so see if we can find a default implementation in assembly
                 if (serviceType.IsAbstract || serviceType.IsInterface)
                 {
-                    //Overwrite the service type with the default implementation
-                    serviceType = GetTypeImplFromCurrentAssembly(serviceType);
+                    throw new NotSupportedException("Requested service creation is an abstract type, you must specify a concrete implementation");
                 }
 
                 object service;
@@ -444,6 +442,7 @@ namespace VNLib.Plugins.Extensions.Loading
             /// <returns>The concrete type that implements the specified abstract type.</returns>
             /// <exception cref="ConcreteTypeNotFoundException">when no concrete implementation of the abstract type is found in the current assembly.</exception>
             /// <exception cref="ConcreteTypeAmbiguousMatchException">when multiple concrete implementations of the abstract type are found in the current assembly.</exception>
+            [Obsolete("Abstract type loading is no longer supported")]
             public static Type GetTypeImplFromCurrentAssembly(Type abstractType)
             {
                 //Get all types from the current assembly that implement the abstract type

@@ -431,6 +431,8 @@ namespace VNLib.Plugins.Extensions.Loading
             public const string PLUGIN_ASSET_KEY = "assets";
             public const string PLUGINS_HOST_KEY = "plugins";
 
+            private readonly PluginBase _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
+
             private readonly void TryConfigureAsync<TConfig>(TConfig config)
             {
                 /* 
@@ -441,7 +443,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 
                 if (config is IAsyncConfigurable ac)
                 {
-                    _ = plugin
+                    _ = _plugin
                         .Tasks()
                         .ConfigureServiceAsync(ac);
                 }
@@ -459,13 +461,13 @@ namespace VNLib.Plugins.Extensions.Loading
             /// <exception cref="ObjectDisposedException">The plugin is unloaded.</exception>
             public readonly IConfigScope? TryGet(string propName)
             {
-                plugin.ThrowIfUnloaded();
+                _plugin.ThrowIfUnloaded();
 
                 // Try to get the element from the plugin config first, or fallback to host
                 if
                 (
-                    plugin.PluginConfig.TryGetProperty(propName, out JsonElement el) ||
-                    plugin.HostConfig.TryGetProperty(propName, out el)
+                    _plugin.PluginConfig.TryGetProperty(propName, out JsonElement el) ||
+                    _plugin.HostConfig.TryGetProperty(propName, out el)
                 )
                 {
                     // Get the top level config as a dictionary
@@ -683,8 +685,8 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 //See if the plugin contains a configuration variables
                 return configName != null && (
-                    plugin.PluginConfig.TryGetProperty(configName.ConfigVarName, out _) ||
-                    plugin.HostConfig.TryGetProperty(configName.ConfigVarName, out _)
+                    _plugin.PluginConfig.TryGetProperty(configName.ConfigVarName, out _) ||
+                    _plugin.HostConfig.TryGetProperty(configName.ConfigVarName, out _)
                 );
             }
 

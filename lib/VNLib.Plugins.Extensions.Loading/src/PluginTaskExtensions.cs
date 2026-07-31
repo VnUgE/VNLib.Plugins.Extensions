@@ -166,11 +166,11 @@ namespace VNLib.Plugins.Extensions.Loading
             /// <exception cref="ObjectDisposedException">The plugin instance has been unloaded.</exception>
             public readonly Task ConfigureServiceAsync<T>(T service, int delayMs = 0) where T : IAsyncConfigurable
             {
+                ArgumentNullException.ThrowIfNull(service);
+
                 PluginBase plugin = _plugin;
 
-                return _plugin
-                    .Tasks()
-                    .ObserveWork(() => service.ConfigureServiceAsync(plugin), delayMs);
+                return ObserveWork(() => service.ConfigureServiceAsync(plugin), delayMs);
             }
         }
     }

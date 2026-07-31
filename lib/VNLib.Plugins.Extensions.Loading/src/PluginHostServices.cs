@@ -89,7 +89,7 @@ namespace VNLib.Plugins.Extensions.Loading
             /// </remarks>
             public readonly HostServiceContainer Export<T>(T instance, ExportFlags flags = ExportFlags.None)
                 where T : class => Export(typeof(T), instance, flags);
-        }
-    }   
+    }
+}
 }
 

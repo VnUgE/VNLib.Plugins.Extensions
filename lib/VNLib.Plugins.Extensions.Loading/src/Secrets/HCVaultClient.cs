@@ -38,7 +38,6 @@ using VNLib.Utils;
 using VNLib.Utils.IO;
 using VNLib.Utils.Memory;
 using VNLib.Utils.Extensions;
-using VNLib.Plugins.Extensions.Loading.Secrets;
 using VNLib.Plugins.Extensions.Loading.Configuration;
 
 /*

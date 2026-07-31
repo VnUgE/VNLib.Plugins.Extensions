@@ -46,17 +46,24 @@ using VNLib.Plugins.Essentials.Accounts;
  */
 namespace VNLib.Plugins.Extensions.Loading
 {
-    // TODO: Centralize configuration element name
-    // TODO: Centralize password hashing secret element
-
     /// <summary>
     /// A plugin configurable <see cref="IPasswordHashingProvider"/> managed implementation. Users may load custom 
     /// assemblies backing instances of this class or configure the <see cref="Argon2HashProvider"/> implementation
     /// </summary>
-    [ConfigurationName("passwords", Required = false)]
+    [ConfigurationName(PASSWORD_CONFIG_KEY, Required = false)]
     public sealed class ManagedPasswordHashing : IPasswordHashingProvider
     {
-        const string PASSWORD_HASHING_KEY = "passwords";
+        /// <summary>
+        /// Configuration property name for the "passwords" configuration object in the 
+        /// plugin config store.
+        /// </summary>
+        const string PASSWORD_CONFIG_KEY = "passwords";
+
+        /// <summary>
+        /// Configuration property name (key) within the secrets store
+        /// that holds the password secret aka pepper. 
+        /// </summary>
+        const string PASSWORD_SECRET_CONFIG_KEY = "passwords";
 
         public ManagedPasswordHashing(PluginBase plugin, IConfigScope? config)
         {
@@ -195,7 +202,7 @@ namespace VNLib.Plugins.Extensions.Loading
         private static ISecretProvider? LoadPasswordPepper(PluginBase plugin, bool useMlock)
         {
             //If no secret was set for the password hashing key, return null
-            if (!plugin.Secrets().IsSet(PASSWORD_HASHING_KEY))
+            if (!plugin.Secrets().IsSet(PASSWORD_SECRET_CONFIG_KEY))
             {
                 return null;
             }
@@ -203,7 +210,7 @@ namespace VNLib.Plugins.Extensions.Loading
             //Get the pepper from secret storage
             IAsyncLazy<byte[]> pepper = plugin
                 .Secrets()
-                .GetAsync(PASSWORD_HASHING_KEY)
+                .GetAsync(PASSWORD_SECRET_CONFIG_KEY)
                 .ToBase64Bytes()
                 .AsLazy();
 

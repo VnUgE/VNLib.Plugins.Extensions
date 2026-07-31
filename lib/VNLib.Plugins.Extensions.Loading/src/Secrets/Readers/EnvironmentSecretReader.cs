@@ -54,6 +54,11 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(secretPath);
 
+            if (cancellation.IsCancellationRequested)
+            {
+                return Task.FromCanceled<ISecretResult?>(cancellation);
+            }
+
             string? envVal = Environment.GetEnvironmentVariable(secretPath);
 
             return Task.FromResult<ISecretResult?>(envVal == null ? null : SecretResult.ToSecret(envVal));

@@ -419,6 +419,26 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         /// threads a <see cref="CancellationToken"/> through to the underlying reader.
         /// </summary>
         [TestMethod]
+        public async Task GetAsync_PreCancelledToken_ReturnsCanceledTask()
+        {
+            Environment.SetEnvironmentVariable("VNLIB_PSS_CANCEL_TEST", "test_value");
+
+            using TestPluginBase plugin = new(
+                new { secrets = new { key = "env://VNLIB_PSS_CANCEL_TEST" } },
+                EmptyHostConfig
+            );
+
+            using CancellationTokenSource cts = new();
+            cts.Cancel();
+
+            await Assert.ThrowsExactlyAsync<TaskCanceledException>(
+                () => plugin.Secrets().GetAsync("key", cts.Token)
+            );
+
+            Environment.SetEnvironmentVariable("VNLIB_PSS_CANCEL_TEST", null);
+        }
+
+        [TestMethod]
         public async Task GetAsync_AcceptsCancellationToken()
         {
             var pluginConfig = new { secrets = new { foo = "bar" } };

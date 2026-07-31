@@ -405,13 +405,6 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <remarks>
         /// <para>
         /// <see cref="PluginConfigStore"/> is the primary façade for interacting with plugin and host configuration.
-        /// It implements a consistent Try*/Get* API pattern where:
-        /// <list type="bullet">
-        /// <item><description><c>Try*</c> methods return nullable types and never throw configuration-related exceptions</description></item>
-        /// <item><description><c>Get*</c> methods throw <see cref="ConfigurationException"/> when configuration is not found</description></item>
-        /// </list>
-        /// </para>
-        /// <para>
         /// This struct is designed to be created inline via the <see cref="PluginConfigExtensions.Config(PluginBase)"/> 
         /// extension method. 
         /// </para>
@@ -430,6 +423,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// and asynchronous initialization (via <see cref="IAsyncConfigurable"/>).
         /// </para>
         /// </remarks>
+        /// <exception cref="ArgumentNullException">If the <paramref name="plugin"/> argument is null</exception>
         public readonly ref struct PluginConfigStore(PluginBase plugin)
         {
             public const string S3_CONFIG = "s3_config";
@@ -504,6 +498,7 @@ namespace VNLib.Plugins.Extensions.Loading
             /// <param name="type">The class type to get the configuration scope for.</param>
             /// <returns>An <see cref="IConfigScope"/> for the desired top-level configuration scope, or <see langword="null"/> if not found.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="type"/> is <see langword="null"/>.</exception>
+            /// <exception cref="ObjectDisposedException">The plugin is unloaded.</exception>
             public readonly IConfigScope? TryGetForType(Type type)
             {
                 ArgumentNullException.ThrowIfNull(type);
@@ -515,13 +510,9 @@ namespace VNLib.Plugins.Extensions.Loading
                     : null;
             }
 
-            /// <summary>
-            /// Retrieves a top-level configuration scope for the specified type.
-            /// The type must be decorated with a <see cref="ConfigurationNameAttribute"/>.
-            /// </summary>
+            /// <inheritdoc cref="TryGetForType(Type)"/>
             /// <typeparam name="T">The type to get the configuration scope for.</typeparam>
             /// <returns>An <see cref="IConfigScope"/> for the type, or <see langword="null"/> if not found.</returns>
-            /// <exception cref="ObjectDisposedException">The plugin is unloaded.</exception>
             public readonly IConfigScope? TryGetForType<T>()
                 => TryGetForType(typeof(T));
 
@@ -540,14 +531,9 @@ namespace VNLib.Plugins.Extensions.Loading
                     ?? throw new ConfigurationException($"Missing required configuration key for type {type.Name}");
             }
 
-            /// <summary>
-            /// Retrieves a top-level configuration scope for the specified type.
-            /// The type must be decorated with a <see cref="ConfigurationNameAttribute"/>.
-            /// </summary>
+            /// <inheritdoc cref="GetForType(Type)"/>
             /// <typeparam name="T">The type to get the configuration scope for.</typeparam>
             /// <returns>An <see cref="IConfigScope"/> for the type.</returns>
-            /// <exception cref="ConfigurationException">Configuration for the specified type is not found.</exception>
-            /// <exception cref="ObjectDisposedException">The plugin is unloaded.</exception>
             public readonly IConfigScope GetForType<T>()
                 => GetForType(typeof(T));
 
@@ -559,6 +545,7 @@ namespace VNLib.Plugins.Extensions.Loading
             /// An <see cref="IConfigScope"/> for the object's type if found; otherwise, <see langword="null"/>.
             /// </returns>
             /// <exception cref="ArgumentNullException"><paramref name="obj"/> is <see langword="null"/>.</exception>
+            /// <exception cref="ObjectDisposedException">The plugin is unloaded.</exception>
             public readonly IConfigScope? TryGetFor(object obj)
             {
                 ArgumentNullException.ThrowIfNull(obj);
@@ -687,11 +674,8 @@ namespace VNLib.Plugins.Extensions.Loading
             public readonly bool HasForType<T>()
                 => HasForType(typeof(T));
 
-            /// <summary>
-            /// Determines whether the current plugin configuration contains the required properties to initialize the specified type.
-            /// </summary>
+            /// <inheritdoc cref="HasForType{T}()"/>
             /// <param name="type">The type to check for configuration.</param>
-            /// <returns><see langword="true"/> if the plugin config contains the required configuration property; otherwise, <see langword="false"/>.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="type"/> is <see langword="null"/>.</exception>
             public readonly bool HasForType(Type type)
             {

@@ -29,7 +29,7 @@ namespace VNLib.Plugins.Extensions.Loading
     /// <summary>
     /// The base class for exceptions that occur during concrete type resolution.
     /// </summary>
-    [Obsolete("Dynamic type resolution is no longer supported and will be removed. Use explicit type resolution")]
+    [Obsolete("Dynamic type resolution is no longer supported and will be removed. Use explicit type resolution.")]
     public class ConcreteTypeException : TypeLoadException
     {
         /// <summary>

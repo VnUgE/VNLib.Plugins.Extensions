@@ -43,7 +43,11 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
     /// <param name="plugin">The plugin instance to get secrets from</param>
     public readonly struct PluginSecretStore(PluginBase plugin) : IEquatable<PluginSecretStore>
     {
-        internal const int HCVaultDefaultKvVersion = 2;
+        /// <summary>
+        /// The default HashiCorp Vault KV secrets engine version used when 
+        /// <see cref="VAULT_KV_VERSION_KEY"/> is not specified in configuration.
+        /// </summary>
+        private const int HCVaultDefaultKvVersion = 2;
 
         private readonly PluginBase plugin = plugin;
         private readonly PluginSecretState _state = plugin.Deps().GetOrCreateSingleton(PluginSecretState.LoadState);

@@ -44,7 +44,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
     /// Provides advanced quality-of-life features for plugin loading.
     /// </summary>
     public static partial class RoutingExtensions
-    {        
+        {
         private static readonly ConditionalWeakTable<IEndpoint, PluginBase?> _pluginRefs = [];
 
         [GeneratedRegex("{{\\s*(.*?)\\s*}}", RegexOptions.Compiled)]
@@ -72,7 +72,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
         {
             _ = _pluginRefs.TryGetValue(ep, out PluginBase? pBase);
             return pBase ?? throw new InvalidOperationException("Endpoint was not dynamically routed");
-        }      
+        }
 
         /// <summary>
         /// Constructs and routes the specific endpoint type for the current plugin.
@@ -120,7 +120,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
                     return config.GetValueOrDefault(varName, @default);
                 }
             });
-        }   
+        }
 
         internal static ILogProvider ConfigureLogger<T>(PluginBase plugin, IConfigScope? config)
         {
@@ -181,11 +181,11 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
                 static EndpointCollection OnCreate(PluginBase plugin)
                 {
                     EndpointCollection collection = new();
-                    
+
                     plugin.Host()
                         .Services()
                         .Export<IVirtualEndpointDefinition>(collection);
-                    
+
                     return collection;
                 }
             }
@@ -232,7 +232,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
                     BindingFlags.NonPublic          // It's an internal method
                 );
 
-                // If the method is not defined , or the attribute is not defined, then skip the
+                // If the method is not defined, or the attribute is not defined, then skip the
                 // initialization step and assume the endpoint will handle it itself
                 if (pathAttr is null || initPathAndLog is null)
                 {
@@ -250,7 +250,6 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
                         pattern: @"^\/\S*$",
                         message: $"Endpoint '{endpointType.Name}' path '{endpointPath}' is not a valid path. It must start with a '/' and contain no whitespace."
                     );
-                    
 
                     //Invoke init function and pass in variable names
                     initPathAndLog(endpointPath, logger);
@@ -271,7 +270,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
 
                 ///<inheritdoc/>
                 IEnumerable<IEndpoint> IVirtualEndpointDefinition.GetEndpoints() => Endpoints.Values;
-            }
-        }        
+        }
     }
+}
 }

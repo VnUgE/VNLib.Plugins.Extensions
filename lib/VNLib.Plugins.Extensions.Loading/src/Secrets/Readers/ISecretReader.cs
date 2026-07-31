@@ -38,9 +38,12 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
         string Scheme { get; }
 
         /// <summary>
-        /// Gets a secret at the given secret path. 
+        /// Gets a secret at the given secret path.
         /// </summary>
-        /// <param name="secretPath">The path defined by the user </param>
+        /// <param name="secretPath">
+        /// The path defined by the user. 
+        /// The path is the entire string portion of the secret after the scheme prefix.
+        /// </param>
         /// <returns>An <see cref="ISecretResult"/> containing the secret value, or null if not found</returns>
         ISecretResult? GetSecret(string secretPath);
 
@@ -51,7 +54,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
         /// The path defined by the user. 
         /// The path is the entire string portion of the secret after the scheme prefix.
         /// </param>
-        /// <param name="cancellation"></param>
+        /// <param name="cancellation">A token to cancel the asynchronous operation</param>
         /// <returns>A task that resolves a <see cref="ISecretResult"/> containing secret or null if not found</returns>
         Task<ISecretResult?> GetSecretAsync(string secretPath, CancellationToken cancellation);
     }

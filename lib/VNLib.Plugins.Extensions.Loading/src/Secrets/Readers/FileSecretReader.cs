@@ -32,38 +32,61 @@ using VNLib.Utils.Memory;
 
 namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
 {
-    /*
-     * This secret reader is a "built-in" reader that attempts
-     * to read secrets from local files based on a file path 
-     * set by the user in the secrets path.
-     * 
-     * file://<absolute file path>
-     */
+    /// <summary>
+    /// A built-in secret reader that reads secrets from local files.
+    /// Secrets are referenced using the <c>file://</c> scheme prefix in configuration
+    /// (e.g., <c>file:///path/to/secret</c>). The scheme prefix is stripped before
+    /// the path is passed to this reader.
+    /// </summary>
     internal sealed class FileSecretReader : ISecretReader
     {
         /// <inheritdoc/>
         public string Scheme => "file";
 
+
+        /*
+        * Returns null for not-found as common with environment variables or vault when 
+        * values are missing. Let permission and IO errors propagate so the user is informed. 
+        */
+
         /// <inheritdoc/>
         public ISecretResult? GetSecret(string secretPath)
         {
-            ArgumentNullException.ThrowIfNull(secretPath);
+            ArgumentException.ThrowIfNullOrWhiteSpace(secretPath);
 
-            byte[] fileData = File.ReadAllBytes(secretPath);
+            try
+            {
+                byte[] fileData = File.ReadAllBytes(secretPath);
 
-            return GetResultFromFileData(fileData);
+                return GetResultFromFileData(fileData);
+            }           
+            catch (FileNotFoundException)
+            { }
+            catch (DirectoryNotFoundException)
+            { }
+
+            return null;
         }
 
         /// <inheritdoc/>
         public async Task<ISecretResult?> GetSecretAsync(string secretPath, CancellationToken cancellation)
         {
-            ArgumentNullException.ThrowIfNull(secretPath);
+            ArgumentException.ThrowIfNullOrWhiteSpace(secretPath);
 
-            byte[] fileData = await File.ReadAllBytesAsync(secretPath, cancellation)
-                                .ConfigureAwait(false);
+            try
+            {
+                byte[] fileData = await File.ReadAllBytesAsync(secretPath, cancellation)
+                                    .ConfigureAwait(false);
 
-            return GetResultFromFileData(fileData);
-        }
+                return GetResultFromFileData(fileData);
+            }
+            catch (FileNotFoundException)
+            { }
+            catch (DirectoryNotFoundException)
+            { }
+
+            return null;
+        }           
 
         private static SecretResult GetResultFromFileData(byte[] secretFileData)
         {

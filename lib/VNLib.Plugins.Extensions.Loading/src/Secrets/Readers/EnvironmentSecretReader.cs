@@ -29,8 +29,10 @@ using System.Threading.Tasks;
 namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
 {
     /// <summary>
-    /// A built-in secret reader that reads secrets from environment variables. Uses the 
-    /// path "env://VARIABLE_NAME".
+    /// A built-in secret reader that reads secrets from environment variables.
+    /// Secrets are referenced using the <c>env://</c> scheme prefix in configuration
+    /// (e.g., <c>env://MY_SECRET_VAR</c>). The scheme prefix is stripped before
+    /// the variable name is passed to this reader.
     /// </summary>
     internal sealed class EnvironmentSecretReader : ISecretReader
     {
@@ -40,7 +42,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
         /// <inheritdoc/>
         public ISecretResult? GetSecret(string secretPath)
         {
-            ArgumentNullException.ThrowIfNull(secretPath);
+            ArgumentException.ThrowIfNullOrWhiteSpace(secretPath);
 
             string? envVal = Environment.GetEnvironmentVariable(secretPath);
 
@@ -50,7 +52,12 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
         /// <inheritdoc/>
         public Task<ISecretResult?> GetSecretAsync(string secretPath, CancellationToken cancellation)
         {
-            ArgumentNullException.ThrowIfNull(secretPath);
+            ArgumentException.ThrowIfNullOrWhiteSpace(secretPath);
+
+            if (cancellation.IsCancellationRequested)
+            {
+                return Task.FromCanceled<ISecretResult?>(cancellation);
+            }
 
             string? envVal = Environment.GetEnvironmentVariable(secretPath);
 

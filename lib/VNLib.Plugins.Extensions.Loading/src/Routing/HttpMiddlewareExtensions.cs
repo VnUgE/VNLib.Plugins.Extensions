@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
@@ -67,12 +67,12 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
             }
 
             /// <summary>
-            /// Exports the specified middleware instances to the plugin's middleware collection.
+            /// All instances must be exposed through this function.
             /// </summary>
             /// <param name="instances">A params array of middleware instances to export to the plugin.</param>
             /// <remarks>
             /// WARNING: Adding middleware arrays explicitly to the plugin service pool will override
-            /// this function. All instances must be exposed though this function
+            /// this function. All instances must be exposed through this function
             /// </remarks>
             public readonly void Add(params IHttpMiddleware[] instances)
             {

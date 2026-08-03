@@ -138,7 +138,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         }
 
         /// <summary>
-        /// Gets the secret value as a secret result
+        /// Gets the secret value as a <see cref="JsonDocument"/>
         /// </summary>
         /// <param name="secret"></param>
         /// <returns>The document parsed from the secret value</returns>
@@ -190,7 +190,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         }
 
         /// <summary>
-        /// Gets a <see cref="ReadOnlyJsonWebKey"/> from a secret value
+        /// <see cref="GetJsonWebKey"/> <c>whose</c> key is provided in the secret.
         /// </summary>
         /// <param name="secret"></param>
         /// <returns>The <see cref="ReadOnlyJsonWebKey"/> from the result</returns>
@@ -227,7 +227,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// Converts the secret recovery task to return the base64 decoded secret as a byte[]
         /// </summary>
         /// <param name="secret"></param>
-        /// <returns>A task whos result the base64 decoded secret as a byte[]</returns>
+        /// <returns>A task whose result the base64 decoded secret as a byte[]</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="InternalBufferTooSmallException"></exception>
         public static async Task<byte[]> ToBase64Bytes(this Task<ISecretResult> secret)
@@ -261,7 +261,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// </summary>
         /// <param name="secret"></param>
         /// <param name="required">
-        /// A value that inidcates that a value is required from the result, 
+        /// A value that indicates that a value is required from the result, 
         /// or a <see cref="KeyNotFoundException"/> is raised
         /// </param>
         /// <returns>The <see cref="ReadOnlyJsonWebKey"/> from the secret, or throws <see cref="KeyNotFoundException"/> if the key was not found</returns>

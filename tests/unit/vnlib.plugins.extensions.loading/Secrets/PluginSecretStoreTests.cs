@@ -419,6 +419,26 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         /// threads a <see cref="CancellationToken"/> through to the underlying reader.
         /// </summary>
         [TestMethod]
+        public async Task GetAsync_PreCancelledToken_ReturnsCanceledTask()
+        {
+            Environment.SetEnvironmentVariable("VNLIB_PSS_CANCEL_TEST", "test_value");
+
+            using TestPluginBase plugin = new(
+                new { secrets = new { key = "env://VNLIB_PSS_CANCEL_TEST" } },
+                EmptyHostConfig
+            );
+
+            using CancellationTokenSource cts = new();
+            cts.Cancel();
+
+            await Assert.ThrowsExactlyAsync<TaskCanceledException>(
+                () => plugin.Secrets().GetAsync("key", cts.Token)
+            );
+
+            Environment.SetEnvironmentVariable("VNLIB_PSS_CANCEL_TEST", null);
+        }
+
+        [TestMethod]
         public async Task GetAsync_AcceptsCancellationToken()
         {
             var pluginConfig = new { secrets = new { foo = "bar" } };
@@ -496,12 +516,11 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         }
 
         /// <summary>
-        /// Verifies that the <c>file://</c> reader surfaces a <see cref="FileNotFoundException"/>
-        /// when the referenced path does not exist, rather than returning null or wrapping
-        /// the error in a different exception type.
+        /// Verifies that the <c>file://</c> reader returns null when the referenced path 
+        /// does not exist.
         /// </summary>
         [TestMethod]
-        public void TryGet_FromFile_ThrowsFileNotFoundException_WhenFileNotFound()
+        public async Task TryGet_FromFile_ReturnsNull_WhenFileNotFound()
         {
             string missingPath = Path.Combine(Path.GetTempPath(), $"vnlib_missing_{Guid.NewGuid()}.secret");
 
@@ -509,28 +528,10 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
-            Assert.ThrowsExactly<FileNotFoundException>(
-                () => plugin.Secrets().TryGet("foo")
-            );
-        }
-
-        /// <summary>
-        /// Verifies that the async <c>file://</c> reader also surfaces a <see cref="FileNotFoundException"/>
-        /// when the referenced path does not exist.
-        /// </summary>
-        [TestMethod]
-        public async Task TryGetAsync_FromFile_ThrowsFileNotFoundException_WhenFileNotFound()
-        {
-            string missingPath = Path.Combine(Path.GetTempPath(), $"vnlib_missing_{Guid.NewGuid()}.secret");
-
-            var pluginConfig = new { secrets = new { foo = $"file://{missingPath}" } };
-
-            using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
-
-            await Assert.ThrowsExactlyAsync<FileNotFoundException>(
-                () => plugin.Secrets().TryGetAsync("foo")
-            );
-        }
+            // Sync and async
+            Assert.IsNull(plugin.Secrets().TryGet("foo"));
+            Assert.IsNull(await plugin.Secrets().TryGetAsync("foo"));
+        }      
 
         #endregion
 
@@ -648,6 +649,158 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
             await Assert.ThrowsExactlyAsync<NotSupportedException>(
+                () => plugin.Secrets().TryGetAsync("foo")
+            );
+        }
+
+        #endregion
+
+        #region ValueKind validation
+
+        /// <summary>
+        /// Verifies that <see cref="PluginSecretStore.IsSet"/> throws
+        /// <see cref="ConfigurationValidationException"/> when the secrets
+        /// configuration element is a string instead of a JSON object.
+        /// </summary>
+        [TestMethod]
+        public void IsSet_ThrowsConfigurationValidationException_WhenSecretsIsString()
+        {
+            var pluginConfig = new { secrets = "not_an_object" };
+
+            using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
+
+            Assert.ThrowsExactly<ConfigurationValidationException>(
+                () => plugin.Secrets().IsSet("anyKey")
+            );
+        }
+
+        /// <summary>
+        /// Verifies that <see cref="PluginSecretStore.IsSet"/> throws
+        /// <see cref="ConfigurationValidationException"/> when the secrets
+        /// configuration element is a number instead of a JSON object.
+        /// </summary>
+        [TestMethod]
+        public void IsSet_ThrowsConfigurationValidationException_WhenSecretsIsNumber()
+        {
+            var pluginConfig = new { secrets = 123 };
+
+            using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
+
+            Assert.ThrowsExactly<ConfigurationValidationException>(
+                () => plugin.Secrets().IsSet("anyKey")
+            );
+        }
+
+        /// <summary>
+        /// Verifies that <see cref="PluginSecretStore.TryGet"/> and
+        /// <see cref="PluginSecretStore.TryGetAsync"/> throw
+        /// <see cref="ConfigurationValidationException"/> when the secrets
+        /// configuration element is a string instead of a JSON object.
+        /// </summary>
+        [TestMethod]
+        public async Task TryGet_ThrowsConfigurationValidationException_WhenSecretsIsString()
+        {
+            var pluginConfig = new { secrets = "not_an_object" };
+
+            using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
+
+            Assert.ThrowsExactly<ConfigurationValidationException>(
+                () => plugin.Secrets().TryGet("anyKey")
+            );
+
+            await Assert.ThrowsExactlyAsync<ConfigurationValidationException>(
+                () => plugin.Secrets().TryGetAsync("anyKey")
+            );
+        }
+
+        /// <summary>
+        /// Verifies that <see cref="PluginSecretStore.TryGet"/> and
+        /// <see cref="PluginSecretStore.TryGetAsync"/> throw
+        /// <see cref="ConfigurationValidationException"/> when the secrets
+        /// configuration element is a number instead of a JSON object.
+        /// </summary>
+        [TestMethod]
+        public async Task TryGet_ThrowsConfigurationValidationException_WhenSecretsIsNumber()
+        {
+            var pluginConfig = new { secrets = 123 };
+
+            using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
+
+            Assert.ThrowsExactly<ConfigurationValidationException>(
+                () => plugin.Secrets().TryGet("anyKey")
+            );
+
+            await Assert.ThrowsExactlyAsync<ConfigurationValidationException>(
+                () => plugin.Secrets().TryGetAsync("anyKey")
+            );
+        }
+
+        #endregion
+
+        #region Malformed scheme format
+
+        /// <summary>
+        /// Verifies that <see cref="PluginSecretStore.TryGet"/> and
+        /// <see cref="PluginSecretStore.TryGetAsync"/> throw
+        /// <see cref="FormatException"/> when the secret value contains a scheme
+        /// delimiter but no path component (e.g., <c>scheme://</c>).
+        /// </summary>
+        [TestMethod]
+        public async Task TryGet_ThrowsFormatException_WhenSchemeHasNoPath()
+        {
+            var pluginConfig = new { secrets = new { foo = "scheme://" } };
+
+            using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
+
+            Assert.ThrowsExactly<FormatException>(
+                () => plugin.Secrets().TryGet("foo")
+            );
+
+            await Assert.ThrowsExactlyAsync<FormatException>(
+                () => plugin.Secrets().TryGetAsync("foo")
+            );
+        }
+
+        /// <summary>
+        /// Verifies that <see cref="PluginSecretStore.TryGet"/> and
+        /// <see cref="PluginSecretStore.TryGetAsync"/> throw
+        /// <see cref="FormatException"/> when the secret value has no scheme
+        /// before the delimiter (e.g., <c>://path</c>).
+        /// </summary>
+        [TestMethod]
+        public async Task TryGet_ThrowsFormatException_WhenSchemeHasNoName()
+        {
+            var pluginConfig = new { secrets = new { foo = "://path" } };
+
+            using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
+
+            Assert.ThrowsExactly<FormatException>(
+                () => plugin.Secrets().TryGet("foo")
+            );
+
+            await Assert.ThrowsExactlyAsync<FormatException>(
+                () => plugin.Secrets().TryGetAsync("foo")
+            );
+        }
+
+        /// <summary>
+        /// Verifies that <see cref="PluginSecretStore.TryGet"/> and
+        /// <see cref="PluginSecretStore.TryGetAsync"/> throw
+        /// <see cref="FormatException"/> when the secret value is only the
+        /// scheme delimiter (e.g., <c>://</c>).
+        /// </summary>
+        [TestMethod]
+        public async Task TryGet_ThrowsFormatException_WhenSchemeIsDelimiterOnly()
+        {
+            var pluginConfig = new { secrets = new { foo = "://" } };
+
+            using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
+
+            Assert.ThrowsExactly<FormatException>(
+                () => plugin.Secrets().TryGet("foo")
+            );
+
+            await Assert.ThrowsExactlyAsync<FormatException>(
                 () => plugin.Secrets().TryGetAsync("foo")
             );
         }

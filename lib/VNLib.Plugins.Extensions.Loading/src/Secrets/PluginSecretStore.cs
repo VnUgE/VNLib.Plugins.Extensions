@@ -31,8 +31,9 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using VNLib.Utils.Memory;
-using VNLib.Plugins.Extensions.Loading.Secrets.Readers;
 
+using VNLib.Plugins.Extensions.Loading.Configuration;
+using VNLib.Plugins.Extensions.Loading.Secrets.Readers;
 using static VNLib.Plugins.Extensions.Loading.Secrets.PluginSecretConstants;
 
 namespace VNLib.Plugins.Extensions.Loading.Secrets
@@ -43,9 +44,13 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
     /// <param name="plugin">The plugin instance to get secrets from</param>
     public readonly struct PluginSecretStore(PluginBase plugin) : IEquatable<PluginSecretStore>
     {
-        internal const int HCVaultDefaultKvVersion = 2;
+        /// <summary>
+        /// The default HashiCorp Vault KV secrets engine version used when 
+        /// <see cref="VAULT_KV_VERSION_KEY"/> is not specified in configuration.
+        /// </summary>
+        private const int HCVaultDefaultKvVersion = 2;
 
-        private readonly PluginBase plugin = plugin;
+        private readonly PluginBase _plugin = plugin;
         private readonly PluginSecretState _state = plugin.Deps().GetOrCreateSingleton(PluginSecretState.LoadState);
 
         /// <summary>
@@ -71,13 +76,23 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             * A secret is defined if an element is found in either the plugin or host config.
             * Plugin is always checked first.
             */
-            return (plugin.PluginConfig.TryGetProperty(SECRETS_CONFIG_KEY, out JsonElement secConfig) && HasNamedPropertyInEl(in secConfig, secretName))
-                || (plugin.HostConfig.TryGetProperty(SECRETS_CONFIG_KEY, out secConfig) && HasNamedPropertyInEl(in secConfig, secretName));
+            return HasNamedSecret(_plugin.PluginConfig, secretName) 
+                || HasNamedSecret(_plugin.HostConfig, secretName);
         
             // Determines if the enumerated element contains objects that 
             // have the case-insensitive name.
-            static bool HasNamedPropertyInEl(in JsonElement el, string secretName)
+            static bool HasNamedSecret(JsonElement secretEl, string secretName)
             {
+                if (!secretEl.TryGetProperty(SECRETS_CONFIG_KEY, out JsonElement el))
+                {
+                    return false;
+                }
+
+                Validate.Assert(
+                    el.ValueKind == JsonValueKind.Object,
+                    message: $"The '{SECRETS_CONFIG_KEY}' configuration element must be a JSON object, but got {el.ValueKind} in plugin/host config"
+                );
+
                 foreach (JsonProperty prop in el.EnumerateObject())
                 {
                     if (string.Equals(prop.Name, secretName, StringComparison.OrdinalIgnoreCase))
@@ -99,7 +114,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(secretName);
 
-            string? rawValue = TryGetSecretFromConfig(plugin, secretName);
+            string? rawValue = TryGetSecretFromConfig(_plugin, secretName);
 
             return rawValue is null 
                 ? Task.FromResult<ISecretResult?>(null) 
@@ -115,7 +130,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(secretName);
 
-            string? rawValue = TryGetSecretFromConfig(plugin, secretName);
+            string? rawValue = TryGetSecretFromConfig(_plugin, secretName);
 
             return rawValue is null ? null : GetSecret(_state, rawValue);
         }
@@ -144,12 +159,12 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             static async Task<ISecretResult> AwaitRequiredSecretAsync(Task<ISecretResult?> resultTask, string secretName)
             {
                 ISecretResult? res = await resultTask.ConfigureAwait(false);
-            return res ?? throw new KeyNotFoundException($"Missing required secret {secretName}");
-        }
+                return res ?? throw new KeyNotFoundException($"Missing required secret {secretName}");
+            }
         }
 
         /// <summary>
-        /// Gets an on-demand secret that can be used to fetch the secret value from it's 
+        /// Gets an on-demand secret that can be used to fetch the secret value from its 
         /// store when needed.
         /// </summary>
         /// <param name="secretName">The name of the secret in the secret config to read</param>
@@ -158,7 +173,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(secretName);
 
-            string? rawValue = TryGetSecretFromConfig(plugin, secretName);
+            string? rawValue = TryGetSecretFromConfig(_plugin, secretName);
 
             return new OnDemandSecret(
                 _state, 
@@ -178,19 +193,31 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             => TryGet(secretName);
 
         ///<inheritdoc/>
-        public override bool Equals(object? obj) => obj is PluginSecretStore store && Equals(store);
+        public override bool Equals(object? obj) 
+            => obj is PluginSecretStore store && Equals(store);
 
         ///<inheritdoc/>
-        public static bool operator ==(PluginSecretStore left, PluginSecretStore right) => left.Equals(right);
+        public static bool operator ==(PluginSecretStore left, PluginSecretStore right) 
+            => left.Equals(right);
 
         ///<inheritdoc/>
-        public static bool operator !=(PluginSecretStore left, PluginSecretStore right) => !(left == right);
+        public static bool operator !=(PluginSecretStore left, PluginSecretStore right) 
+            => !(left == right);
 
         /// <inheritdoc/>
-        public bool Equals(PluginSecretStore other) => ReferenceEquals(other.plugin, plugin);
+        public bool Equals(PluginSecretStore other) => ReferenceEquals(other._plugin, _plugin);
 
         ///<inheritdoc/>
-        public override int GetHashCode() => plugin.GetHashCode();
+        public override int GetHashCode() => _plugin.GetHashCode();
+
+        private static (string, string) ParseSchemeAndPath(string rawValue)
+        {
+            string[] parts = rawValue.Split("://", StringSplitOptions.RemoveEmptyEntries);
+
+            return parts.Length == 2
+                ? (parts[0], parts[1])
+                : throw new FormatException($"Invalid secret scheme format: '{rawValue}'. Expected 'scheme://path'.");
+        }
 
         private static string? TryGetSecretFromConfig(PluginBase plugin, string secretName)
         {
@@ -214,6 +241,11 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
 
             if (host)
             {
+                Validate.Assert(
+                    hostEl.ValueKind == JsonValueKind.Object,
+                    message: $"The '{SECRETS_CONFIG_KEY}' configuration element must be a JSON object, but got {hostEl.ValueKind} in host config"
+                );
+
                 foreach (JsonProperty p in hostEl.EnumerateObject())
                 {
                     conf[p.Name] = p.Value;
@@ -222,6 +254,11 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
 
             if (local)
             {
+                Validate.Assert(
+                    localEl.ValueKind == JsonValueKind.Object,
+                    message: $"The '{SECRETS_CONFIG_KEY}' configuration element must be a JSON object, but got {localEl.ValueKind} in plugin config"
+                );
+
                 foreach (JsonProperty p in localEl.EnumerateObject())
                 {
                     conf[p.Name] = p.Value;
@@ -229,7 +266,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             }
 
             return conf.TryGetValue(secretName, out JsonElement el) ? el.GetString() : null;
-        }
+        }       
 
         private static ISecretResult? GetSecret(PluginSecretState state, string rawValue)
         {
@@ -249,12 +286,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
                 return SecretResult.ToSecret(rawValue);
             }
 
-            // Try fetching the secret reader for the scheme, otherwise not supported
-
-            string[] schemeAndPath = rawValue.Split("://", StringSplitOptions.RemoveEmptyEntries);
-
-            string scheme = schemeAndPath[0];
-            string secretPath = schemeAndPath[1];
+            (string scheme, string secretPath) = ParseSchemeAndPath(rawValue);
 
             return state.Readers.TryGetValue(scheme, out ISecretReader? reader)
                 ? reader.GetSecret(secretPath)
@@ -283,18 +315,12 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
                 return Task.FromResult<ISecretResult?>(SecretResult.ToSecret(rawValue));
             }
 
-            // Try fetching the secret reader for the scheme, otherwise not supported
-
-            string[] schemeAndPath = rawValue.Split("://", StringSplitOptions.RemoveEmptyEntries);
-
-            string scheme = schemeAndPath[0];
-            string secretPath = schemeAndPath[1];
+            (string scheme, string secretPath) = ParseSchemeAndPath(rawValue);
 
             return state.Readers.TryGetValue(scheme, out ISecretReader? reader)
                 ? reader.GetSecretAsync(secretPath, cancellation)
                 : Task.FromException<ISecretResult?>(new NotSupportedException($"Secret scheme {scheme} is not supported"));
-        }
-       
+        }       
 
         private sealed record PluginSecretState(
             IKvVaultClient? VaultClient,

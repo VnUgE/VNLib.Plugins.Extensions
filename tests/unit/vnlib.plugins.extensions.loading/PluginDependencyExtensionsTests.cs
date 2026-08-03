@@ -382,15 +382,15 @@ namespace VNLib.Plugins.Extensions.Loading.Tests
 
         /// <summary>
         /// Verifies that <see cref="PluginDependencies.Create(Type, IConfigScope?)"/> throws
-        /// <see cref="ConcreteTypeNotFoundException"/> when an abstract type has no concrete
-        /// implementation in the executing assembly.
+        /// <see cref="NotSupportedException"/> when an abstract type has no concrete
+        /// implementation as we no longer support dynamic type resolution.
         /// </summary>
         [TestMethod]
-        public void Create_AbstractTypeNoImpl_ThrowsConcreteTypeNotFoundException()
+        public void Create_AbstractType_ThrowsNotSupportedException()
         {
             using TestPluginBase plugin = new();
 
-            Assert.ThrowsExactly<ConcreteTypeNotFoundException>(
+            Assert.ThrowsExactly<NotSupportedException>(
                 () => plugin.Deps().Create(typeof(IUnimplementedTestService), null)
             );
         }

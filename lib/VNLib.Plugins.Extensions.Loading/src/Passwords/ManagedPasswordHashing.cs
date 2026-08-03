@@ -41,20 +41,23 @@ using VNLib.Plugins.Extensions.Loading.Secrets;
 
 namespace VNLib.Plugins.Extensions.Loading.Passwords
 {
-    // TODO: Centralize configuration element name
-    // TODO: Centralize password hashing secret element
-
     /// <summary>
     /// Provides a plugin-configurable managed implementation of <see cref="IPasswordHashingProvider"/>.
     /// </summary>
-    /// <remarks>
-    /// Users may load custom assemblies backing instances of this class
-    /// or configure the <see cref="Argon2HashProvider"/> implementation.
-    /// </remarks>
-    [ConfigurationName(CONFIG_KEY, Required = false)]
+    [ConfigurationName(PASSWORD_CONFIG_KEY, Required = false)]
     public sealed class ManagedPasswordHashing : IPasswordHashingProvider
     {
-        public const string CONFIG_KEY = "passwords";
+        /// <summary>
+        /// Configuration property name for the "passwords" configuration object in the 
+        /// plugin config store.
+        /// </summary>
+        const string PASSWORD_CONFIG_KEY = "passwords";
+
+        /// <summary>
+        /// Configuration property name (key) within the secrets store
+        /// that holds the password secret aka pepper. 
+        /// </summary>
+        const string PASSWORD_SECRET_CONFIG_KEY = "passwords";
 
         private readonly IAsyncLazy<IPasswordHashingProvider> _provider;
 
@@ -210,7 +213,7 @@ namespace VNLib.Plugins.Extensions.Loading.Passwords
         private static async Task<ISecretProvider?> LoadPasswordPepperAsync(PluginBase plugin, bool useMlock)
         {
             //If no secret was set for the password hashing key, return null
-            if (!plugin.Secrets().IsSet(CONFIG_KEY))
+            if (!plugin.Secrets().IsSet(PASSWORD_SECRET_CONFIG_KEY))
             {
                 return null;
             }
@@ -219,7 +222,7 @@ namespace VNLib.Plugins.Extensions.Loading.Passwords
             {
                 //Get the pepper from secret storage
                 byte[] rawPepper = await plugin.Secrets()
-                    .GetAsync(CONFIG_KEY)
+                    .GetAsync(PASSWORD_SECRET_CONFIG_KEY)
                     .ToBase64Bytes()
                     .ConfigureAwait(false);
 

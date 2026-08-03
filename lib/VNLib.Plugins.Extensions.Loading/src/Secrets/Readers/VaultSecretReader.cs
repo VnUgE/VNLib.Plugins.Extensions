@@ -30,6 +30,12 @@ using VNLib.Utils.Extensions;
 
 namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
 {
+    /// <summary>
+    /// A built-in secret reader that reads secrets from HashiCorp Vault.
+    /// Secrets are referenced using the <c>vault://</c> scheme prefix in configuration
+    /// (e.g., <c>vault://mount/path?secret=key</c>). The scheme prefix is stripped before
+    /// the path is passed to this reader.
+    /// </summary>
     internal sealed class VaultSecretReader(IKvVaultClient vaultClient) : ISecretReader
     {
         /// <inheritdoc/>

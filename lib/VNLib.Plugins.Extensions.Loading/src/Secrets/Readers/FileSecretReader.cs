@@ -1,15 +1,15 @@
 /*
 * Copyright (c) 2026 Vaughn Nugent
-* 
+*
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: FileSecretReader.cs 
+* File: FileSecretReader.cs
 *
-* FileSecretReader.cs is part of VNLib.Plugins.Extensions.Loading which is 
+* FileSecretReader.cs is part of VNLib.Plugins.Extensions.Loading which is
 * part of the larger VNLib collection of libraries and utilities.
 *
-* VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
-* it under the terms of the GNU Affero General Public License as 
+* VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Affero General Public License as
 * published by the Free Software Foundation, either version 3 of the
 * License, or (at your option) any later version.
 *
@@ -45,8 +45,8 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
 
 
         /*
-        * Returns null for not-found as common with environment variables or vault when 
-        * values are missing. Let permission and IO errors propagate so the user is informed. 
+        * Returns null for not-found as common with environment variables or vault when
+        * values are missing. Let permission and IO errors propagate so the user is informed.
         */
 
         /// <inheritdoc/>
@@ -59,7 +59,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
                 byte[] fileData = File.ReadAllBytes(secretPath);
 
                 return GetResultFromFileData(fileData);
-            }           
+            }
             catch (FileNotFoundException)
             { }
             catch (DirectoryNotFoundException)
@@ -69,13 +69,13 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
         }
 
         /// <inheritdoc/>
-        public async Task<ISecretResult?> GetSecretAsync(string secretPath, CancellationToken cancellation)
+        public async Task<ISecretResult?> GetSecretAsync(string secretPath, CancellationToken cancellationToken)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(secretPath);
 
             try
             {
-                byte[] fileData = await File.ReadAllBytesAsync(secretPath, cancellation)
+                byte[] fileData = await File.ReadAllBytesAsync(secretPath, cancellationToken)
                                     .ConfigureAwait(false);
 
                 return GetResultFromFileData(fileData);
@@ -86,7 +86,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
             { }
 
             return null;
-        }           
+        }
 
         private static SecretResult GetResultFromFileData(byte[] secretFileData)
         {

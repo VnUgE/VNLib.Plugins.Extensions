@@ -1,15 +1,15 @@
 /*
 * Copyright (c) 2026 Vaughn Nugent
-* 
+*
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: ISecretReader.cs 
+* File: ISecretReader.cs
 *
-* ISecretReader.cs is part of VNLib.Plugins.Extensions.Loading which is 
+* ISecretReader.cs is part of VNLib.Plugins.Extensions.Loading which is
 * part of the larger VNLib collection of libraries and utilities.
 *
-* VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
-* it under the terms of the GNU Affero General Public License as 
+* VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Affero General Public License as
 * published by the Free Software Foundation, either version 3 of the
 * License, or (at your option) any later version.
 *
@@ -41,7 +41,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
         /// Gets a secret at the given secret path.
         /// </summary>
         /// <param name="secretPath">
-        /// The path defined by the user. 
+        /// The path defined by the user.
         /// The path is the entire string portion of the secret after the scheme prefix.
         /// </param>
         /// <returns>An <see cref="ISecretResult"/> containing the secret value, or null if not found</returns>
@@ -51,11 +51,11 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
         /// Gets a secret at the given secret path.
         /// </summary>
         /// <param name="secretPath">
-        /// The path defined by the user. 
+        /// The path defined by the user.
         /// The path is the entire string portion of the secret after the scheme prefix.
         /// </param>
-        /// <param name="cancellation">A token to cancel the asynchronous operation</param>
+        /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that resolves a <see cref="ISecretResult"/> containing secret or null if not found</returns>
-        Task<ISecretResult?> GetSecretAsync(string secretPath, CancellationToken cancellation);
+        Task<ISecretResult?> GetSecretAsync(string secretPath, CancellationToken cancellationToken);
     }
 }

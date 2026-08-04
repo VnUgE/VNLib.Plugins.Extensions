@@ -1,15 +1,15 @@
 /*
 * Copyright (c) 2026 Vaughn Nugent
-* 
+*
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: MvcExtensions.cs 
+* File: MvcExtensions.cs
 *
-* MvcExtensions.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
+* MvcExtensions.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger
 * VNLib collection of libraries and utilities.
 *
-* VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
-* it under the terms of the GNU Affero General Public License as 
+* VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Affero General Public License as
 * published by the Free Software Foundation, either version 3 of the
 * License, or (at your option) any later version.
 *
@@ -68,7 +68,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
                 .Deps()
                 .Create<T>();
 
-            IEndpoint[] staticEndpoints = GetStaticEndpointsForController(router.Plugin, controller, guards);           
+            IEndpoint[] staticEndpoints = GetStaticEndpointsForController(router.Plugin, controller, guards);
 
             foreach (IEndpoint endpoint in staticEndpoints)
             {
@@ -79,7 +79,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
         }
 
         /// <inheritdoc cref="Add{T}(in EndpointRouter, T?, IHttpControllerGuard[])"/>
-        public static T Add<T>(this in EndpointRouter router, T? controller) where T : IHttpController 
+        public static T Add<T>(this in EndpointRouter router, T? controller) where T : IHttpController
             => Add(in router, controller, guards: []);  // pass empty guards array
 
         /// <inheritdoc cref="Add{T}(in EndpointRouter, T?, IHttpControllerGuard[])"/>
@@ -94,7 +94,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
         /// <exception cref="ObjectDisposedException">The plugin or its dependencies have been disposed.</exception>
         /// <exception cref="InvalidOperationException">The controller or endpoint configuration is invalid.</exception>
         public static T Add<T>(this in EndpointRouter router) where T : IHttpController
-            => Add<T>(in router, controller: default);     
+            => Add<T>(in router, controller: default);
 
         /// <summary>
         /// Routes all endpoints for the specified controller using the provided instance.
@@ -164,7 +164,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
 
                 //Path may have config variables to substitute
                 string? routePath = SubstituteConfigStringValue(config, route.Path, @default: null);
-                Validate.NotNull(routePath, $"Route path for {method.Name} was null or undefined in configuration");               
+                Validate.NotNull(routePath, $"Route path for {method.Name} was null or undefined in configuration");
                 Validate.Matches(
                       routePath,
                       pattern: @"^\/\S*$",
@@ -174,7 +174,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
                 routes.Add(new StaticRouteDefinition
                 {
                     Parent      = controller,
-                    Route       = route,                   
+                    Route       = route,
                     Path        = routePath,
                     WorkFunc    = CreateHandlerDelegate(controller, method)        //Extract the processor delegate from the method
                 });
@@ -192,16 +192,16 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
         }
 
         private static StaticEndpoint[] BuildStaticRoutes(
-            IHttpController parent, 
-            ILogProvider logger, 
+            IHttpController parent,
+            ILogProvider logger,
             IHttpControllerGuard[] routeGuards,
-            StaticRouteDefinition[] routes
+                StaticRouteDefinition[] routes
         )
         {
             //Group routes with the same path together
             IEnumerable<RoutesWithSamePathGroup> groups = routes
                 .GroupBy(static p => p.Path)
-                .Select(static p => new RoutesWithSamePathGroup(p.Key, [.. p]));          
+                .Select(static p => new RoutesWithSamePathGroup(p.Key, [.. p]));
 
             //Get endpoints for all groups that share the same endpoint path
             return groups
@@ -210,10 +210,10 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
         }
 
         /*
-         * A static endpoint maps functions from within http controllers labeled 
+         * A static endpoint maps functions from within http controllers labeled
          * with the HttpStaticRouteAttribute to the IEndpoint interface that vnlib
-         * needs to process virtual connections. 
-         * 
+         * needs to process virtual connections.
+         *
          * This is an abstraction for architecture mapping. This endpoint will serve
          * a single path, but can serve multiple http methods.
          */
@@ -221,15 +221,15 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
         {
             /*
              * This array holds all the processor functions for each http method.
-             * 
+             *
              * The array size is fixed for performance reasons, and for future compatibility
-             * between the http library and this one. 33 positions shouldn't be that 
+             * between the http library and this one. 33 positions shouldn't be that
              * much memory to worry about as the handlers are reference types.
              */
             private readonly StaticRouteProcessor[] _processorFunctions = new StaticRouteProcessor[33];
 
             //Cache local copy incase the parent call creates too much overhead
-            private readonly ProtectionSettings _protection = info.ParentController.GetProtectionSettings();          
+            private readonly ProtectionSettings _protection = info.ParentController.GetProtectionSettings();
 
             /// <inheritdoc/>
             protected override ProtectionSettings EndpointProtectionSettings => _protection;
@@ -237,7 +237,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
             internal StaticEndpoint(
                 StaticRouteControlInfo info,
                 ILogProvider logger,
-                StaticRouteDefinition[] routes               
+                StaticRouteDefinition[] routes
             )
                 : this(info)
             {
@@ -256,7 +256,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
             protected override ERRNO PreProcess(HttpEntity entity)
             {
                 // Preserve return code from base pre-processes before running controller's pre-process method
-                ERRNO baseResult = base.PreProcess(entity);          
+                ERRNO baseResult = base.PreProcess(entity);
                 if (baseResult <= 0)
                 {
                     return baseResult;
@@ -326,7 +326,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
                     => new(handler.WorkFunc);
 
                 /*
-                * This function acts as the default handler in case a route or 
+                * This function acts as the default handler in case a route or
                 * http method is not defined
                 */
                 private static ValueTask<VfReturnType> DefaultHandler(HttpEntity _)
@@ -336,7 +336,6 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
 
 
         private delegate ValueTask<VfReturnType> EndpointWorkFunc(HttpEntity entity);
-    
         private readonly record struct StaticRouteControlInfo(
             string RoutePath,
             IHttpController ParentController,

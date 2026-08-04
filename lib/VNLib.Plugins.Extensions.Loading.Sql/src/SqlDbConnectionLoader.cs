@@ -1,15 +1,15 @@
 /*
 * Copyright (c) 2026 Vaughn Nugent
-* 
+*
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql
-* File: SqlDbConnectionLoader.cs 
+* File: SqlDbConnectionLoader.cs
 *
-* SqlDbConnectionLoader.cs is part of VNLib.Plugins.Extensions.Loading.Sql which is part of the larger 
+* SqlDbConnectionLoader.cs is part of VNLib.Plugins.Extensions.Loading.Sql which is part of the larger
 * VNLib collection of libraries and utilities.
 *
-* VNLib.Plugins.Extensions.Loading.Sql is free software: you can redistribute it and/or modify 
-* it under the terms of the GNU Affero General Public License as 
+* VNLib.Plugins.Extensions.Loading.Sql is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Affero General Public License as
 * published by the Free Software Foundation, either version 3 of the
 * License, or (at your option) any later version.
 *
@@ -59,8 +59,8 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
              * insead of forcing a shared interface. This allows the external library to be
              * more flexible and slimmer.
              */
-            return plugin.Deps().LoadExternal<IRuntimeDbProvider>(dllPath);
-        }
+return plugin.Deps().LoadExternal<IRuntimeDbProvider>(dllPath);
+    }
         private static IRuntimeDbProvider GetDbProvider(PluginBase plugin)
         {
             plugin.ThrowIfUnloaded();
@@ -69,7 +69,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
 
 
         /// <summary>
-        /// Gets (or loads) the ambient sql connection factory for the current plugin 
+        /// Gets (or loads) the ambient sql connection factory for the current plugin
         /// and synchronously blocks the current thread until the connection is ready.
         /// </summary>
         /// <param name="plugin"></param>
@@ -97,10 +97,10 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         {
             IRuntimeDbProvider provider = GetDbProvider(plugin);
             return provider.GetDbConnectionAsync().AsLazy();
-        }     
+        }
 
         /// <summary>
-        /// Gets (or loads) the ambient <see cref="DbContextOptions"/> configured from 
+        /// Gets (or loads) the ambient <see cref="DbContextOptions"/> configured from
         /// the ambient sql factory and blocks the current thread until the options are ready
         /// </summary>
         /// <param name="plugin"></param>
@@ -118,7 +118,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         }
 
         /// <summary>
-        /// Gets (or loads) the ambient <see cref="DbContextOptions"/> configured from 
+        /// Gets (or loads) the ambient <see cref="DbContextOptions"/> configured from
         /// the ambient sql factory
         /// </summary>
         /// <param name="plugin"></param>
@@ -133,7 +133,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         }
 
         /// <summary>
-        /// Ensures the tables that back your desired DbContext exist within the configured database, 
+        /// Ensures the tables that back your desired DbContext exist within the configured database,
         /// or creates them if needed.
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -147,7 +147,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         }
 
         /// <summary>
-        /// Ensures the tables that back your desired DbContext exist within the configured database, 
+        /// Ensures the tables that back your desired DbContext exist within the configured database,
         /// or creates them if needed.
         /// </summary>
         /// <typeparam name="T"></typeparam>

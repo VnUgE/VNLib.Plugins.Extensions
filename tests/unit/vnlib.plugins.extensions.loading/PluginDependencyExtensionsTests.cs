@@ -1,15 +1,15 @@
 /*
 * Copyright (c) 2026 Vaughn Nugent
-* 
+*
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Tests
-* File: PluginDependencyExtensionsTests.cs 
+* File: PluginDependencyExtensionsTests.cs
 *
-* PluginDependencyExtensionsTests.cs is part of VNLib.Plugins.Extensions.Loading.Tests which is part of the larger 
+* PluginDependencyExtensionsTests.cs is part of VNLib.Plugins.Extensions.Loading.Tests which is part of the larger
 * VNLib collection of libraries and utilities.
 *
-* VNLib.Plugins.Extensions.Loading.Tests is free software: you can redistribute it and/or modify 
-* it under the terms of the GNU Affero General Public License as 
+* VNLib.Plugins.Extensions.Loading.Tests is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Affero General Public License as
 * published by the Free Software Foundation, either version 3 of the
 * License, or (at your option) any later version.
 *
@@ -61,7 +61,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests
         {
             using TestPluginBase plugin = new();
 
-           _ = plugin.Deps();
+            _ = plugin.Deps();
         }
 
         #endregion
@@ -144,7 +144,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests
         public void UseSingleton_GenericOverload_CachesInstance()
         {
             using TestPluginBase plugin = new();
-            
+
             SingletonTestService instance = new();
 
             plugin.Deps()
@@ -467,7 +467,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests
 
     /// <summary>
     /// An abstract test interface with no concrete implementation in the test assembly,
-    /// used to verify <see cref="ConcreteTypeNotFoundException"/>.
+    /// used to verify <see cref="NotSupportedException"/>.
     /// </summary>
     internal interface IUnimplementedTestService
     { }

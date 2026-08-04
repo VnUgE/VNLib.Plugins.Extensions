@@ -47,7 +47,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
 
         /// <summary>
         /// Copies the data from the provided string into a new secret result
-        /// then erases the original string
+        /// then erases the original string.
         /// </summary>
         /// <param name="result">The secret string to read</param>
         /// <returns>The <see cref="SecretResult"/> wrapper</returns>
@@ -71,7 +71,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// Copies the data from the provided span into a new secret result
         /// by allocating a new array internally
         /// </summary>
-        /// <param name="secretChars">The array of characters to copy</param>
+        /// <param name="secretChars">The span of characters to copy</param>
         /// <returns>The wrapped secret</returns>
         internal static SecretResult ToSecret(ReadOnlySpan<char> secretChars) => new(secretChars.ToArray());
 

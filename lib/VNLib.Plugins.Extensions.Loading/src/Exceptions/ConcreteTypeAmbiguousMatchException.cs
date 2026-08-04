@@ -30,7 +30,7 @@ namespace VNLib.Plugins.Extensions.Loading
     /// The exception that is thrown when a concrete type is ambiguous because more than one
     /// type implements the desired abstract type.
     /// </summary>
-    [Obsolete("Dynamic type resolution is no longer supported and will be removed. Use explicit type resolution")]
+    [Obsolete("Dynamic type resolution is no longer supported and will be removed. Use explicit type resolution.")]
     public sealed class ConcreteTypeAmbiguousMatchException : ConcreteTypeException
     {
         /// <summary>

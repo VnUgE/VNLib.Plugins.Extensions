@@ -1,15 +1,15 @@
 /*
 * Copyright (c) 2026 Vaughn Nugent
-* 
+*
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: PluginConfigExtensions.cs 
+* File: PluginConfigExtensions.cs
 *
-* PluginConfigExtensions.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
+* PluginConfigExtensions.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger
 * VNLib collection of libraries and utilities.
 *
-* VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
-* it under the terms of the GNU Affero General Public License as 
+* VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Affero General Public License as
 * published by the Free Software Foundation, either version 3 of the
 * License, or (at your option) any later version.
 *
@@ -32,11 +32,11 @@ using System.Text.Json;
 using VNLib.Utils.Extensions;
 
 /*
- * TODO: (03-23-2026) 
+ * TODO: (03-23-2026)
  * Im preparing release 0.2.0 and that is a big breaking release. However currently there are already a bunch of
  * breaking namespace changes, and for now there is enough usage of the .Config() type for nearly all extensions,
- * we will keep the Loading namespace as the default. 
- * 
+ * we will keep the Loading namespace as the default.
+ *
  * Consider moving to Loading.Config namespace in v0.3.0
  */
 
@@ -75,7 +75,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The property value, or the default value for <typeparamref name="T"/> if the property is not found.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="config"/>, <paramref name="property"/>, or <paramref name="getter"/> is <see langword="null"/>.</exception>
         public static T? GetProperty<T>(this IConfigScope config, string property, Func<JsonElement, T> getter)
-        {            
+        {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(getter);
             ArgumentException.ThrowIfNullOrWhiteSpace(property);
@@ -96,7 +96,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ArgumentNullException"><paramref name="config"/>, <paramref name="property"/>, or <paramref name="getter"/> is <see langword="null"/>.</exception>
         /// <exception cref="ConfigurationException">The specified property is not found or the value is <see langword="null"/>.</exception>
         public static T GetRequiredProperty<T>(this IConfigScope config, string property, Func<JsonElement, T> getter)
-        {            
+        {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(getter);
             ArgumentException.ThrowIfNullOrWhiteSpace(property);
@@ -396,7 +396,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <returns>The deserialized and validated configuration object.</returns>
         /// <exception cref="ConfigurationValidationException">Configuration validation fails.</exception>
         [Obsolete("This method has been renamed to DeserializeAndValidate. Please use DeserializeAndValidate instead.")]
-        public static T DeserialzeAndValidate<T>(this IConfigScope scope) where T : IOnConfigValidation 
+        public static T DeserialzeAndValidate<T>(this IConfigScope scope) where T : IOnConfigValidation
             => DeserializeAndValidate<T>(scope);
 
         /// <summary>
@@ -405,8 +405,8 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <remarks>
         /// <para>
         /// <see cref="PluginConfigStore"/> is the primary façade for interacting with plugin and host configuration.
-        /// This struct is designed to be created inline via the <see cref="PluginConfigExtensions.Config(PluginBase)"/> 
-        /// extension method. 
+        /// This struct is designed to be created inline via the <see cref="PluginConfigExtensions.Config(PluginBase)"/>
+        /// extension method.
         /// </para>
         /// <para>
         /// Configuration lookup follows a consistent search order:
@@ -418,7 +418,7 @@ namespace VNLib.Plugins.Extensions.Loading
         /// </para>
         /// <para>
         /// For complex types, configuration is retrieved using the <see cref="ConfigurationNameAttribute"/>
-        /// which decorates classes to specify their configuration property name. Methods like 
+        /// which decorates classes to specify their configuration property name. Methods like
         /// <see cref="GetElement{TConfig}()"/> also support configuration validation (via <see cref="IOnConfigValidation"/>)
         /// and asynchronous initialization (via <see cref="IAsyncConfigurable"/>).
         /// </para>
@@ -435,19 +435,19 @@ namespace VNLib.Plugins.Extensions.Loading
 
             private readonly void TryConfigureAsync<TConfig>(TConfig config)
             {
-                /* 
+                /*
                  * If the config supports async initialization, schedule it on the
                  * plugin's task scheduler. The plugin's lifecycle controller observes
-                 * the task, so we don't need to await it here. 
+                 * the task, so we don't need to await it here.
                  */
-                
+
                 if (config is IAsyncConfigurable ac)
                 {
                     _ = _plugin
                         .Tasks()
                         .ConfigureServiceAsync(ac);
                 }
-            }         
+            }
 
             /// <summary>
             /// Retrieves a top-level configuration scope with the specified property name,
@@ -759,7 +759,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 /*
                  * Hosts are allowed to define multiple plugin loading paths. A
-                 * single path is supported for compat. Multi path takes precedence 
+                 * single path is supported for compat. Multi path takes precedence
                  * of course so attempt to load a string array first
                  */
 
@@ -841,6 +841,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 //Get the first file that matches the search file
                 return searchDirs
+                    .Where(Directory.Exists)
                     .SelectMany(d => Directory.EnumerateFiles(d, assemblyName, searchOption))
                     .FirstOrDefault();
             }

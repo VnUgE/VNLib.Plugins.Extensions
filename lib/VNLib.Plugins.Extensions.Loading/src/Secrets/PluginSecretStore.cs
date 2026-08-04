@@ -265,7 +265,18 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
                 }
             }
 
-            return conf.TryGetValue(secretName, out JsonElement el) ? el.GetString() : null;
+            // If secret was found ensure it's a string and return it
+            if (conf.TryGetValue(secretName, out JsonElement el))
+            {
+                Validate.Assert(
+                    el.ValueKind == JsonValueKind.String,
+                    message: $"Secret {secretName} config value exists, but is {el.ValueKind} but must be a string."
+                );
+
+                return el.GetString();
+            }
+
+            return null;
         }       
 
         private static ISecretResult? GetSecret(PluginSecretState state, string rawValue)

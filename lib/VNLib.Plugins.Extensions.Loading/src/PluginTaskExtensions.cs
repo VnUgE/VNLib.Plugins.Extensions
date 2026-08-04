@@ -53,7 +53,7 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             private readonly PluginBase _plugin = plugin;
            
-            private static async Task ObserveWork(PluginBase plugin, Func<Task> asyncTask, int delayMs = 0)
+            private static Task ObserveWork(PluginBase plugin, Func<Task> asyncTask, int delayMs = 0)
             {
                 /*
                  * Motivation:
@@ -66,38 +66,41 @@ namespace VNLib.Plugins.Extensions.Loading
                  * of a pending async operation 
                  */
 
-                //Test status
+                //Test status before delay
                 plugin.ThrowIfUnloaded();
 
-                //Optional delay
-                await Task.Delay(delayMs)
-                    .ConfigureAwait(false);
+                Task deferred = Task.Run(DoDeferredWork, plugin.UnloadToken);
 
-                //If plugin unloads during delay, bail
-                if (plugin.UnloadToken.IsCancellationRequested)
-                {
-                    return;
-                }
-
-                //Run on ts
-                Task deferred = Task.Run(asyncTask);
-
-                //Add task to deferred list
+                // Add task to deferred list
                 plugin.ObserveTask(deferred);
-                try
-                {
-                    //Await the task results
-                    await deferred.ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    //Log errors
-                    plugin.Log.Error(ex, "Error occurred while observing deferred task");
-                }
-                finally
-                {
-                    //Remove task when complete
-                    plugin.RemoveObservedTask(deferred);
+
+                // Best effort to remove once completed regardless of result
+                _ = deferred.ContinueWith(plugin.RemoveObservedTask, TaskContinuationOptions.ExecuteSynchronously);                
+
+                return deferred;
+
+                async Task DoDeferredWork()
+                {                   
+                    try
+                    {
+
+                        // Optional delay
+                        await Task.Delay(delayMs, plugin.UnloadToken)
+                            .ConfigureAwait(false);
+                      
+                        await asyncTask()
+                            .ConfigureAwait(false);
+                    }
+                    // Cancelled because the plugin unloaded while waiting or starting up
+                    catch (TaskCanceledException) when (plugin.UnloadToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        //Log errors
+                        plugin.Log.Error(ex, "Error occurred while observing deferred task");
+                    }
                 }
             }
 
@@ -126,7 +129,7 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             /// <summary>
-            /// Registers a callback to execute when the plugin is unloaded, blocking <see cref="PluginBase.Unload"/> until completion.
+            /// Registers a callback to execute when the plugin is unloaded, blocking <see cref="IPlugin.Unload"/> until completion.
             /// </summary>
             /// <param name="callback">The method to invoke when the plugin is unloaded.</param>
             /// <returns>A <see cref="Task"/> that represents the registered unload work.</returns>

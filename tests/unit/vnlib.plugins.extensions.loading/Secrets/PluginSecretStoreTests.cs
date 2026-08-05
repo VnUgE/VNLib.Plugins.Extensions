@@ -423,19 +423,24 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         {
             Environment.SetEnvironmentVariable("VNLIB_PSS_CANCEL_TEST", "test_value");
 
-            using TestPluginBase plugin = new(
-                new { secrets = new { key = "env://VNLIB_PSS_CANCEL_TEST" } },
-                EmptyHostConfig
-            );
+            try
+            {
+                using TestPluginBase plugin = new(
+                    new { secrets = new { key = "env://VNLIB_PSS_CANCEL_TEST" } },
+                    EmptyHostConfig
+                );
 
-            using CancellationTokenSource cts = new();
-            cts.Cancel();
+                using CancellationTokenSource cts = new();
+                cts.Cancel();
 
-            await Assert.ThrowsExactlyAsync<TaskCanceledException>(
-                () => plugin.Secrets().GetAsync("key", cts.Token)
-            );
-
-            Environment.SetEnvironmentVariable("VNLIB_PSS_CANCEL_TEST", null);
+                await Assert.ThrowsExactlyAsync<TaskCanceledException>(
+                    () => plugin.Secrets().GetAsync("key", cts.Token)
+                );
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("VNLIB_PSS_CANCEL_TEST", null);
+            }
         }
 
         [TestMethod]

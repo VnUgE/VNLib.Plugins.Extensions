@@ -1,15 +1,15 @@
 /*
 * Copyright (c) 2026 Vaughn Nugent
-* 
+*
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: VaultSecretReader.cs 
+* File: VaultSecretReader.cs
 *
-* VaultSecretReader.cs is part of VNLib.Plugins.Extensions.Loading which is 
+* VaultSecretReader.cs is part of VNLib.Plugins.Extensions.Loading which is
 * part of the larger VNLib collection of libraries and utilities.
 *
-* VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
-* it under the terms of the GNU Affero General Public License as 
+* VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Affero General Public License as
 * published by the Free Software Foundation, either version 3 of the
 * License, or (at your option) any later version.
 *
@@ -44,7 +44,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
         /// <inheritdoc/>
         public ISecretResult? GetSecret(string secretPath)
         {
-            ArgumentNullException.ThrowIfNull(secretPath);
+            ArgumentException.ThrowIfNullOrWhiteSpace(secretPath);
 
             GetVaultComponents(
                 secretPath,
@@ -56,14 +56,14 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
             return vaultClient.ReadSecret(secret, mount, secretTableKey);
         }
         /// <inheritdoc/>
-        public Task<ISecretResult?> GetSecretAsync(string secretPath, CancellationToken cancellation)
+        public Task<ISecretResult?> GetSecretAsync(string secretPath, CancellationToken cancellationToken)
         {
-            ArgumentNullException.ThrowIfNull(secretPath);
+            ArgumentException.ThrowIfNullOrWhiteSpace(secretPath);
 
             GetVaultComponents(
-                secretPath, 
-                out string mount, 
-                out string secret, 
+                secretPath,
+                out string mount,
+                out string secret,
                 out string secretTableKey
             );
 
@@ -73,9 +73,9 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
         /*
          * Recovers the vault components from the given vault path
          * in the format
-         * 
+         *
          * [mount-name]/[secret-path]?secret=[secret_name]
-         * 
+         *
          * The leading scheme (vault://) has already been removed
          */
 
@@ -92,7 +92,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
 
             if (path.IsEmpty)
             {
-                throw new UriFormatException("Vault secret location not valid/empty ");
+                throw new UriFormatException("Vault secret location not valid/empty");
             }
 
             // Get the secret table key

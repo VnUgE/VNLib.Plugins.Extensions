@@ -1,15 +1,15 @@
 /*
 * Copyright (c) 2026 Vaughn Nugent
-* 
+*
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Tests
-* File: PluginSecretStoreTests.cs 
+* File: PluginSecretStoreTests.cs
 *
-* PluginSecretStoreTests.cs is part of VNLib.Plugins.Extensions.Loading.Tests which is part of the larger 
+* PluginSecretStoreTests.cs is part of VNLib.Plugins.Extensions.Loading.Tests which is part of the larger
 * VNLib collection of libraries and utilities.
 *
-* VNLib.Plugins.Extensions.Loading.Tests is free software: you can redistribute it and/or modify 
-* it under the terms of the GNU Affero General Public License as 
+* VNLib.Plugins.Extensions.Loading.Tests is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Affero General Public License as
 * published by the Free Software Foundation, either version 3 of the
 * License, or (at your option) any later version.
 *
@@ -117,7 +117,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
 
         /// <summary>
         /// Verifies that <see cref="PluginSecretStore.IsSet"/> throws
-        /// when the secret name argument is null, empty, or whitespace — 
+        /// when the secret name argument is null, empty, or whitespace —
         /// a null/blank key is always a programming error, not a not-found condition.
         /// </summary>
         [TestMethod]
@@ -237,7 +237,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         #region Config merge behaviour
 
         /// <summary>
-        /// Verifies that secrets from both host and plugin configs are merged, 
+        /// Verifies that secrets from both host and plugin configs are merged,
         /// making distinct keys from each source independently accessible.
         /// </summary>
         [TestMethod]
@@ -261,7 +261,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         }
 
         /// <summary>
-        /// Verifies that when the same key exists in both configs, the plugin config 
+        /// Verifies that when the same key exists in both configs, the plugin config
         /// value shadows (takes precedence over) the host config value.
         /// </summary>
         [TestMethod]
@@ -423,19 +423,24 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         {
             Environment.SetEnvironmentVariable("VNLIB_PSS_CANCEL_TEST", "test_value");
 
-            using TestPluginBase plugin = new(
-                new { secrets = new { key = "env://VNLIB_PSS_CANCEL_TEST" } },
-                EmptyHostConfig
-            );
+            try
+            {
+                using TestPluginBase plugin = new(
+                    new { secrets = new { key = "env://VNLIB_PSS_CANCEL_TEST" } },
+                    EmptyHostConfig
+                );
 
-            using CancellationTokenSource cts = new();
-            cts.Cancel();
+                using CancellationTokenSource cts = new();
+                cts.Cancel();
 
-            await Assert.ThrowsExactlyAsync<TaskCanceledException>(
-                () => plugin.Secrets().GetAsync("key", cts.Token)
-            );
-
-            Environment.SetEnvironmentVariable("VNLIB_PSS_CANCEL_TEST", null);
+                await Assert.ThrowsExactlyAsync<TaskCanceledException>(
+                    () => plugin.Secrets().GetAsync("key", cts.Token)
+                );
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("VNLIB_PSS_CANCEL_TEST", null);
+            }
         }
 
         [TestMethod]
@@ -516,11 +521,11 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         }
 
         /// <summary>
-        /// Verifies that the <c>file://</c> reader returns null when the referenced path 
+        /// Verifies that the <c>file://</c> reader returns null when the referenced path
         /// does not exist.
         /// </summary>
         [TestMethod]
-        public async Task TryGet_FromFile_ReturnsNull_WhenFileNotFound()
+        public async Task TryGetAsync_FromFile_ReturnsNull_WhenFileNotFound()
         {
             string missingPath = Path.Combine(Path.GetTempPath(), $"vnlib_missing_{Guid.NewGuid()}.secret");
 
@@ -531,7 +536,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
             // Sync and async
             Assert.IsNull(plugin.Secrets().TryGet("foo"));
             Assert.IsNull(await plugin.Secrets().TryGetAsync("foo"));
-        }      
+        }
 
         #endregion
 
@@ -623,7 +628,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         /// <summary>
         /// Verifies that <see cref="PluginSecretStore.TryGet"/> throws
         /// <see cref="NotSupportedException"/> when the secret value references
-        /// an unrecognised URI scheme — no reader is registered for it.
+        /// an unrecognized URI scheme — no reader is registered for it.
         /// </summary>
         [TestMethod]
         public void TryGet_ThrowsNotSupportedException_WhenSchemeIsUnknown()
@@ -639,7 +644,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
 
         /// <summary>
         /// Verifies that <see cref="PluginSecretStore.TryGetAsync"/> returns a faulted task
-        /// carrying a <see cref="NotSupportedException"/> when the scheme is unrecognised.
+        /// carrying a <see cref="NotSupportedException"/> when the scheme is unrecognized.
         /// </summary>
         [TestMethod]
         public async Task TryGetAsync_ThrowsNotSupportedException_WhenSchemeIsUnknown()
@@ -698,7 +703,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         /// configuration element is a string instead of a JSON object.
         /// </summary>
         [TestMethod]
-        public async Task TryGet_ThrowsConfigurationValidationException_WhenSecretsIsString()
+        public async Task TryGetAsync_ThrowsConfigurationValidationException_WhenSecretsIsString()
         {
             var pluginConfig = new { secrets = "not_an_object" };
 
@@ -720,7 +725,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         /// configuration element is a number instead of a JSON object.
         /// </summary>
         [TestMethod]
-        public async Task TryGet_ThrowsConfigurationValidationException_WhenSecretsIsNumber()
+        public async Task TryGetAsync_ThrowsConfigurationValidationException_WhenSecretsIsNumber()
         {
             var pluginConfig = new { secrets = 123 };
 
@@ -746,7 +751,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         /// delimiter but no path component (e.g., <c>scheme://</c>).
         /// </summary>
         [TestMethod]
-        public async Task TryGet_ThrowsFormatException_WhenSchemeHasNoPath()
+        public async Task TryGetAsync_ThrowsFormatException_WhenSchemeHasNoPath()
         {
             var pluginConfig = new { secrets = new { foo = "scheme://" } };
 
@@ -768,7 +773,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         /// before the delimiter (e.g., <c>://path</c>).
         /// </summary>
         [TestMethod]
-        public async Task TryGet_ThrowsFormatException_WhenSchemeHasNoName()
+        public async Task TryGetAsync_ThrowsFormatException_WhenSchemeHasNoName()
         {
             var pluginConfig = new { secrets = new { foo = "://path" } };
 
@@ -790,7 +795,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         /// scheme delimiter (e.g., <c>://</c>).
         /// </summary>
         [TestMethod]
-        public async Task TryGet_ThrowsFormatException_WhenSchemeIsDelimiterOnly()
+        public async Task TryGetAsync_ThrowsFormatException_WhenSchemeIsDelimiterOnly()
         {
             var pluginConfig = new { secrets = new { foo = "://" } };
 
@@ -1098,7 +1103,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         }
 
         /// <summary>
-        /// Verifies that the hash code for a <see cref="PluginSecretStore"/> remains 
+        /// Verifies that the hash code for a <see cref="PluginSecretStore"/> remains
         /// stable across repeated calls for the same underlying plugin instance.
         /// </summary>
         [TestMethod]

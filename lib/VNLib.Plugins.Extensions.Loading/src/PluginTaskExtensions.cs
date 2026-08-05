@@ -53,7 +53,7 @@ namespace VNLib.Plugins.Extensions.Loading
         {
             private readonly PluginBase _plugin = plugin;
            
-            private static async Task ObserveWork(PluginBase plugin, Func<Task> asyncTask, int delayMs = 0)
+            private static Task ObserveWork(PluginBase plugin, Func<Task> asyncTask, int delayMs = 0)
             {
                 /*
                  * Motivation:
@@ -66,38 +66,60 @@ namespace VNLib.Plugins.Extensions.Loading
                  * of a pending async operation 
                  */
 
-                //Test status
+                //Test status before delay
                 plugin.ThrowIfUnloaded();
 
-                //Optional delay
-                await Task.Delay(delayMs)
-                    .ConfigureAwait(false);
+                /*
+                 * In some cases (like unit testing) The scheduler is very busy and plugins can exit 
+                 * very quickly, between the guard above and when the scheduler checks the token again
+                 * to begin work. In that condition, the work gets added to the queue, cancelled and 
+                 * observed on Unload() which throws before the work had a chance to get scheduled or 
+                 * complete. 
+                 * 
+                 * Im considering this a TOCTOU bug for now and intentionally ignoring the cancellation
+                 * token on the Task.Run() call to force the plugin to wait until at least the Task.Delay
+                 * call where the token can be observed. We consider Task.Run to be "idempotent" in the
+                 * case that once it's called it's up to the work to cancel itself and the task must get
+                 * added to the work queue. 
+                 * 
+                 * Currently, during PluginBase.Unload() takes a snapshot of the pending task list so 
+                 * removing it does nothing.
+                 * 
+                 */
+                Task deferred = Task.Run(DoDeferredWork);
 
-                //If plugin unloads during delay, bail
-                if (plugin.UnloadToken.IsCancellationRequested)
-                {
-                    return;
-                }
-
-                //Run on ts
-                Task deferred = Task.Run(asyncTask);
-
-                //Add task to deferred list
+                // Add task to deferred list
                 plugin.ObserveTask(deferred);
-                try
+
+                // Best effort to remove once completed regardless of result
+                _ = deferred.ContinueWith(
+                    plugin.RemoveObservedTask, 
+                    TaskContinuationOptions.ExecuteSynchronously
+                );                
+
+                return deferred;
+
+                async Task DoDeferredWork()
                 {
-                    //Await the task results
-                    await deferred.ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    //Log errors
-                    plugin.Log.Error(ex, "Error occurred while observing deferred task");
-                }
-                finally
-                {
-                    //Remove task when complete
-                    plugin.RemoveObservedTask(deferred);
+                    try
+                    {
+                        // Optional delay
+                        await Task.Delay(delayMs, plugin.UnloadToken)
+                            .ConfigureAwait(false);
+                      
+                        await asyncTask()
+                            .ConfigureAwait(false);
+                    }
+                    // Cancelled because the plugin unloaded while waiting or starting up
+                    catch (TaskCanceledException) when (plugin.UnloadToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        //Log errors
+                        plugin.Log.Error(ex, "Error occurred while observing deferred task");
+                    }
                 }
             }
 
@@ -126,19 +148,17 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             /// <summary>
-            /// Registers a callback to execute when the plugin is unloaded, blocking <see cref="PluginBase.Unload"/> until completion.
+            /// Registers a callback to execute when the plugin is unloaded, blocking <see cref="IPlugin.Unload"/> until completion.
             /// </summary>
             /// <param name="callback">The method to invoke when the plugin is unloaded.</param>
             /// <returns>A <see cref="Task"/> that represents the registered unload work.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="callback"/> is <see langword="null"/>.</exception>
             /// <exception cref="ObjectDisposedException">The plugin instance has been unloaded.</exception>
             public readonly Task RegisterForUnload(Action callback)
-            {
-                //Test status
-                _plugin.ThrowIfUnloaded();
+            {                
                 ArgumentNullException.ThrowIfNull(callback);
 
-                PluginBase plugin = _plugin;
+                PluginBase plugin = _plugin;  
 
                 //Register the task to cause the plugin to wait until the action is completed
                 return ObserveWork(() => WaitForUnload(plugin, callback));

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -17,7 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\lib\VNLib.Plugins.Extensions.Ipc\src\VNLib.Plugins.Extensions.Ipc.csproj" />
     <ProjectReference Include="..\..\..\lib\VNLib.Plugins.Extensions.Loading\src\VNLib.Plugins.Extensions.Loading.csproj" />
+    <ProjectReference Include="..\vnlib.plugins.extensions.loading\VNLib.Plugins.Extensions.Loading.Tests.csproj" />
   </ItemGroup>
 
 </Project>

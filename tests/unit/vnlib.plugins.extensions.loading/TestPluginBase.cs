@@ -30,7 +30,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests
     /// <summary>
     /// Mock implementation of PluginBase for testing purposes
     /// </summary>
-    internal class TestPluginBase : PluginBase, IDisposable
+    public class TestPluginBase : PluginBase, IDisposable
     {       
 
         public TestPluginBase(): this(new { }, new { })

@@ -1,15 +1,15 @@
 /*
 * Copyright (c) 2026 Vaughn Nugent
-* 
+*
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: RoutingExtensions.cs 
+* File: RoutingExtensions.cs
 *
-* RoutingExtensions.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
+* RoutingExtensions.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger
 * VNLib collection of libraries and utilities.
 *
-* VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
-* it under the terms of the GNU Affero General Public License as 
+* VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Affero General Public License as
 * published by the Free Software Foundation, either version 3 of the
 * License, or (at your option) any later version.
 *
@@ -163,6 +163,8 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
             {
                 ArgumentNullException.ThrowIfNull(endpoint);
 
+                ArgumentException.ThrowIfNullOrWhiteSpace(endpoint.Path);
+
                 if (!Regex.IsMatch(endpoint.Path, @"^\/\S*$"))
                 {
                     throw new ArgumentException($"Endpoint path '{endpoint.Path}' is not a valid path. It must start with a '/' and contain no whitespace.", nameof(endpoint));
@@ -211,7 +213,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
                 return endpoint;
             }
 
-            private delegate void InitFunc(string path, ILogProvider log);          
+            private delegate void InitFunc(string path, ILogProvider log);
 
             private static void InitEndpointSettings<T>(PluginBase plugin, T endpoint) where T : IEndpoint
             {
@@ -223,7 +225,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
                 EndpointPathAttribute? pathAttr = endpointType.GetCustomAttribute<EndpointPathAttribute>();
 
                 /*
-                 * gets the protected function for assigning the endpoint path 
+                 * gets the protected function for assigning the endpoint path
                  * and logger instance.
                  */
                 InitFunc? initPathAndLog = ManagedLibrary.TryGetMethod<InitFunc>(
@@ -246,7 +248,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
                     string? endpointPath = SubstituteConfigStringValue(config, pathAttr.Path, @default: null);
                     Validate.NotNull(endpointPath, $"Endpoint '{endpointType.Name}' pathname is null or an empty string '{endpointPath}'");
                     Validate.Matches(
-                        endpointPath, 
+                        endpointPath,
                         pattern: @"^\/\S*$",
                         message: $"Endpoint '{endpointType.Name}' path '{endpointPath}' is not a valid path. It must start with a '/' and contain no whitespace."
                     );

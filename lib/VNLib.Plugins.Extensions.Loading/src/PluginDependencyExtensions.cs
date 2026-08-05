@@ -41,6 +41,8 @@ namespace VNLib.Plugins.Extensions.Loading
 {
     using static PluginConfigExtensions;
 
+    using AssemblyCache = Dictionary<string, ManagedLibrary>;
+
     /// <summary>
     /// Declares a class as an external service provider.
     /// </summary>
@@ -59,7 +61,7 @@ namespace VNLib.Plugins.Extensions.Loading
     public static class PluginDependencyExtensions
     {
         private static readonly ConditionalWeakTable<PluginBase, SingletonCache> _singletons = [];
-        private static readonly Dictionary<string, ManagedLibrary> _assemblyCache = [];
+        private static readonly ConditionalWeakTable<PluginBase, AssemblyCache> _assemblyCaches = [];
 
         /// <summary>
         /// Gets a <see cref="PluginDependencies"/> ref struct for the plugin that provides scoped access
@@ -388,20 +390,22 @@ namespace VNLib.Plugins.Extensions.Loading
             {
                 /*
                  * Get or create the library for the assembly path, but only load it once
-                 * Loading it on the plugin will also cause it be cleaned up when the plugin 
+                 * Loading it on the plugin will also cause it to be cleaned up when the plugin 
                  * is unloaded.
                  */
 
                 ManagedLibrary? manLib;
 
-                lock (_assemblyCache)
+                 AssemblyCache asmCache = _assemblyCaches.GetOrCreateValue(_plugin);
+
+                lock (asmCache)
                 {
-                    if (!_assemblyCache.TryGetValue(assemblyDllName, out manLib))
+                    if (!asmCache.TryGetValue(assemblyDllName, out manLib))
                     {
                         manLib = LoadAssembly<T>(assemblyDllName, search, defaultCtx);
 
                         // Add to cache store
-                        _assemblyCache.Add(assemblyDllName, manLib);
+                        asmCache.Add(assemblyDllName, manLib);
                     }
                 }
 

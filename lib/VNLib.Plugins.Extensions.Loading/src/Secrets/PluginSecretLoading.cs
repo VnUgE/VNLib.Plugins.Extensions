@@ -190,7 +190,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         }
 
         /// <summary>
-        /// <see cref="GetJsonWebKey"/> <c>whose</c> key is provided in the secret.
+        /// Gets a <see cref="ReadOnlyJsonWebKey"/> whose key material is provided in the secret.
         /// </summary>
         /// <param name="secret"></param>
         /// <returns>The <see cref="ReadOnlyJsonWebKey"/> from the result</returns>

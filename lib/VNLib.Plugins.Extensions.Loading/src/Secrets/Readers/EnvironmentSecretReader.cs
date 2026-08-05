@@ -50,13 +50,13 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
         }
 
         /// <inheritdoc/>
-        public Task<ISecretResult?> GetSecretAsync(string secretPath, CancellationToken cancellation)
+        public Task<ISecretResult?> GetSecretAsync(string secretPath, CancellationToken cancellationToken)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(secretPath);
 
-            if (cancellation.IsCancellationRequested)
+            if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<ISecretResult?>(cancellation);
+                return Task.FromCanceled<ISecretResult?>(cancellationToken);
             }
 
             string? envVal = Environment.GetEnvironmentVariable(secretPath);

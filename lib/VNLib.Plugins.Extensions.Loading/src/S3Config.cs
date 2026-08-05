@@ -31,7 +31,7 @@ namespace VNLib.Plugins.Extensions.Loading
     /// <summary>
     /// Provides a JSON-serializable configuration for S3-compatible storage.
     /// </summary>
-    [Obsolete("S3 built-in config support is being deprecated")]
+    [Obsolete("S3 built-in config support is being removed")]
     public class S3Config
     {
         /// <summary>

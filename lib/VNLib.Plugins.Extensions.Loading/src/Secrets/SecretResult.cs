@@ -53,7 +53,8 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <returns>The <see cref="SecretResult"/> wrapper</returns>
         internal static SecretResult ToSecret(string? result)
         {
-            if (result == null)
+            // A null or empty string is a valid empty secret
+            if (string.IsNullOrEmpty(result))
             {
                 return new SecretResult([]);
             }

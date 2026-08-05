@@ -1,21 +1,22 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>VNLib.Plugins.Extensions.Loading</RootNamespace>
-    <AssemblyName>VNLib.Plugins.Extensions.Loading</AssemblyName>
+    <RootNamespace>VNLib.Plugins.Extensions.Ipc</RootNamespace>
+    <AssemblyName>VNLib.Plugins.Extensions.Ipc</AssemblyName>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <WarningsAsErrors>True</WarningsAsErrors>
   </PropertyGroup>
   
   <PropertyGroup>
     <Authors>Vaughn Nugent</Authors>
     <Company>Vaughn Nugent</Company>
-    <Product>VNLib.Plugins.Extensions.Loading</Product>
-    <PackageId>VNLib.Plugins.Extensions.Loading</PackageId>
-    <Description>An Essentials framework extension library for common loading/configuration/service operations. Enables rapid plugin and service development.</Description>
+    <Product>VNLib.Plugins.Extensions.Ipc</Product>
+    <PackageId>VNLib.Plugins.Extensions.Ipc</PackageId>
+    <Description>An Essentials framework extension library for inter-plugin communication (IPC) via shared memory export bridges, enabling managed object sharing across plugin assembly boundaries within the same process.</Description>
     <Copyright>Copyright © 2026 Vaughn Nugent</Copyright>
     <PackageProjectUrl>https://www.vaughnnugent.com/resources/software/modules/VNLib.Plugins.Extensions</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/VNLib.Plugins.Extensions.Loading</RepositoryUrl>
+    <RepositoryUrl>https://github.com/VnUgE/VNLib.Plugins.Extensions/tree/master/lib/VNLib.Plugins.Extensions.Ipc</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
@@ -34,14 +35,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="VNLib.Plugins.Extensions.Loading.Tests" />
+    <InternalsVisibleTo Include="VNLib.Plugins.Extensions.Ipc.Tests" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\core\lib\Utils\src\VNLib.Utils.csproj" />
     <ProjectReference Include="..\..\..\..\core\lib\Plugins\src\VNLib.Plugins.csproj" />
-    <ProjectReference Include="..\..\..\..\core\lib\Plugins.Essentials\src\VNLib.Plugins.Essentials.csproj" />
-    <ProjectReference Include="..\..\..\..\core\lib\Plugins.PluginBase\src\VNLib.Plugins.PluginBase.csproj" />
+    <ProjectReference Include="..\..\..\..\core\lib\Plugins.Ipc\src\VNLib.Plugins.Ipc.csproj" />
+    <ProjectReference Include="..\..\..\lib\VNLib.Plugins.Extensions.Loading\src\VNLib.Plugins.Extensions.Loading.csproj" />
   </ItemGroup>
 
 </Project>

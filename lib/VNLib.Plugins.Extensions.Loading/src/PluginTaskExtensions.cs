@@ -69,21 +69,40 @@ namespace VNLib.Plugins.Extensions.Loading
                 //Test status before delay
                 plugin.ThrowIfUnloaded();
 
-                Task deferred = Task.Run(DoDeferredWork, plugin.UnloadToken);
+                /*
+                 * In some cases (like unit testing) The scheduler is very busy and plugins can exit 
+                 * very quickly, between the guard above and when the scheduler checks the token again
+                 * to begin work. In that condition, the work gets added to the queue, cancelled and 
+                 * observed on Unload() which throws before the work had a chance to get scheduled or 
+                 * complete. 
+                 * 
+                 * Im considering this a TOCTOU bug for now and intentionally ignoring the cancellation
+                 * token on the Task.Run() call to force the plugin to wait until at least the Task.Delay
+                 * call where the token can be observed. We consider Task.Run to be "idempotent" in the
+                 * case that once it's called it's up to the work to cancel itself and the task must get
+                 * added to the work queue. 
+                 * 
+                 * Currently, during PluginBase.Unload() takes a snapshot of the pending task list so 
+                 * removing it does nothing.
+                 * 
+                 */
+                Task deferred = Task.Run(DoDeferredWork);
 
                 // Add task to deferred list
                 plugin.ObserveTask(deferred);
 
                 // Best effort to remove once completed regardless of result
-                _ = deferred.ContinueWith(plugin.RemoveObservedTask, TaskContinuationOptions.ExecuteSynchronously);                
+                _ = deferred.ContinueWith(
+                    plugin.RemoveObservedTask, 
+                    TaskContinuationOptions.ExecuteSynchronously
+                );                
 
                 return deferred;
 
                 async Task DoDeferredWork()
-                {                   
+                {
                     try
                     {
-
                         // Optional delay
                         await Task.Delay(delayMs, plugin.UnloadToken)
                             .ConfigureAwait(false);
@@ -136,12 +155,10 @@ namespace VNLib.Plugins.Extensions.Loading
             /// <exception cref="ArgumentNullException"><paramref name="callback"/> is <see langword="null"/>.</exception>
             /// <exception cref="ObjectDisposedException">The plugin instance has been unloaded.</exception>
             public readonly Task RegisterForUnload(Action callback)
-            {
-                //Test status
-                _plugin.ThrowIfUnloaded();
+            {                
                 ArgumentNullException.ThrowIfNull(callback);
 
-                PluginBase plugin = _plugin;
+                PluginBase plugin = _plugin;  
 
                 //Register the task to cause the plugin to wait until the action is completed
                 return ObserveWork(() => WaitForUnload(plugin, callback));

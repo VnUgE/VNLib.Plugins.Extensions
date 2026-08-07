@@ -23,6 +23,8 @@
 */
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -47,6 +49,10 @@ namespace VNLib.Plugins.Extensions.Ipc
     /// <para>
     /// If the producer is disposed, the table is destroyed and all exports are revoked.
     /// </para>
+    /// <para>
+    /// Consumer bridges track exports they publish and automatically unpublish them when
+    /// the consumer is disposed, preventing stale entries from lingering in the export table.
+    /// </para>
     /// </remarks>
     public class IpcExportBridge : VnDisposeable
     {
@@ -61,6 +67,14 @@ namespace VNLib.Plugins.Extensions.Ipc
         private readonly CancellationTokenSource _disposeToken;
 
         /// <summary>
+        /// Tracks export names published by this bridge instance, so they can be
+        /// unpublished when the bridge is disposed. Only maintained for consumer
+        /// bridges; <see langword="null"/> for producers since <see cref="IpcObjectExporter.Destroy"/>
+        /// reclaims all exports on producer disposal.
+        /// </summary>
+        private readonly HashSet<string>? _publishedSymbols;
+
+        /// <summary>
         /// Initializes a new <see cref="IpcExportBridge"/> instance.
         /// </summary>
         /// <param name="producer"><see langword="true"/> if this instance owns the export table (producer); <see langword="false"/> if it is a consumer.</param>
@@ -72,6 +86,7 @@ namespace VNLib.Plugins.Extensions.Ipc
             _lockObj = @lock;
             _getSpan = getSpan;
             _disposeToken = new();
+            _publishedSymbols = producer ? null : new(StringComparer.OrdinalIgnoreCase);
 
             // Producer must initialize the export table
             if (producer)
@@ -93,29 +108,79 @@ namespace VNLib.Plugins.Extensions.Ipc
             }
             finally
             {
-                // Producer owns table memory and must clean up 
                 if (_producer)
                 {
+                    // Producer owns the table and must destroy it, which reclaims all exports
                     ExportTable.Destroy();
                 }
-            }          
+                else
+                {
+                    // Consumer must unpublish its own exports before the table is left
+                    UnpublishAll();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Removes all exports published by this consumer bridge instance from the shared
+        /// export table. The shared lock is held for the entire operation to ensure atomicity
+        /// with concurrent <see cref="Publish"/> and <see cref="Unpublish"/> calls.
+        /// </summary>
+        private void UnpublishAll()
+        {
+            Debug.Assert(_publishedSymbols is not null, "Consumer bridge must have a published symbols set");
+
+            lock (_lockObj)
+            {
+                IpcObjectExporter table = ExportTable;
+
+                foreach (string name in _publishedSymbols)
+                {
+                    try
+                    {
+                        _ = table.Unpublish(name);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // The producer has already destroyed the table; remaining entries are gone
+                        break;
+                    }
+                }
+            }
         }
 
         /// <inheritdoc cref="IpcObjectExporter.Publish(ReadOnlySpan{char}, object)"/>
-        public IpcExportBridge Publish(ReadOnlySpan<char> exportName, object instance)
+        public IpcExportBridge Publish(string exportName, object instance)
         {
             Check();
-            ExportTable.Publish(exportName, instance);
+
+            lock (_lockObj)
+            {
+                ExportTable.Publish(exportName, instance);
+
+                _publishedSymbols?.Add(exportName);
+            }
+
             return this;
         }
 
         /// <inheritdoc cref="IpcObjectExporter.Unpublish(ReadOnlySpan{char})"/>
-        public bool Unpublish(ReadOnlySpan<char> exportName)
+        public bool Unpublish(string exportName)
         {
             Check();
-            return ExportTable.Unpublish(exportName);
-        }
 
+            lock (_lockObj)
+            {
+                bool removed = ExportTable.Unpublish(exportName);
+
+                if (removed)
+                {
+                    _publishedSymbols?.Remove(exportName);
+                }
+
+                return removed;
+            }
+        }
 
         /// <inheritdoc cref="IpcObjectExporter.TryGetExport(ReadOnlySpan{char})"/>
         public IpcObjectExport TryGetExport(ReadOnlySpan<char> symbolName)

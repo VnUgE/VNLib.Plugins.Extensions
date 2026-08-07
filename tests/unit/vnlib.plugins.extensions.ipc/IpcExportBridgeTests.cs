@@ -196,6 +196,30 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
 
         #endregion
 
+        #region Consumer Publish
+
+        /// <summary>
+        /// Validates that an export published by a consumer bridge is visible
+        /// to the producer reading the same shared table.
+        /// </summary>
+        [TestMethod]
+        public void Publish_ConsumerExportVisibleToProducer()
+        {
+            using IpcExportBridge producer = CreateProducer();
+            using IpcExportBridge consumer = OpenConsumer();
+
+            TestSharedObj obj = new();
+
+            consumer.Publish("ConsumerExport", obj);
+
+            (bool initialized, object? instance, _) = producer.TryGetExport("ConsumerExport");
+            Assert.IsTrue(initialized);
+            Assert.IsNotNull(instance);
+            Assert.AreSame(obj, instance);
+        }
+
+        #endregion
+
         #region Dispose
 
         /// <summary>
@@ -241,6 +265,137 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
             // Table should still be initialized after consumer disposal
             (bool initialized, _, _) = producer.TryGetExport(string.Empty);
             Assert.IsTrue(initialized);
+        }
+
+        /// <summary>
+        /// Validates that disposing a consumer bridge unpublishes all exports
+        /// that the consumer published, making them no longer visible to other
+        /// bridges and completing their exit tasks.
+        /// </summary>
+        [TestMethod]
+        public async Task Dispose_ConsumerUnpublishesOwnExports()
+        {
+            using IpcExportBridge producer = CreateProducer();
+
+            IpcExportBridge consumer = OpenConsumer();
+            consumer.Publish("ConsumerExport", new TestSharedObj());
+
+            (_, Task? exitTask) = producer.TryGetExport("ConsumerExport");
+            Assert.IsNotNull(exitTask);
+            Assert.IsFalse(exitTask.IsCompleted);
+
+            consumer.Dispose();
+
+            // Exit task should be completed by the unpublish
+            await exitTask.WaitAsync(TestContext.CancellationToken);
+
+            // Export should no longer be visible to the producer
+            (bool initialized, object? instance, _) = producer.TryGetExport("ConsumerExport");
+            Assert.IsTrue(initialized);
+            Assert.IsNull(instance);
+        }
+
+        /// <summary>
+        /// Validates that explicitly unpublishing an export before disposing the
+        /// consumer bridge does not throw during disposal, and that the freed slot
+        /// can be reused by another consumer publishing the same export name.
+        /// </summary>
+        [TestMethod]
+        public void Unpublish_ThenDispose_SlotReusableByAnotherConsumer()
+        {
+            const string SharedExportName = "sharedExport";
+
+            using IpcExportBridge producer = CreateProducer();
+
+            {
+                TestSharedObj obj = new();
+
+                // First consumer publishes
+                IpcExportBridge consumer = OpenConsumer();
+                consumer.Publish(SharedExportName, obj);
+
+                (bool init, object? inst, _) = producer.TryGetExport(SharedExportName);
+                Assert.IsTrue(init);
+                Assert.AreSame(obj, inst);
+
+                // Explicitly unpublish before disposal
+                bool removed = consumer.Unpublish(SharedExportName);
+                Assert.IsTrue(removed);
+
+                // Disposal should not throw or attempt to unpublish again
+                consumer.Dispose();
+            }
+
+            // Slot should be free
+            (bool init2, object? inst2, _) = producer.TryGetExport(SharedExportName);
+            Assert.IsTrue(init2);
+            Assert.IsNull(inst2);
+
+            {
+                TestSharedObj obj = new();
+
+                // A new consumer re-publishes the same name into the reclaimed slot
+                using IpcExportBridge consumer = OpenConsumer();
+                consumer.Publish(SharedExportName, obj);
+
+                (bool init, object? inst, _) = producer.TryGetExport(SharedExportName);
+                Assert.IsTrue(init);
+                Assert.AreSame(obj, inst);
+            }
+        }
+
+        /// <summary>
+        /// Validates that disposing a consumer bridge does not throw when the
+        /// producer has already destroyed the table, ensuring the
+        /// <see cref="IpcExportBridge"/> cleanup path swallows
+        /// <see cref="InvalidOperationException"/> from the destroyed table.
+        /// </summary>
+        [TestMethod]
+        public void Dispose_ConsumerAfterTableDestroyed_DoesNotThrow()
+        {
+            IpcExportBridge producer = CreateProducer();
+
+            IpcExportBridge consumer = OpenConsumer();
+            consumer.Publish("ConsumerExport", new TestSharedObj());
+
+            // Producer destroys the table first
+            producer.Dispose();
+
+            // Consumer disposal should not throw despite the table being gone
+            consumer.Dispose();
+        }
+
+        /// <summary>
+        /// Validates that disposing one consumer bridge only unpublishes the
+        /// exports that consumer published, leaving other consumers' exports intact.
+        /// </summary>
+        [TestMethod]
+        public void Dispose_OneConsumer_DoesNotRemoveOtherConsumersExports()
+        {
+            using IpcExportBridge producer = CreateProducer();
+            using IpcExportBridge consumerB = OpenConsumer();
+
+            IpcExportBridge consumerA = OpenConsumer();
+
+            TestSharedObj objA = new();
+            TestSharedObj objB = new();
+
+            consumerA.Publish("ExportA", objA);
+            consumerB.Publish("ExportB", objB);
+
+            // Dispose only consumerA
+            consumerA.Dispose();
+
+            // ExportA should be gone
+            (bool initA, object? instA, _) = producer.TryGetExport("ExportA");
+            Assert.IsTrue(initA);
+            Assert.IsNull(instA);
+
+            // ExportB should still be visible
+            (bool initB, object? instB, _) = producer.TryGetExport("ExportB");
+            Assert.IsTrue(initB);
+            Assert.IsNotNull(instB);
+            Assert.AreSame(objB, instB);
         }
 
         /// <summary>

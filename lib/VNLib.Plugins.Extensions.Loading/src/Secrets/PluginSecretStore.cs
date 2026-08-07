@@ -310,7 +310,9 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             CancellationToken cancellation
         )
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(rawValue);
+            // Empty or whitespace strings are allowed and will fall through
+            // to raw secret value
+            ArgumentNullException.ThrowIfNull(rawValue);
 
             /*
              * See if external secret scheme format is being used, if so

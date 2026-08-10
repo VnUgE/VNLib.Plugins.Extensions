@@ -48,8 +48,8 @@ tasks:
     requires:
       vars: [DEP_REPO, DEP_REVISION]
     vars:
-      DEP_BRANCH: '{{ splitList "/" .DEP_REVISION | first }}'
-      DEP_VERSION: '{{ splitList "/" .DEP_REVISION | last }}'
+      DEP_BRANCH: '{{ splitList "::" .DEP_REVISION | first }}'
+      DEP_VERSION: '{{ splitList "::" .DEP_REVISION | last }}'
       IMPLICIT_DIR: '{{ splitList "/" .DEP_REPO | last }}'
       DEP_DIR: '{{ default .IMPLICIT_DIR .DEP_DIR }}'
     cmds:

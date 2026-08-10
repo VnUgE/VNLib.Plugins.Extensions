@@ -101,7 +101,9 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
         {
             if (config is null)
             {
-                return @default;
+                // When no config scope is available, return the literal path if it
+                // contains no config variable syntax, otherwise fall back to default
+                return ConfigSyntaxParser.IsMatch(pathVar) ? @default : pathVar;
             }
 
             // Replace the matched pattern with the corresponding value from the configuration

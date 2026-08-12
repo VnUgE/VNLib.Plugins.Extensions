@@ -69,6 +69,103 @@ namespace VNLib.Plugins.Extensions.Ipc
         {
             ArgumentNullException.ThrowIfNull(plugin);
             return new(plugin);
+        }     
+
+        /// <summary>
+        /// A background worker that publishes a named export on an <see cref="IpcExportBridge"/>
+        /// and automatically re-publishes the instance when the export table is destroyed and
+        /// re-established by the owning plugin, for the duration of the plugin's lifetime
+        /// or until the caller cancels the stop token.
+        /// </summary>
+        /// <param name="bridgeTask">A task that completes with the <see cref="IpcExportBridge"/> to publish on.</param>
+        /// <param name="userCancellation">An optional cancellation token that stops the publish worker.</param>
+        /// <param name="symbolName">The name of the export symbol to publish on the bridge.</param>
+        /// <param name="instance">The object instance to export and share with consumers.</param>
+        private sealed class IpcPublishWorker(
+            Task<IpcExportBridge> bridgeTask,
+            CancellationToken userCancellation,
+            string symbolName,
+            object instance
+        ) : IAsyncBackgroundWork
+        {
+
+            /// <summary>
+            /// The delay in milliseconds between polls of the export table state while
+            /// waiting for the owning plugin to (re-)establish the table.
+            /// </summary>
+            private const int TablePollDelayMs = 100;
+
+            /// <summary>
+            /// Runs the export publishing loop, waiting for the bridge and the export table
+            /// to become available, publishing the instance, blocking until the export is
+            /// revoked, and repeating until the plugin unloads.
+            /// </summary>
+            /// <param name="pluginLog">The log provider used for diagnostic messages during monitoring.</param>
+            /// <param name="exitToken">The cancellation token that signals when the plugin is unloading.</param>
+            public async Task DoWorkAsync(ILogProvider pluginLog, CancellationToken exitToken)
+            {
+                using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(exitToken, userCancellation);
+                
+                ILogProvider log = pluginLog.CreateScope("IpcExport");
+
+                log.Verbose("{sym} - waiting for bridge to become available.", symbolName);               
+
+                IpcExportBridge bridge = await bridgeTask.ConfigureAwait(false);
+
+                do
+                {
+                    try
+                    {
+                        (bool initialized, _, Task? onExitTask) = bridge.TryGetExport(symbolName);
+
+                        // Wait for the export table to be initialized by the owning plugin
+                        if (!initialized)
+                        {
+                            await Task.Delay(TablePollDelayMs, cts.Token)
+                                .ConfigureAwait(false);
+
+                            continue;
+                        }
+                        // onExitTask is connected to the instance, if it's null, the instance is not published
+                        // so it's safe to publish it
+                        else if (onExitTask is null)
+                        {
+                            log.Debug("{sym} - Publishing {type} to the export table.", symbolName, instance.GetType().Name);
+
+                            bridge.Publish(symbolName, instance);
+
+                            // Re-loop to re-capture the new export 
+                            continue;
+                        }
+
+                        log.Debug("{sym} - Export ({real_name}) published. Waiting for revocation.",
+                            symbolName,
+                            instance.GetType().Name
+                        );
+
+                        // Block until the export is revoked or the plugin unloads.
+                        // During steady state this is the only waiting point — no polling occurs.
+                        await onExitTask.WaitAsync(cts.Token)
+                            .ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException) when (cts.IsCancellationRequested)
+                    {
+                        break;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        log.Error("{sym} - Wait for export task was cancelled unexpectedly", symbolName);
+                        break;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        break;
+                    }                   
+                }
+                while (!cts.IsCancellationRequested);
+
+                log.Verbose("{sym} - publish loop is exiting on plugin unload", symbolName);
+            }
         }
 
         /// <summary>
@@ -76,8 +173,11 @@ namespace VNLib.Plugins.Extensions.Ipc
         /// and notifies the consumer when the exported instance becomes available or expires,
         /// for the duration of the plugin's lifetime.
         /// </summary>
+        /// <param name="bridgeTask">A task that completes with the <see cref="IpcExportBridge"/> to monitor.</param>
+        /// <param name="symbolName">The name of the export symbol to monitor on the bridge.</param>
+        /// <param name="consumer">The consumer that receives notifications when the exported instance changes.</param>
         private sealed class IpcConsumerWorker(
-            Task<IpcExportBridge> bridgeTask, 
+            Task<IpcExportBridge> bridgeTask,
             string symbolName,
             IIpcExportConsumer consumer
         ) : IAsyncBackgroundWork
@@ -85,14 +185,13 @@ namespace VNLib.Plugins.Extensions.Ipc
 
             /// <summary>
             /// Runs the export monitoring loop, waiting for the bridge and the named export
-            /// to become available, notifying the consumer of instance changes, and repeating
-            /// until the plugin unloads.
+            /// to become available, notifying the consumer, blocking until the export expires,
+            /// and repeating until the plugin unloads.
             /// </summary>
             /// <param name="pluginLog">The log provider used for diagnostic messages during monitoring.</param>
             /// <param name="exitToken">The cancellation token that signals when the plugin is unloading.</param>
-            /// <exception cref="InvalidOperationException">Thrown when the export bridge returns an invalid state (uninitialized, null instance, or null exit task).</exception>
             public async Task DoWorkAsync(ILogProvider pluginLog, CancellationToken exitToken)
-            {             
+            {
                 ILogProvider log = pluginLog.CreateScope("IpcExport");
 
                 log.Verbose("{sym} - waiting for bridge to become available.", symbolName);
@@ -101,7 +200,7 @@ namespace VNLib.Plugins.Extensions.Ipc
 
                 /*
                  * In reloadable environments the table producer or even the export can unload
-                 * or expire so we can run in a loop to wait for exports as long as the current plugin
+                 * or expire so we run in a loop to wait for exports as long as the current plugin
                  * is alive.
                  */
 
@@ -222,6 +321,34 @@ namespace VNLib.Plugins.Extensions.Ipc
                 ArgumentNullException.ThrowIfNull(consumer);
 
                 IpcConsumerWorker worker = new (_bridgeTask, exportName, consumer);
+
+                _ = _plugin.Tasks()
+                          .ObserveWork(worker);
+
+                return this;
+            }
+
+            /// <summary>
+            /// Publishes an object instance to the IPC export table under the specified symbol
+            /// name and schedules a background worker that automatically re-publishes the
+            /// instance if the export table is destroyed and re-established by the owning
+            /// plugin (e.g. during hot-reload).
+            /// </summary>
+            /// <param name="exportName">The name of the export symbol to publish on the bridge.</param>
+            /// <param name="instance">The object instance to export and share with consumers.</param>
+            /// <param name="stopToken">An optional cancellation token that stops the publish worker and exits the monitoring loop.</param>
+            /// <returns>This monitor instance for method chaining.</returns>
+            /// <exception cref="ArgumentNullException">Thrown when <paramref name="exportName"/> or <paramref name="instance"/> is <see langword="null"/>.</exception>
+            public readonly IpcExportConsumerMonitor Publish(
+                string exportName, 
+                object instance, 
+                CancellationToken stopToken = default
+            )
+            {
+                ArgumentNullException.ThrowIfNull(exportName);
+                ArgumentNullException.ThrowIfNull(instance);
+
+                IpcPublishWorker worker = new (_bridgeTask, stopToken, exportName, instance);
 
                 _ = _plugin.Tasks()
                           .ObserveWork(worker);

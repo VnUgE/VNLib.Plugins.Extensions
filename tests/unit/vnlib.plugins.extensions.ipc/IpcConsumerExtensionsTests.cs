@@ -471,6 +471,227 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
             Assert.ThrowsExactly<ArgumentNullException>(() => monitor.Consume(nameof(TestExportType), null!));
         }
 
+        /// <summary>
+        /// Validates that <see cref="PluginConsumerExtensions.IpcExportConsumerMonitor.Publish"/> throws
+        /// <see cref="ArgumentNullException"/> when the export name or instance argument is null.
+        /// </summary>
+        [TestMethod]
+        public void Publish_NullArguments_ThrowsArgumentNullException()
+        {
+            using TestPluginBase testPlugin = new();
+            using IpcExportBridge bridge = ConsumerBridge();
+
+            PluginConsumerExtensions.IpcExportConsumerMonitor monitor = testPlugin.Ipc().Exports(bridge);
+
+            Assert.ThrowsExactly<ArgumentNullException>(() => monitor.Publish(null!, new TestExportType()));
+            Assert.ThrowsExactly<ArgumentNullException>(() => monitor.Publish(nameof(TestExportType), null!));
+        }
+
+        #endregion
+
+        #region Publish Monitoring Loop
+
+        /// <summary>
+        /// Validates that the publish worker publishes an instance to the export
+        /// table and that a consumer on a separate bridge can discover it.
+        /// </summary>
+        [TestMethod]
+        public async Task Publish_HappyPath_InstanceVisibleOnConsumerBridge()
+        {
+            using IpcExportBridge producer = ProducerBridge();
+
+            TestExportType publishInstance = new();
+
+            using TestPluginBase testPlugin = new();
+            using IpcExportBridge bridge = ConsumerBridge();
+
+            testPlugin.Ipc()
+                      .Exports(bridge)
+                      .Publish(nameof(TestExportType), publishInstance);
+
+            // Allow the background worker to poll and publish
+            IpcObjectExport export = await bridge.WaitForExport(nameof(TestExportType), TestContext.CancellationToken)
+                                                .ConfigureAwait(false);
+
+            Assert.IsTrue(export.Initialized);
+            Assert.IsNotNull(export.Instance);
+            Assert.AreSame(publishInstance, export.Instance);
+        }
+
+        /// <summary>
+        /// Validates that the publish worker, started before the bridge is available,
+        /// awaits the bridge task and then publishes the instance once the bridge resolves.
+        /// </summary>
+        [TestMethod]
+        public async Task Publish_WaitsForDelayedBridge_ThenPublishesInstance()
+        {
+            using IpcExportBridge producer = ProducerBridge();
+
+            TestExportType publishInstance = new();
+
+            TaskCompletionSource<IpcExportBridge> bridgeTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using TestPluginBase testPlugin = new();
+            using IpcExportBridge bridge = ConsumerBridge();
+
+            testPlugin.Ipc()
+                      .Exports(bridgeTcs.Task)
+                      .Publish(nameof(TestExportType), publishInstance);
+
+            // Resolve the bridge so the worker can proceed to publish
+            bridgeTcs.SetResult(bridge);
+
+            IpcObjectExport export = await bridge.WaitForExport(nameof(TestExportType), TestContext.CancellationToken)
+                                                .ConfigureAwait(false);
+
+            Assert.IsTrue(export.Initialized);
+            Assert.IsNotNull(export.Instance);
+            Assert.AreSame(publishInstance, export.Instance);
+        }
+
+        /// <summary>
+        /// Validates that after the producer unpublishes an export, the publish
+        /// worker detects the revocation and re-publishes the instance so it
+        /// becomes available again on the consumer bridge.
+        /// </summary>
+        [TestMethod]
+        public async Task Publish_RepublishesAfterUnpublish_InstanceVisibleAgain()
+        {
+            using IpcExportBridge producer = ProducerBridge();
+
+            TestExportType publishInstance = new();
+
+            using TestPluginBase testPlugin = new();
+            using IpcExportBridge bridge = ConsumerBridge();
+
+            testPlugin.Ipc()
+                      .Exports(bridge)
+                      .Publish(nameof(TestExportType), publishInstance);
+
+            // Wait for initial publish
+            IpcObjectExport export = await bridge.WaitForExport(nameof(TestExportType), TestContext.CancellationToken)
+                                                .ConfigureAwait(false);
+
+            Assert.IsTrue(export.Initialized);
+            Assert.AreSame(publishInstance, export.Instance);
+
+            // Unpublish from the producer side to simulate table entry revocation
+            producer.Unpublish(nameof(TestExportType));
+
+            // Allow the publish worker to detect revocation and re-publish
+            IpcObjectExport republished = await bridge.WaitForExport(nameof(TestExportType), TestContext.CancellationToken)
+                                                     .ConfigureAwait(false);
+
+            Assert.IsTrue(republished.Initialized);
+            Assert.IsNotNull(republished.Instance);
+            Assert.AreSame(publishInstance, republished.Instance);
+        }
+
+        /// <summary>
+        /// Validates that when the plugin is unloaded while the publish worker is
+        /// monitoring a published instance, the worker exits its loop cleanly
+        /// without hanging or throwing.
+        /// </summary>
+        [TestMethod]
+        public async Task Publish_PluginUnloadCancelsWaitingWorker()
+        {
+            using IpcExportBridge producer = ProducerBridge();
+
+            TestExportType publishInstance = new();
+
+            TestPluginBase testPlugin = new();
+            using IpcExportBridge bridge = ConsumerBridge();
+
+            testPlugin.Ipc()
+                      .Exports(bridge)
+                      .Publish(nameof(TestExportType), publishInstance);
+
+            // Wait for the worker to publish before unloading
+            IpcObjectExport export = await bridge.WaitForExport(nameof(TestExportType), TestContext.CancellationToken)
+                                                 .ConfigureAwait(false);
+
+            Assert.AreSame(publishInstance, export.Instance);
+
+            // Dispose blocks until all scheduled tasks (including the worker) complete.
+            // If the worker does not honor the exit token, this call hangs and the test times out.
+            testPlugin.Dispose();
+
+            // Verify the published instance remains in the table after the worker exits
+            IpcObjectExport finalExport = bridge.TryGetExport(nameof(TestExportType));
+            Assert.IsTrue(finalExport.Initialized);
+            Assert.AreSame(publishInstance, finalExport.Instance);
+        }
+
+        /// <summary>
+        /// Validates that the <see cref="PluginConsumerExtensions.PluginIpcManager.Exports(IAsyncLazy{IpcExportBridge})"/>
+        /// overload works with <see cref="PluginConsumerExtensions.IpcExportConsumerMonitor.Publish"/>
+        /// by resolving the lazy bridge and publishing the instance once the bridge becomes available.
+        /// </summary>
+        [TestMethod]
+        public async Task Publish_LazyBridge_ResolvesAndPublishesInstance()
+        {
+            using IpcExportBridge producer = ProducerBridge();
+
+            TestExportType publishInstance = new();
+
+            TaskCompletionSource<IpcExportBridge> bridgeTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using TestPluginBase testPlugin = new();
+            using IpcExportBridge bridge = ConsumerBridge();
+
+            testPlugin.Ipc()
+                      .Exports(bridgeTcs.Task.AsLazy())
+                      .Publish(nameof(TestExportType), publishInstance);
+
+            // Resolve the lazy bridge so the worker can proceed to publish
+            bridgeTcs.SetResult(bridge);
+
+            IpcObjectExport export = await bridge.WaitForExport(nameof(TestExportType), TestContext.CancellationToken)
+                                                 .ConfigureAwait(false);
+
+            Assert.IsTrue(export.Initialized);
+            Assert.IsNotNull(export.Instance);
+            Assert.AreSame(publishInstance, export.Instance);
+        }
+
+        /// <summary>
+        /// Validates that cancelling the stop token causes the publish worker to
+        /// exit its monitoring loop cleanly without hanging or throwing.
+        /// </summary>
+        [TestMethod]
+        public async Task Publish_StopTokenCancelsWorker()
+        {
+            using IpcExportBridge producer = ProducerBridge();
+
+            TestExportType publishInstance = new();
+
+            using TestPluginBase testPlugin = new();
+            using IpcExportBridge bridge = ConsumerBridge();
+
+            using CancellationTokenSource stopCts = new();
+
+            testPlugin.Ipc()
+                      .Exports(bridge)
+                      .Publish(nameof(TestExportType), publishInstance, stopCts.Token);
+
+            // Wait for the worker to publish the instance
+            IpcObjectExport export = await bridge.WaitForExport(nameof(TestExportType), TestContext.CancellationToken)
+                                                 .ConfigureAwait(false);
+
+            Assert.AreSame(publishInstance, export.Instance);
+
+            // Cancel the stop token to signal the worker to exit
+            stopCts.Cancel();
+
+            // Allow the worker to observe cancellation
+            await Task.Delay(150, TestContext.CancellationToken);
+
+            // Verify the published instance remains in the table after the worker exits
+            IpcObjectExport finalExport = bridge.TryGetExport(nameof(TestExportType));
+            Assert.IsTrue(finalExport.Initialized);
+            Assert.AreSame(publishInstance, finalExport.Instance);
+        }
+
         #endregion
 
         #region Test Fixtures

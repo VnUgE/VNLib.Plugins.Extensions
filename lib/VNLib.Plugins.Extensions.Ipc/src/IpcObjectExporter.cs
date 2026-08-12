@@ -142,12 +142,8 @@ namespace VNLib.Plugins.Extensions.Ipc
                     if (export.GCHandlePtr.IsAllocated)
                     {
                         Debug.Assert(export.ExitTaskPtr.Handle.IsAllocated);
-                        export.ExitTaskPtr.FireAndForget();
 
-                        // NOTE Free mutates the GCHandle, which will mutate our entire
-                        // memory block
-                        export.GCHandlePtr.Free();
-                        export.ExitTaskPtr.Free();
+                        CloseExport(ref export);
                     }
                 }
 
@@ -204,20 +200,7 @@ namespace VNLib.Plugins.Extensions.Ipc
                     // Check for an empty slot (zero handle indicates empty)
                     if (!export.GCHandlePtr.IsAllocated)
                     {
-                        Debug.Assert(!export.ExitTaskPtr.Handle.IsAllocated, "Empty slot has allocated gc handle");
-
-                        // Zeroing the export element should zero all fields including the inline arrays.
-                        MemoryUtil.ZeroStruct(ref export);
-
-                        // Alloc new gc handle with a strong reference to ensure the object remains alive as long as the producer allows it.
-                        export.GCHandlePtr = GCHandle.Alloc(instance, GCHandleType.Normal);
-
-                        // Also add the producer's exit handle to the export
-                        export.ExitTaskPtr = OnExitHandle.New();
-
-                        // Write the object name into the export slot.
-                        // Null terminated only because the array is zeroed. 
-                        exportName.CopyTo(export.Name.AsSpan());
+                        InitExport(ref export, exportName, instance);
 
                         return;
                     }                    
@@ -269,13 +252,10 @@ namespace VNLib.Plugins.Extensions.Ipc
 
                     if (existingName.Equals(exportName, StringComparison.OrdinalIgnoreCase))
                     {
-                        export.ExitTaskPtr.FireAndForget();
-
-                        // Free gc handle (mutates the handle structures)
-                        export.GCHandlePtr.Free();
-                        export.ExitTaskPtr.Free();
+                        CloseExport(ref export);
 
                         MemoryUtil.ZeroStruct(ref export);
+
                         return true;
                     }
                 }
@@ -374,7 +354,35 @@ namespace VNLib.Plugins.Extensions.Ipc
                     throw new ArgumentException($"An export with the name '{exportName}' is already registered.", paramName);
                 }
             }
-        }      
+        }            
+
+        private static void InitExport(ref SymbolExport export, ReadOnlySpan<char> exportName, object instance)
+        {
+            Debug.Assert(!export.GCHandlePtr.IsAllocated, "Empty slot has allocated gc handle");
+            Debug.Assert(!export.ExitTaskPtr.Handle.IsAllocated, "Empty slot has allocated gc handle");
+
+            // Zeroing the export element should zero all fields including the inline arrays.
+            MemoryUtil.ZeroStruct(ref export);
+
+            // Alloc new gc handle with a strong reference to ensure the object remains alive as long as the producer allows it.
+            export.GCHandlePtr = GCHandle.Alloc(instance, GCHandleType.Normal);
+
+            // Also add the producer's exit handle to the export
+            export.ExitTaskPtr = OnExitHandle.New();
+
+            // Write the object name into the export slot.
+            // Null terminated only because the array is zeroed. 
+            exportName.CopyTo(export.Name.AsSpan());
+        }
+
+        private static void CloseExport(ref SymbolExport export)
+        {
+            export.ExitTaskPtr.FireAndForget();
+
+            // Free gc handle (mutates the handle structures)
+            export.GCHandlePtr.Free();
+            export.ExitTaskPtr.Free();
+        }
 
         /*
          * Data structures

@@ -32,6 +32,7 @@ using System.Collections.Generic;
 
 using VNLib.Utils.Logging;
 using VNLib.Utils.Resources;
+using VNLib.Utils.Extensions;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
@@ -152,7 +153,10 @@ namespace VNLib.Plugins.Extensions.Loading
         /// <exception cref="ObjectDisposedException">The plugin has been unloaded or disposed.</exception>
         [Obsolete("Prefer plugin.Tasks().RegisterForUnload() instead")]
         public static Task RegisterForUnload(this PluginBase plugin, Action callback)
-            => plugin.Tasks().RegisterForUnload(callback);
+        {
+            plugin.Tasks().RegisterForUnload(callback);
+            return plugin.UnloadToken.WaitHandle.WaitAsync();
+        }
 
         /// <summary>
         /// Exports a service of the desired type to the host application.

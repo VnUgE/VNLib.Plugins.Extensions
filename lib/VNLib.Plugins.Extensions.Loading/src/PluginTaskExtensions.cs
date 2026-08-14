@@ -26,6 +26,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;
@@ -34,6 +35,8 @@ namespace VNLib.Plugins.Extensions.Loading
 {
     public static class PluginTaskExtensions
     {
+        private static readonly ConditionalWeakTable<PluginBase, OnUnloadContainer> _onUnloadReg = [];
+
         /// <summary>
         /// Creates a <see cref="PluginTaskObserver"/> that scopes task operations to the specified plugin instance.
         /// </summary>
@@ -160,9 +163,8 @@ namespace VNLib.Plugins.Extensions.Loading
                 ArgumentNullException.ThrowIfNull(callback);
 
                 // Get or init unload container to register the callback on
-               _plugin.Deps()
-                      .GetOrCreateSingleton<OnUnloadContainer>()
-                      .Add(callback);
+                _onUnloadReg.GetValue(_plugin, OnUnloadContainer.Create)
+                    .Add(callback);              
 
                 return this;
             }
@@ -195,36 +197,38 @@ namespace VNLib.Plugins.Extensions.Loading
                 PluginBase plugin = _plugin;
 
                 return ObserveWork(() => service.ConfigureServiceAsync(plugin), delayMs);
-            }
+            }          
+        }
 
-            private sealed class OnUnloadContainer
+        private sealed class OnUnloadContainer
+        {
+            private readonly HashSet<Action> _onUnloadActions = [];
+            private readonly CancellationTokenRegistration _reg;
+
+            public OnUnloadContainer(PluginBase plugin)
             {
-                private readonly HashSet<Action> _onUnloadActions = [];
-                private readonly CancellationTokenRegistration _reg;
+                // Register this class's cleanup on plugin unload.
+                // Forces all cleanup tasks to execute on the token when cancelled, without
+                // capturing context
+                _reg = plugin.UnloadToken.Register(OnPluginUnload, useSynchronizationContext: false);
+            }
 
-                public OnUnloadContainer(PluginBase plugin)
+            public bool Add(Action instance) => _onUnloadActions.Add(instance);
+
+            public void OnPluginUnload()
+            {
+                try
                 {
-                    // Register this class's cleanup on plugin unload.
-                    // Forces all cleanup tasks to execute on the token when cancelled, without
-                    // capturing context
-                    _reg = plugin.UnloadToken.Register(OnPluginUnload, useSynchronizationContext: false);
+                    // Best effort call all dispose
+                    _onUnloadActions.TryForeach(static dis => dis.Invoke());
                 }
-
-                public bool Add(Action instance) => _onUnloadActions.Add(instance);
-
-                public void OnPluginUnload()
+                finally
                 {
-                    try
-                    {
-                        // Best effort call all dispose
-                        _onUnloadActions.TryForeach(static dis => dis.Invoke());
-                    }
-                    finally
-                    {
-                        _reg.Dispose();
-                    }
+                    _reg.Dispose();
                 }
             }
+
+            public static OnUnloadContainer Create(PluginBase plugin) => new(plugin);
         }
     }
 }

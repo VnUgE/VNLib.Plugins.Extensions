@@ -1,7 +1,7 @@
 version: 46
 properties:
 - name: deps_core_version
-  value: develop::HEAD
+  value: feature/no-ref/essentials-refactor::HEAD
   archived: false
 jobs:
 - name: Git Mirror Push

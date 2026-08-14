@@ -25,6 +25,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 using VNLib.Utils.Logging;
 using VNLib.Utils.Extensions;
@@ -154,26 +155,29 @@ namespace VNLib.Plugins.Extensions.Loading
             /// <returns>A <see cref="Task"/> that represents the registered unload work.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="callback"/> is <see langword="null"/>.</exception>
             /// <exception cref="ObjectDisposedException">The plugin instance has been unloaded.</exception>
-            public readonly Task RegisterForUnload(Action callback)
-            {                
+            public readonly PluginTaskObserver RegisterForUnload(Action callback)
+            {
                 ArgumentNullException.ThrowIfNull(callback);
 
-                PluginBase plugin = _plugin;  
+                // Get or init unload container to register the callback on
+               _plugin.Deps()
+                      .GetOrCreateSingleton<OnUnloadContainer>()
+                      .Add(callback);
 
-                //Register the task to cause the plugin to wait until the action is completed
-                return ObserveWork(() => WaitForUnload(plugin, callback));
+                return this;
+            }
 
-                //Wait method
-                static async Task WaitForUnload(PluginBase pb, Action callback)
-                {
-                    //Wait for unload as a task on the threadpool to avoid deadlocks
-                    _ = await pb.UnloadToken
-                        .WaitHandle
-                        .NoSpinWaitAsync(Timeout.Infinite)
-                        .ConfigureAwait(false);
-
-                    callback();
-                }
+            /// <summary>
+            /// Registers a callback to execute when the plugin is unloaded, blocking <see cref="IPlugin.Unload"/> until completion.
+            /// </summary>
+            /// <param name="disposable">The disposable type to dispose on plugin unload.</param>
+            /// <returns>A <see cref="Task"/> that represents the registered unload work.</returns>
+            /// <exception cref="ArgumentNullException"><paramref name="disposable"/> is <see langword="null"/>.</exception>
+            /// <exception cref="ObjectDisposedException">The plugin instance has been unloaded.</exception>
+            public readonly PluginTaskObserver RegisterForUnload(IDisposable disposable)
+            {
+                ArgumentNullException.ThrowIfNull(disposable);
+                return RegisterForUnload(disposable.Dispose);
             }
 
             /// <summary>
@@ -191,6 +195,35 @@ namespace VNLib.Plugins.Extensions.Loading
                 PluginBase plugin = _plugin;
 
                 return ObserveWork(() => service.ConfigureServiceAsync(plugin), delayMs);
+            }
+
+            private sealed class OnUnloadContainer
+            {
+                private readonly HashSet<Action> _onUnloadActions = [];
+                private readonly CancellationTokenRegistration _reg;
+
+                public OnUnloadContainer(PluginBase plugin)
+                {
+                    // Register this class's cleanup on plugin unload.
+                    // Forces all cleanup tasks to execute on the token when cancelled, without
+                    // capturing context
+                    _reg = plugin.UnloadToken.Register(OnPluginUnload, useSynchronizationContext: false);
+                }
+
+                public bool Add(Action instance) => _onUnloadActions.Add(instance);
+
+                public void OnPluginUnload()
+                {
+                    try
+                    {
+                        // Best effort call all dispose
+                        _onUnloadActions.TryForeach(static dis => dis.Invoke());
+                    }
+                    finally
+                    {
+                        _reg.Dispose();
+                    }
+                }
             }
         }
     }

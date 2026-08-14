@@ -168,7 +168,8 @@ namespace VNLib.Plugins.Extensions.Loading
                 //register dispose cleanup
                 if (service is IDisposable disp)
                 {
-                    _ = _plugin.Tasks().RegisterForUnload(disp.Dispose);
+                    _plugin.Tasks()
+                           .RegisterForUnload(disp);
                 }
 
                 return service;
@@ -553,8 +554,7 @@ namespace VNLib.Plugins.Extensions.Loading
                 _store = [];
 
                 //Register cleanup on unload
-                _ = _plugin
-                    .Tasks()
+                _plugin.Tasks()
                     .RegisterForUnload(_store.Clear);
             }
            

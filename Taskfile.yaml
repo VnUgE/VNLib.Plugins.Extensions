@@ -10,73 +10,83 @@
 version: '3.45'
 
 vars:
-  TARGET_FRAMEWORK: '{{ .TARGET_FRAMEWORK | default "net8.0" }}'
   BINARY_DIR: '{{ .BINARY_DIR | default "bin" }}'
-  RELEASE_DIR: "{{ .BINARY_DIR }}/release/{{ .TARGET_FRAMEWORK }}/publish"
+  TARGET_FRAMEWORK: '{{ .TARGET_FRAMEWORK | default "net8.0" }}'
+  TARGET_DIR: '{{ .USER_WORKING_DIR }}/{{ .BINARY_DIR }}'
 
 tasks:
-  
+
   default:
-    desc: 'Builds a single managed library when run from a project root'
-    dir: '{{ .USER_WORKING_DIR }}'
+    desc: 'When run from a library directory, builds the managed project'
+    dir: "{{ .USER_WORKING_DIR }}"
     vars:
       CONFIGURATION: '{{ .CONFIGURATION | default "release" }}'
     cmds:
-      - cmd: dotnet build -c {{ .CONFIGURATION }} {{ .CLI_ARGS }}
+     - cmd: cd src/ && 
+        dotnet build 
+        --configuration {{ .CONFIGURATION }} 
+        --verbosity detailed
+        {{ .MS_ARGS }} 
+        {{ .CLI_ARGS }}    
 
   #when build succeeds, archive the output into a tgz 
   postbuild_success:
     dir: '{{ .USER_WORKING_DIR }}'
-    cmds:
-     #pack up source code
+    desc: 'Called by vnbuild after build succeeds. Used to prepare completed build artifacts.'
+    deps:
      - task: packsource
-
-     #run post in debug mode
+     
      - task: postbuild
        vars: { BUILD_MODE: debug }
-
-     #remove uncessary files from the release dir
-     - cmd: powershell -Command "Get-ChildItem -Recurse '{{ .RELEASE_DIR }}/' -Include *.pdb,*.xml | Remove-Item"
-
-     #run post in release mode
+     
      - task: postbuild
        vars: { BUILD_MODE: release }
-
+    cmds:     
+     - cmd: echo "Postbuild complete for {{ .PROJECT_NAME }}"
+       silent: true
 
   postbuild_failed:
-    dir: '{{ .USER_WORKING_DIR }}'
+    desc: 'Called by vnbuild when an error occured during build task'
     cmds: []
-
 
   postbuild:
     dir: '{{ .USER_WORKING_DIR }}'
     internal: true
+    requires:
+      vars: [BINARY_DIR, BUILD_MODE, TARGET_FRAMEWORK, TARGET_DIR]
     vars:
       #the build output directory
-      BUILD_OUT: "{{ .BINARY_DIR }}/{{ .BUILD_MODE }}/{{ .TARGET_FRAMEWORK }}/publish" 
-
-    cmds:
-     #copy license and readme to target
-     - cmd: cp '../build.readme.md' '{{ .BUILD_OUT }}/readme.md'
-
-     #tar outputs
-     - cmd: cd "{{ .BUILD_OUT }}" && tar{{ if eq OS "windows" }}.exe{{ end }} -czf "{{ .USER_WORKING_DIR }}/{{ .BINARY_DIR }}/{{ .BUILD_MODE }}.tgz" .
+      BUILD_OUT: "{{ .BINARY_DIR }}/{{ .BUILD_MODE }}/{{ .TARGET_FRAMEWORK }}/publish"
+      #removes unnecessary files from the release packages
+      TAR_ARGS: '{{ if eq .BUILD_MODE  "release" }}--exclude="*.pdb" --exclude="*.xml"{{ end }}'
+    cmds: 
+     - cmd: tar{{ if eq OS "windows" }}.exe{{ end }} 
+         -czf "{{ .TARGET_DIR }}/{{ .BUILD_MODE }}.tgz" {{ .TAR_ARGS }}
+         -C "{{ .BUILD_OUT }}" .
  
   packsource:
     dir: '{{ .USER_WORKING_DIR }}'
+    desc: 'Creates an archive for package source files'
     internal: true
+    requires:
+      vars: [TARGET_DIR]
     vars:
-      EXCLUDES:
-        --exclude="bin"
-        --exclude="obj"
+      EXCLUDES: 
+        --exclude 'obj/'
+        --exclude 'bin/'
     cmds:
-    #copy source code to target
-    - cmd: tar{{ if eq OS "windows" }}.exe{{ end }} {{ .EXCLUDES }} -czf '{{ .BINARY_DIR }}/src.tgz' .
+      - cmd: cd ../ && tar{{ if eq OS "windows" }}.exe{{ end }} 
+          {{ .EXCLUDES }}
+          -czf "{{ .TARGET_DIR }}/src.tgz" .
 
-#Remove the output dirs on clean
+  publish:
+    desc: 'Called by vnbuild during a publish command'
+    cmds: []
+
   clean:
+    desc: 'Cleans local project artifacts and outputs. Typically called by vnbuild clean command.'
     dir: '{{ .USER_WORKING_DIR }}'
     ignore_error: true
     cmds:
-     - for: ['bin/', 'obj/']
-       cmd: rm -rf '{{ .ITEM }}'
+    - for: [ bin/, obj/ ]
+      cmd: rm -rf '{{ .ITEM }}'

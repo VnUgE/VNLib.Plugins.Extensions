@@ -22,6 +22,8 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
+using System.Collections.Generic;
+
 using VNLib.Plugins.Essentials;
 
 namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
@@ -39,6 +41,13 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
     /// </remarks>
     public interface IHttpControllerGuard
     {
+        /// <summary>
+        /// Called by the MVC router once routes are configured for service
+        /// </summary>
+        /// <param name="routes">The collection of configured routes for the <see cref="IHttpController"/></param>
+        virtual void OnRoutesConfigured(IReadOnlyCollection<MvcHttpRouteInfo> routes)
+        { }
+
         /// <summary>
         /// Determines whether the request should continue processing.
         /// </summary>

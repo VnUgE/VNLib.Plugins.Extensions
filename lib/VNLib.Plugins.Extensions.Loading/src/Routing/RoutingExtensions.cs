@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Copyright (c) 2026 Vaughn Nugent
 *
 * Library: VNLib
@@ -31,10 +31,8 @@ using System.Diagnostics.CodeAnalysis;
 
 using VNLib.Utils.Logging;
 using VNLib.Utils.Resources;
+using VNLib.Plugins.Essentials.Endpoints;
 using VNLib.Plugins.Extensions.Loading.Configuration;
-
-// TODO: TEMPORARY v0.2.0
-using VNLib.Plugins.Essentials.Runtime;
 
 namespace VNLib.Plugins.Extensions.Loading.Routing
 {
@@ -44,7 +42,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
     /// Provides advanced quality-of-life features for plugin loading.
     /// </summary>
     public static partial class RoutingExtensions
-        {
+    {
         private static readonly ConditionalWeakTable<IEndpoint, PluginBase?> _pluginRefs = [];
 
         [GeneratedRegex("{{\\s*(.*?)\\s*}}", RegexOptions.Compiled)]
@@ -274,7 +272,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
 
                 ///<inheritdoc/>
                 IEnumerable<IEndpoint> IVirtualEndpointDefinition.GetEndpoints() => Endpoints.Values;
+            }
         }
     }
-}
 }

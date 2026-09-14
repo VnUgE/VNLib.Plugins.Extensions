@@ -58,6 +58,10 @@ namespace VNLib.Plugins.Extensions.Loading
     public sealed class ServiceExportAttribute() : Attribute
     { }
 
+    /// <summary>
+    /// Provides extension methods for plugin dependency injection, singleton management,
+    /// and assembly loading.
+    /// </summary>
     public static class PluginDependencyExtensions
     {
         private static readonly ConditionalWeakTable<PluginBase, SingletonCache> _singletons = [];
@@ -94,7 +98,7 @@ namespace VNLib.Plugins.Extensions.Loading
             /// <exception cref="KeyNotFoundException">when the required configuration key is not found for the service type.</exception>
             /// <exception cref="ObjectDisposedException">when the plugin has been unloaded.</exception>
             /// <exception cref="EntryPointNotFoundException">when the service constructor cannot be resolved.</exception>
-            /// <exception cref="NotSupportedException"></exception>
+            /// <exception cref="NotSupportedException">The requested service creation type is abstract and no concrete implementation was specified.</exception>
             /// <remarks>
             /// <para>If the type derives <see cref="IAsyncConfigurable"/>, the <see cref="IAsyncConfigurable.ConfigureServiceAsync"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
             /// <para>If the type derives <see cref="IAsyncBackgroundWork"/>, the <see cref="IAsyncBackgroundWork.DoWorkAsync(ILogProvider, CancellationToken)"/> method is called once when the instance is loaded, and observed on the plugin scheduler.</para>
@@ -233,11 +237,23 @@ namespace VNLib.Plugins.Extensions.Loading
                 return pc.GetOrCreateService(serviceType, serviceFactory);
             }
 
+            /// <summary>
+            /// Gets a previously cached service singleton of the desired type, or creates
+            /// a new one using the specified factory.
+            /// </summary>
             /// <typeparam name="T">The service type to get or create.</typeparam>
+            /// <param name="serviceFactory">A factory method to produce the singleton when not yet cached.</param>
+            /// <returns>An existing instance of a cache singleton, or the newly generated one.</returns>
             /// <inheritdoc cref="GetOrCreateSingleton(Type, Func{PluginBase, object})"/>
             public readonly T GetOrCreateSingleton<T>(Func<PluginBase, T> serviceFactory)
                 => (T)GetOrCreateSingleton(typeof(T), p => serviceFactory(p)!);
 
+            /// <summary>
+            /// Gets a previously cached service singleton of the desired type, or creates
+            /// a new one using the default service creation pipeline.
+            /// </summary>
+            /// <typeparam name="T">The service type to get or create.</typeparam>
+            /// <returns>An existing instance of a cache singleton, or the newly generated one.</returns>
             /// <inheritdoc cref="GetOrCreateSingleton{T}(Func{PluginBase, T})"/>
             public readonly T GetOrCreateSingleton<T>()
             {
@@ -271,9 +287,9 @@ namespace VNLib.Plugins.Extensions.Loading
             /// <returns>
             /// The current structure for fluent api chaining.
             /// </returns>
-            /// <exception cref="ArgumentNullException"></exception>
+            /// <exception cref="ArgumentNullException"><paramref name="type"/> or <paramref name="instance"/> is <see langword="null"/>.</exception>
             /// <remarks>
-            /// NOTE! If an existing instance of the service type (or derived types) have already been added 
+            /// NOTE! If an existing instance of the service type (or derived types) have already been added
             /// to cache or created with <see cref="GetOrCreateSingleton{T}()"/> methods, this function silently
             /// ignores your request. Similarly, calls to <see cref="UseSingleton(Type, object)"/> will suppress 
             /// the creation of any object with a converging type created with <see cref="GetOrCreateSingleton{T}()"/>
@@ -301,7 +317,7 @@ namespace VNLib.Plugins.Extensions.Loading
             /// </summary>
             /// <param name="type">The service type to recover from the cache</param>
             /// <returns>The existing service instance if found</returns>
-            /// <exception cref="ArgumentNullException"></exception>
+            /// <exception cref="ArgumentNullException"><paramref name="type"/> is <see langword="null"/>.</exception>
             public readonly object? TryGetSingleton(Type type)
             {
                 ArgumentNullException.ThrowIfNull(type);
@@ -412,7 +428,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 Type[] matchingTypes = manLib.TryGetAllMatchingTypes<T>().ToArray();
 
-                //try to get the first type that has the extern attribute, or fall back to the first public & concrete type
+                //try to get the first type that has the export attribute, or fall back to the first public & concrete type
                 Type? exported = matchingTypes.FirstOrDefault(t => t.GetCustomAttribute<ServiceExportAttribute>() != null)
                 ?? matchingTypes.Where(t => !t.IsAbstract && t.IsPublic).FirstOrDefault();
 

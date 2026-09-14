@@ -28,6 +28,9 @@ namespace VNLib.Plugins.Extensions.Loading
 {
     using static PluginHostExtensions;
 
+    /// <summary>
+    /// Provides extension methods for exporting services from a plugin host container.
+    /// </summary>
     public static class PluginHostServices
     {
         /// <summary>

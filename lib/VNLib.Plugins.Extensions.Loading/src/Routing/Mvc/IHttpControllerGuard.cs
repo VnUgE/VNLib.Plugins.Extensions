@@ -42,7 +42,9 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
     public interface IHttpControllerGuard
     {
         /// <summary>
-        /// Called by the MVC router once routes are configured for service
+        /// Called by the MVC router once routes are configured for the controller,
+        /// before request processing begins. Guards may inspect or cache the
+        /// discovered route collection.
         /// </summary>
         /// <param name="routes">The collection of configured routes for the <see cref="IHttpController"/></param>
         virtual void OnRoutesConfigured(IReadOnlyCollection<MvcHttpRouteInfo> routes)

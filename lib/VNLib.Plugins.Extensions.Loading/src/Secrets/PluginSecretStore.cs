@@ -145,9 +145,9 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// </summary>
         /// <param name="secretName">The name of the secret property to get</param>
         /// <param name="cancellation">A token to cancel the asynchronous operation</param>
-        /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
+        /// <returns>An <see cref="ISecretResult"/> for the required secret, raises an exception if the secret does not exist</returns>
+        /// <exception cref="KeyNotFoundException">The required secret does not exist in the merged secrets elements.</exception>
+        /// <exception cref="ObjectDisposedException">The secret store has been disposed.</exception>
         public Task<ISecretResult> GetAsync(string secretName, CancellationToken cancellation = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(secretName);
@@ -182,12 +182,12 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             );
         }       
 
-        ///<inheritdoc/>
+        ///<inheritdoc cref="TryGetAsync(string, CancellationToken)"/>
         [Obsolete("Use TryGetAsync instead")]
         public readonly Task<ISecretResult?> TryGetSecretAsync(string secretName, CancellationToken cancellation = default)
             => TryGetAsync(secretName, cancellation);
 
-        ///<inheritdoc/>
+        ///<inheritdoc cref="TryGet(string)"/>
         [Obsolete("Use TryGet instead")]
         public readonly ISecretResult? TryGetSecret(string secretName)
             => TryGet(secretName);

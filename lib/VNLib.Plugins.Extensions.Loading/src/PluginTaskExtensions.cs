@@ -33,6 +33,9 @@ using VNLib.Utils.Extensions;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
+    /// <summary>
+    /// Provides extension methods for observing and scheduling plugin lifecycle tasks.
+    /// </summary>
     public static class PluginTaskExtensions
     {
         private static readonly ConditionalWeakTable<PluginBase, OnUnloadContainer> _onUnloadReg = [];
@@ -80,7 +83,7 @@ namespace VNLib.Plugins.Extensions.Loading
                  * observed on Unload() which throws before the work had a chance to get scheduled or 
                  * complete. 
                  * 
-                 * Im considering this a TOCTOU bug for now and intentionally ignoring the cancellation
+                 * I'm considering this a TOCTOU bug for now and intentionally ignoring the cancellation
                  * token on the Task.Run() call to force the plugin to wait until at least the Task.Delay
                  * call where the token can be observed. We consider Task.Run to be "idempotent" in the
                  * case that once it's called it's up to the work to cancel itself and the task must get

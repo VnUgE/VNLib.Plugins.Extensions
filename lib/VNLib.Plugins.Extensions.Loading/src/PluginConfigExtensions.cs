@@ -33,7 +33,7 @@ using VNLib.Utils.Extensions;
 
 /*
  * TODO: (03-23-2026)
- * Im preparing release 0.2.0 and that is a big breaking release. However currently there are already a bunch of
+ * I'm preparing release 0.2.0 and that is a big breaking release. However currently there are already a bunch of
  * breaking namespace changes, and for now there is enough usage of the .Config() type for nearly all extensions,
  * we will keep the Loading namespace as the default.
  *

@@ -64,7 +64,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void IsSet_ReturnsTrue_WhenKeyInHostConfig()
         {
-            var hostConfig = new { secrets = new { mySecret = "value" } };
+            object hostConfig = new { secrets = new { mySecret = "value" } };
 
             using TestPluginBase plugin = new(EmptyPluginConfig, hostConfig);
 
@@ -78,7 +78,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void IsSet_ReturnsTrue_WhenKeyInPluginConfig()
         {
-            var pluginConfig = new { secrets = new { mySecret = "value" } };
+            object pluginConfig = new { secrets = new { mySecret = "value" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -93,7 +93,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void IsSet_IsCaseInsensitive()
         {
-            var pluginConfig = new { secrets = new { MySecret = "value" } };
+            object pluginConfig = new { secrets = new { MySecret = "value" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -163,7 +163,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void TryGet_ReturnsValue_FromHostConfig()
         {
-            var hostConfig = new { secrets = new { foo = "bar" } };
+            object hostConfig = new { secrets = new { foo = "bar" } };
 
             using TestPluginBase plugin = new(EmptyPluginConfig, hostConfig);
 
@@ -180,7 +180,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void TryGet_ReturnsValue_FromPluginConfig()
         {
-            var pluginConfig = new { secrets = new { foo = "bar" } };
+            object pluginConfig = new { secrets = new { foo = "bar" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -197,7 +197,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void TryGet_IsCaseInsensitive()
         {
-            var pluginConfig = new { secrets = new { MySecret = "value" } };
+            object pluginConfig = new { secrets = new { MySecret = "value" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -243,8 +243,8 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void SecretMerge_HostAndPluginKeysAreBothAvailable()
         {
-            var hostConfig   = new { secrets = new { fromHost   = "hostValue"   } };
-            var pluginConfig = new { secrets = new { fromPlugin = "pluginValue" } };
+object hostConfig = new { secrets = new { fromHost = "hostValue" } };
+            object pluginConfig = new { secrets = new { fromPlugin = "pluginValue" } };
 
             using TestPluginBase plugin = new(pluginConfig, hostConfig);
 
@@ -267,8 +267,8 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void SecretMerge_PluginValueShadowsHostValue()
         {
-            var hostConfig   = new { secrets = new { foo = "hostValue"   } };
-            var pluginConfig = new { secrets = new { foo = "pluginValue" } };
+object hostConfig = new { secrets = new { foo = "hostValue" } };
+            object pluginConfig = new { secrets = new { foo = "pluginValue" } };
 
             using TestPluginBase plugin = new(pluginConfig, hostConfig);
 
@@ -287,8 +287,8 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void SecretMerge_CaseInsensitiveKeyCollision_PluginValueWins()
         {
-            var hostConfig   = new { secrets = new { mykey = "hostValue"   } };
-            var pluginConfig = new { secrets = new { MyKey = "pluginValue" } };
+object hostConfig = new { secrets = new { mykey = "hostValue" } };
+            object pluginConfig = new { secrets = new { MyKey = "pluginValue" } };
 
             using TestPluginBase plugin = new(pluginConfig, hostConfig);
 
@@ -323,7 +323,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public async Task TryGetAsync_ReturnsValue_InlineSecret()
         {
-            var pluginConfig = new { secrets = new { foo = "bar" } };
+            object pluginConfig = new { secrets = new { foo = "bar" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -382,7 +382,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public async Task GetAsync_ReturnsValue_WhenSecretExists()
         {
-            var pluginConfig = new { secrets = new { foo = "bar" } };
+            object pluginConfig = new { secrets = new { foo = "bar" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -446,7 +446,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public async Task GetAsync_AcceptsCancellationToken()
         {
-            var pluginConfig = new { secrets = new { foo = "bar" } };
+            object pluginConfig = new { secrets = new { foo = "bar" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -474,7 +474,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
             {
                 File.WriteAllText(tempFile, SecretValue);
 
-                var pluginConfig = new { secrets = new { foo = $"file://{tempFile}" } };
+                object pluginConfig = new { secrets = new { foo = $"file://{tempFile}" } };
 
                 using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -505,7 +505,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
             {
                 await File.WriteAllTextAsync(tempFile, SecretValue);
 
-                var pluginConfig = new { secrets = new { foo = $"file://{tempFile}" } };
+                object pluginConfig = new { secrets = new { foo = $"file://{tempFile}" } };
 
                 using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -529,7 +529,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         {
             string missingPath = Path.Combine(Path.GetTempPath(), $"vnlib_missing_{Guid.NewGuid()}.secret");
 
-            var pluginConfig = new { secrets = new { foo = $"file://{missingPath}" } };
+            object pluginConfig = new { secrets = new { foo = $"file://{missingPath}" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -556,7 +556,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
 
             try
             {
-                var pluginConfig = new { secrets = new { foo = $"env://{EnvVarName}" } };
+                object pluginConfig = new { secrets = new { foo = $"env://{EnvVarName}" } };
 
                 using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -585,7 +585,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
 
             try
             {
-                var pluginConfig = new { secrets = new { foo = $"env://{EnvVarName}" } };
+                object pluginConfig = new { secrets = new { foo = $"env://{EnvVarName}" } };
 
                 using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -612,7 +612,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
             // Ensure the variable is absent before the test
             Environment.SetEnvironmentVariable(EnvVarName, null);
 
-            var pluginConfig = new { secrets = new { foo = $"env://{EnvVarName}" } };
+            object pluginConfig = new { secrets = new { foo = $"env://{EnvVarName}" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -633,7 +633,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void TryGet_ThrowsNotSupportedException_WhenSchemeIsUnknown()
         {
-            var pluginConfig = new { secrets = new { foo = "unknownscheme://some-path" } };
+            object pluginConfig = new { secrets = new { foo = "unknownscheme://some-path" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -649,7 +649,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public async Task TryGetAsync_ThrowsNotSupportedException_WhenSchemeIsUnknown()
         {
-            var pluginConfig = new { secrets = new { foo = "unknownscheme://some-path" } };
+            object pluginConfig = new { secrets = new { foo = "unknownscheme://some-path" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -670,7 +670,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void IsSet_ThrowsConfigurationValidationException_WhenSecretsIsString()
         {
-            var pluginConfig = new { secrets = "not_an_object" };
+            object pluginConfig = new { secrets = "not_an_object" };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -687,7 +687,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void IsSet_ThrowsConfigurationValidationException_WhenSecretsIsNumber()
         {
-            var pluginConfig = new { secrets = 123 };
+            object pluginConfig = new { secrets = 123 };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -705,7 +705,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public async Task TryGetAsync_ThrowsConfigurationValidationException_WhenSecretsIsString()
         {
-            var pluginConfig = new { secrets = "not_an_object" };
+            object pluginConfig = new { secrets = "not_an_object" };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -727,7 +727,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public async Task TryGetAsync_ThrowsConfigurationValidationException_WhenSecretsIsNumber()
         {
-            var pluginConfig = new { secrets = 123 };
+            object pluginConfig = new { secrets = 123 };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -753,7 +753,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public async Task TryGetAsync_ThrowsFormatException_WhenSchemeHasNoPath()
         {
-            var pluginConfig = new { secrets = new { foo = "scheme://" } };
+            object pluginConfig = new { secrets = new { foo = "scheme://" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -775,7 +775,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public async Task TryGetAsync_ThrowsFormatException_WhenSchemeHasNoName()
         {
-            var pluginConfig = new { secrets = new { foo = "://path" } };
+            object pluginConfig = new { secrets = new { foo = "://path" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -797,7 +797,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public async Task TryGetAsync_ThrowsFormatException_WhenSchemeIsDelimiterOnly()
         {
-            var pluginConfig = new { secrets = new { foo = "://" } };
+            object pluginConfig = new { secrets = new { foo = "://" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -821,7 +821,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void GetOnDemandSecret_HasCorrectSecretName()
         {
-            var pluginConfig = new { secrets = new { myKey = "value" } };
+            object pluginConfig = new { secrets = new { myKey = "value" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -875,7 +875,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void GetOnDemandSecret_FetchSecret_ReturnsInlineValue()
         {
-            var pluginConfig = new { secrets = new { foo = "bar" } };
+            object pluginConfig = new { secrets = new { foo = "bar" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -910,7 +910,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public async Task GetOnDemandSecret_FetchSecretAsync_ReturnsInlineValue()
         {
-            var pluginConfig = new { secrets = new { foo = "bar" } };
+            object pluginConfig = new { secrets = new { foo = "bar" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -975,7 +975,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
 
             try
             {
-                var pluginConfig = new { secrets = new { foo = $"env://{EnvVarName}" } };
+                object pluginConfig = new { secrets = new { foo = $"env://{EnvVarName}" } };
 
                 using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -1015,7 +1015,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
             {
                 File.WriteAllText(tempFile, SecretValue);
 
-                var pluginConfig = new { secrets = new { foo = $"file://{tempFile}" } };
+                object pluginConfig = new { secrets = new { foo = $"file://{tempFile}" } };
 
                 using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -1046,7 +1046,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
             {
                 await File.WriteAllTextAsync(tempFile, SecretValue);
 
-                var pluginConfig = new { secrets = new { foo = $"file://{tempFile}" } };
+                object pluginConfig = new { secrets = new { foo = $"file://{tempFile}" } };
 
                 using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
@@ -1127,7 +1127,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Secrets
         [TestMethod]
         public void SecretResult_ZeroesBackingMemory_OnDispose()
         {
-            var pluginConfig = new { secrets = new { foo = "sensitiveValue" } };
+            object pluginConfig = new { secrets = new { foo = "sensitiveValue" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 

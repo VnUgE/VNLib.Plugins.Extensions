@@ -26,6 +26,9 @@ using System;
 
 namespace VNLib.Plugins.Extensions.Loading
 {
+    /// <summary>
+    /// Provides extension methods for wrapping plugins in host containers.
+    /// </summary>
     public static class PluginHostExtensions
     {
         /// <summary>

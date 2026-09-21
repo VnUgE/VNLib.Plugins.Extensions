@@ -1,8 +1,10 @@
-version: 46
+version: 53
+
 properties:
 - name: deps_core_version
   value: master::v0.1.5
   archived: false
+
 jobs:
 - name: Git Mirror Push
   steps:
@@ -29,6 +31,8 @@ jobs:
   retryCondition: never
   maxRetries: 3
   retryDelay: 30
+  includeUpstreamWhenRebuild: false
+  includeDownstreamWhenRebuild: false
   timeout: 3600
 
 - name: Unit Testing
@@ -43,7 +47,8 @@ jobs:
     name: run unit tests
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PowerShellInterpreter
+      powershell: powershell.exe
       commands: |
         cd @project_name@
         mise run-vnbuild test --include @project_name@ --verbose
@@ -57,6 +62,8 @@ jobs:
   retryCondition: never
   maxRetries: 3
   retryDelay: 30
+  includeUpstreamWhenRebuild: false
+  includeDownstreamWhenRebuild: false
   timeout: 14400
 
 - name: Staging build
@@ -71,7 +78,8 @@ jobs:
     name: mock build
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PowerShellInterpreter
+      powershell: powershell.exe
       commands: |
         cd @project_name@
         mise run-vnbuild build --no-delay --include @project_name@ --verbose
@@ -82,7 +90,8 @@ jobs:
     name: mock publish
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PowerShellInterpreter
+      powershell: powershell.exe
       commands: |
         cd @project_name@
         mise run-vnbuild publish -i @project_name@
@@ -99,6 +108,8 @@ jobs:
   retryCondition: never
   maxRetries: 3
   retryDelay: 30
+  includeUpstreamWhenRebuild: false
+  includeDownstreamWhenRebuild: false
   timeout: 14400
 
 - name: Publish master
@@ -113,7 +124,8 @@ jobs:
     name: Create git tag
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PowerShellInterpreter
+      powershell: powershell.exe
       commands: |
         cd @project_name@
         mise run-task -t Module.Taskfile.yaml tag-current-commit
@@ -124,7 +136,8 @@ jobs:
     name: VNBuild build
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PowerShellInterpreter
+      powershell: powershell.exe
       commands: |
         cd @project_name@
         mise run-vnbuild build --no-delay --include @project_name@
@@ -135,7 +148,8 @@ jobs:
     name: VNBuild publish
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PowerShellInterpreter
+      powershell: powershell.exe
       commands: |
         cd @project_name@
         mise run-vnbuild publish -i @project_name@ --ftp "@secret:ftp_server_address@" --sign
@@ -154,6 +168,8 @@ jobs:
   retryCondition: never
   maxRetries: 3
   retryDelay: 30
+  includeUpstreamWhenRebuild: false
+  includeDownstreamWhenRebuild: false
   timeout: 14400
 
 - name: Code Reviews
@@ -163,7 +179,8 @@ jobs:
     name: basic-pr-review
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PowerShellInterpreter
+      powershell: powershell.exe
       commands: |
         git clone @server_url@/@project_path@ --branch @branch@ @project_name@
         cd @project_name@/ci/agents
@@ -189,6 +206,8 @@ jobs:
   retryCondition: never
   maxRetries: 3
   retryDelay: 30
+  includeUpstreamWhenRebuild: false
+  includeDownstreamWhenRebuild: false
   timeout: 14400
 
 stepTemplates:
@@ -198,7 +217,8 @@ stepTemplates:
     name: init local deps
     runInContainer: false
     interpreter:
-      type: DefaultInterpreter
+      type: PowerShellInterpreter
+      powershell: powershell.exe
       commands: |
         git clone @server_url@/@project_path@ --branch @branch@ @project_name@
 

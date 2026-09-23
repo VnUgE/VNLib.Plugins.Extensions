@@ -38,7 +38,6 @@ using VNLib.Utils;
 using VNLib.Utils.IO;
 using VNLib.Utils.Memory;
 using VNLib.Utils.Extensions;
-using VNLib.Plugins.Extensions.Loading.Secrets;
 using VNLib.Plugins.Extensions.Loading.Configuration;
 
 /*
@@ -49,7 +48,7 @@ using VNLib.Plugins.Extensions.Loading.Configuration;
  * VaultSharp package which adds at least 600kb to the final package size.
  */
 
-namespace VNLib.Plugins.Extensions.Loading
+namespace VNLib.Plugins.Extensions.Loading.Secrets
 {
 
     /// <summary>
@@ -168,7 +167,7 @@ namespace VNLib.Plugins.Extensions.Loading
 
                 //Read the response async
                 using SecretResponse res = await ReadSecretResponse(response.Content)
-                    .ConfigureAwait(false);
+                                                .ConfigureAwait(false);
 
                 return FromResponse(res, secretName);
             }
@@ -213,7 +212,8 @@ namespace VNLib.Plugins.Extensions.Loading
 
             try
             {
-                await content.CopyToAsync(response.StreamData).ConfigureAwait(false);
+                await content.CopyToAsync(response.StreamData)
+                    .ConfigureAwait(false);
 
                 response.ResetStream();
 
@@ -327,9 +327,11 @@ namespace VNLib.Plugins.Extensions.Loading
             static async ValueTask ExceptionsFromContentAsync(string secretName, HttpResponseMessage response)
             {
                 //Read stream async and deserialize async
-                using Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                using Stream stream = await response.Content.ReadAsStreamAsync()
+                                        .ConfigureAwait(false);
+
                 VaultErrorMessage? errs = await JsonSerializer.DeserializeAsync<VaultErrorMessage>(stream)
-                    .ConfigureAwait(false);
+                                            .ConfigureAwait(false);
 
                 await ExceptionFromVaultErrors(secretName, response.StatusCode, errs)
                     .ConfigureAwait(false);

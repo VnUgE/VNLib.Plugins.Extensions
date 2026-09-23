@@ -20,13 +20,13 @@ osx-arm64 = { url = "https://www.vaughnnugent.com/public/resources/software/buil
 DOTNET_SYSTEM_GLOBALIZATION_INVARIANT = "1"
 DOTNET_CLI_TELEMETRY_OPTOUT = "1"
 
-[tasks.run-task]
+[tasks.ci-task]
 run = 'task'
 
-[tasks.run-vnbuild]
+[tasks.ci-vnbuild]
 run = 'vnbuild'
 
 # configure deps in the parent dir to our module
-[tasks.configure-dep]
+[tasks.ci-configure-dep]
 dir = '../'
 run = 'task configure-dep'

@@ -25,7 +25,7 @@
 using System;
 using System.Net.Http;
 
-namespace VNLib.Plugins.Extensions.Loading
+namespace VNLib.Plugins.Extensions.Loading.Secrets
 {
     /// <summary>
     /// The exception that is thrown when a Hashicorp Vault operation fails.

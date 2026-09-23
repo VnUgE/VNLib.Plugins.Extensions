@@ -24,7 +24,7 @@
 
 using System;
 
-namespace VNLib.Plugins.Extensions.Loading
+namespace VNLib.Plugins.Extensions.Loading.Secrets
 {
     /// <summary>
     /// Represents the result of a secret fetch operation.

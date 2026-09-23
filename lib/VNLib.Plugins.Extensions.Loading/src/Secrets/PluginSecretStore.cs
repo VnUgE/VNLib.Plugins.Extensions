@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2025 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -23,169 +23,186 @@
 */
 
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
 
 using VNLib.Utils.Memory;
 
-using VNLib.Plugins.Extensions.Loading.Secrets;
+using VNLib.Plugins.Extensions.Loading.Configuration;
+using VNLib.Plugins.Extensions.Loading.Secrets.Readers;
 using static VNLib.Plugins.Extensions.Loading.Secrets.PluginSecretConstants;
 
-namespace VNLib.Plugins.Extensions.Loading
+namespace VNLib.Plugins.Extensions.Loading.Secrets
 {
     /// <summary>
-    /// Provides a secret store for a plugin that can be used to fetch secrets from plugin configuration.
+    /// A secret store for a plugin that can be used to fetch secrets from plugin configuration
     /// </summary>
-    /// <param name="plugin">The plugin instance to get secrets from.</param>
+    /// <param name="plugin">The plugin instance to get secrets from</param>
     public readonly struct PluginSecretStore(PluginBase plugin) : IEquatable<PluginSecretStore>
     {
-        internal const int HCVaultDefaultKvVersion = 2;
+        /// <summary>
+        /// The default HashiCorp Vault KV secrets engine version used when 
+        /// <see cref="VAULT_KV_VERSION_KEY"/> is not specified in configuration.
+        /// </summary>
+        private const int HCVaultDefaultKvVersion = 2;
 
         private readonly PluginBase _plugin = plugin;
+        private readonly PluginSecretState _state = plugin.Deps().GetOrCreateSingleton(PluginSecretState.LoadState);
 
         /// <summary>
-        /// Gets the ambient <see cref="IKvVaultClient"/> for the current plugin if the configuration is loaded.
+        /// Gets the ambient vault client for the current plugin
+        /// if the configuration is loaded, null otherwise
         /// </summary>
         /// <returns>The ambient <see cref="IKvVaultClient"/> if configuration is loaded; otherwise, <see langword="null" />.</returns>
         /// <exception cref="KeyNotFoundException">The vault configuration is missing required keys.</exception>
         /// <exception cref="ObjectDisposedException">The plugin has been disposed.</exception>
-        public IKvVaultClient? GetVaultClient() => LoadingExtensions.GetOrCreateSingleton(_plugin, LoadVaultClient);
-
-        private static IKvVaultClient? LoadVaultClient(PluginBase plugin)
-        {
-            IConfigScope? customVaultConf = plugin.Config().TryGet(CUSTOM_KV_CONFIG);
-            KvVaultConfig? kvVaultConfig = customVaultConf?.Deserialize<KvVaultConfig>();
-
-            //No custom config, load HCP by default
-            if (customVaultConf is null || kvVaultConfig is null)
-            {
-                return LoadHcpVault(plugin);
-            }
-
-            //Try to get the custom assembly path, otherwise load HCP
-            return !string.IsNullOrWhiteSpace(kvVaultConfig.CustomAssemblyPath)
-                ? plugin.CreateServiceExternal<IKvVaultClient>(kvVaultConfig.CustomAssemblyPath)
-                : LoadHcpVault(plugin);
-        }
-
-        private static HCVaultClient? LoadHcpVault(PluginBase plugin)
-        {
-            //Get vault config
-            IConfigScope? conf = plugin.Config().TryGet(VAULT_OBJECT_NAME);
-
-            if (conf is null)
-            {
-                return null;
-            }
-
-            //Get auth token from config, then fall back to environment variable
-            string? envAuthToken =  Environment.GetEnvironmentVariable(VAULT_TOKEN_ENV_NAME);
-            string? authToken = conf.GetValueOrDefault(VAULT_TOKEN_KEY, envAuthToken!);
-
-            _ = authToken ?? throw new KeyNotFoundException($"HCP Vault authentication token required. Set {VAULT_OBJECT_NAME} or env:{VAULT_TOKEN_ENV_NAME}");
-
-            //create vault client, invalid or nulls will raise exceptions here
-            return HCVaultClient.Create(
-                 serverAddress: conf.GetRequiredProperty(VAULT_URL_KEY, p => p.GetString()!),
-                 authToken,
-                 kvVersion: conf.GetValueOrDefault(VAULT_KV_VERSION_KEY, HCVaultDefaultKvVersion),
-                 trustCert: conf.GetValueOrDefault(VAULT_TRUST_CERT_KEY, false),
-                 heap: MemoryUtil.Shared
-            );
-        }
+        public IKvVaultClient? GetVaultClient() => _state.VaultClient;
 
         /// <summary>
-        /// Checks whether a named secret is defined in the plugin configuration.
+        /// Checks if a named secret is set in the plugin configuration. 
+        /// It does not check if the secret has a value, only if it's defined.
         /// </summary>
-        /// <remarks>
-        /// This method does not check if the secret has a value, only if it is defined.
-        /// </remarks>
-        /// <param name="secretName">The name of the secret to search for.</param>
-        /// <returns><see langword="true" /> if the configuration contains a definition for the specified secret name; otherwise, <see langword="false" />.</returns>
+        /// <param name="secretName">The name of the secret to search for</param>
+        /// <returns>True if the system configuration has a key set for the secret name within the secret configuration element</returns>
         public readonly bool IsSet(string secretName)
         {
-            return OnDemandSecret.IsSecretDefined(_plugin, secretName);
-        }
+            ArgumentException.ThrowIfNullOrWhiteSpace(secretName);
 
-        ///<inheritdoc/>
-        public readonly Task<ISecretResult?> TryGetAsync(string secretName, CancellationToken cancellation = default)
-        {
-            IOnDemandSecret secret = GetOnDemandSecret(secretName);
-            return secret.FetchSecretAsync(cancellation);
-        }
+            /*
+            * A secret is defined if an element is found in either the plugin or host config.
+            * Plugin is always checked first.
+            */
+            return HasNamedSecret(_plugin.PluginConfig, secretName) 
+                || HasNamedSecret(_plugin.HostConfig, secretName);
+        
+            // Determines if the enumerated element contains objects that 
+            // have the case-insensitive name.
+            static bool HasNamedSecret(JsonElement secretEl, string secretName)
+            {
+                if (!secretEl.TryGetProperty(SECRETS_CONFIG_KEY, out JsonElement el))
+                {
+                    return false;
+                }
 
-        ///<inheritdoc/>
-        public readonly ISecretResult? TryGet(string secretName)
-        {
-            IOnDemandSecret secret = GetOnDemandSecret(secretName);
-            return secret.FetchSecret();
+                Validate.Assert(
+                    el.ValueKind == JsonValueKind.Object,
+                    message: $"The '{SECRETS_CONFIG_KEY}' configuration element must be a JSON object, but got {el.ValueKind} in plugin/host config"
+                );
+
+                foreach (JsonProperty prop in el.EnumerateObject())
+                {
+                    if (string.Equals(prop.Name, secretName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
         }
 
         /// <summary>
-        /// Gets a required secret from the "secrets" element. 
+        /// Attempts to get a secret from the "secrets" element by name asynchronously.
         /// </summary>
-        /// <remarks>
-        /// <para>
-        /// Secrets elements are merged from the host config and plugin local config 'secrets' element
-        /// before searching. The plugin config takes precedence over the host config.
-        /// </para>
-        /// </remarks>
-        /// <param name="secretName">The name of the secret property to get.</param>
-        /// <returns>The secret result for the specified name.</returns>
-        /// <exception cref="KeyNotFoundException">The specified secret was not found.</exception>
-        /// <exception cref="ObjectDisposedException">The plugin has been disposed.</exception>
-        public async Task<ISecretResult> GetAsync(string secretName)
+        /// <param name="secretName">The name of the secret in the secret config to read</param>
+        /// <param name="cancellation">A token to cancel the asynchronous operation</param>
+        /// <returns>A task that resolves the secret result if found, otherwise a task that resolves null</returns>
+        public readonly Task<ISecretResult?> TryGetAsync(string secretName, CancellationToken cancellation = default)
         {
-            ISecretResult? res = await TryGetAsync(secretName).ConfigureAwait(false);
+            ArgumentException.ThrowIfNullOrWhiteSpace(secretName);
 
-            return res ?? throw new KeyNotFoundException($"Missing required secret {secretName}");
+            string? rawValue = TryGetSecretFromConfig(_plugin, secretName);
+
+            return rawValue is null 
+                ? Task.FromResult<ISecretResult?>(null) 
+                : GetSecretAsync(_state, rawValue, cancellation);
         }
 
-        ///<inheritdoc/>
+        /// <summary>
+        /// Attempts to get a secret from the "secrets" element by name.
+        /// </summary>
+        /// <param name="secretName">The name of the secret in the secret config to read</param>
+        /// <returns>The secret result if found, null otherwise</returns>
+        public readonly ISecretResult? TryGet(string secretName)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(secretName);
+
+            string? rawValue = TryGetSecretFromConfig(_plugin, secretName);
+
+            return rawValue is null ? null : GetSecret(_state, rawValue);
+        }
+
+        /// <summary>
+        /// <para>
+        /// Gets a required secret from the "secrets" element. 
+        /// </para>
+        /// <para>
+        /// Secrets elements are merged from the host config and the plugin's local 'secrets' element before searching. The plugin config takes precedence over the host config.
+        /// </para>
+        /// </summary>
+        /// <param name="secretName">The name of the secret property to get</param>
+        /// <param name="cancellation">A token to cancel the asynchronous operation</param>
+        /// <returns>An <see cref="ISecretResult"/> for the required secret, raises an exception if the secret does not exist</returns>
+        /// <exception cref="KeyNotFoundException">The required secret does not exist in the merged secrets elements.</exception>
+        /// <exception cref="ObjectDisposedException">The secret store has been disposed.</exception>
+        public Task<ISecretResult> GetAsync(string secretName, CancellationToken cancellation = default)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(secretName);
+
+            Task<ISecretResult?> resultTask = TryGetAsync(secretName, cancellation);
+
+            return AwaitRequiredSecretAsync(resultTask, secretName);
+
+            static async Task<ISecretResult> AwaitRequiredSecretAsync(Task<ISecretResult?> resultTask, string secretName)
+            {
+                ISecretResult? res = await resultTask.ConfigureAwait(false);
+                return res ?? throw new KeyNotFoundException($"Missing required secret {secretName}");
+            }
+        }
+
+        /// <summary>
+        /// Gets an on-demand secret that can be used to fetch the secret value from its 
+        /// store when needed.
+        /// </summary>
+        /// <param name="secretName">The name of the secret in the secret config to read</param>
+        /// <returns>An on-demand secret instance</returns>
         public readonly IOnDemandSecret GetOnDemandSecret(string secretName)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(secretName);
-            return new OnDemandSecret(_plugin, secretName, GetVaultClient);
-        }
 
+            string? rawValue = TryGetSecretFromConfig(_plugin, secretName);
 
-        /// <summary>
-        /// Gets a required secret from the "secrets" element. 
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// Secrets elements are merged from the host config and plugin local config 'secrets' element
-        /// before searching. The plugin config takes precedence over the host config.
-        /// </para>
-        /// </remarks>
-        /// <param name="secretName">The name of the secret property to get.</param>
-        /// <returns>The secret result for the specified name.</returns>
-        /// <exception cref="KeyNotFoundException">The specified secret was not found.</exception>
-        /// <exception cref="ObjectDisposedException">The plugin has been disposed.</exception>
-        [Obsolete("Use GetAsync instead")]
-        public Task<ISecretResult> GetSecretAsync(string secretName)
-            => GetAsync(secretName);
+            return new OnDemandSecret(
+                _state, 
+                secretName: secretName, 
+                rawValue: rawValue
+            );
+        }       
 
-        ///<inheritdoc/>
+        ///<inheritdoc cref="TryGetAsync(string, CancellationToken)"/>
         [Obsolete("Use TryGetAsync instead")]
         public readonly Task<ISecretResult?> TryGetSecretAsync(string secretName, CancellationToken cancellation = default)
             => TryGetAsync(secretName, cancellation);
 
-        ///<inheritdoc/>
+        ///<inheritdoc cref="TryGet(string)"/>
         [Obsolete("Use TryGet instead")]
         public readonly ISecretResult? TryGetSecret(string secretName)
-            => TryGet(secretName);       
+            => TryGet(secretName);
 
         ///<inheritdoc/>
-        public override bool Equals(object? obj) => obj is PluginSecretStore store && Equals(store);
+        public override bool Equals(object? obj) 
+            => obj is PluginSecretStore store && Equals(store);
 
         ///<inheritdoc/>
-        public static bool operator ==(PluginSecretStore left, PluginSecretStore right) => left.Equals(right);
+        public static bool operator ==(PluginSecretStore left, PluginSecretStore right) 
+            => left.Equals(right);
 
         ///<inheritdoc/>
-        public static bool operator !=(PluginSecretStore left, PluginSecretStore right) => !(left == right);
+        public static bool operator !=(PluginSecretStore left, PluginSecretStore right) 
+            => !(left == right);
 
         /// <inheritdoc/>
         public bool Equals(PluginSecretStore other) => ReferenceEquals(other._plugin, _plugin);
@@ -193,11 +210,244 @@ namespace VNLib.Plugins.Extensions.Loading
         ///<inheritdoc/>
         public override int GetHashCode() => _plugin.GetHashCode();
 
-
-        private sealed class KvVaultConfig
+        private static (string, string) ParseSchemeAndPath(string rawValue)
         {
-            [JsonPropertyName("assembly_name")]
-            public string? CustomAssemblyPath { get; set; }
+            string[] parts = rawValue.Split("://", StringSplitOptions.RemoveEmptyEntries);
+
+            return parts.Length == 2
+                ? (parts[0], parts[1])
+                : throw new FormatException($"Invalid secret scheme format: '{rawValue}'. Expected 'scheme://path'.");
+        }
+
+        private static string? TryGetSecretFromConfig(PluginBase plugin, string secretName)
+        {
+            bool local = plugin.PluginConfig.TryGetProperty(SECRETS_CONFIG_KEY, out JsonElement localEl);
+            bool host = plugin.HostConfig.TryGetProperty(SECRETS_CONFIG_KEY, out JsonElement hostEl);
+
+            if (!local && !host)
+            {
+                return null;
+            }
+
+            /*
+             * Merge secrets from host and plugin configs into a single case-insensitive lookup.
+             * Host entries are written first; plugin entries follow and overwrite any matching
+             * key (ordinal-ignore-case), so plugin config always takes precedence.
+             *
+             * If a key appears more than once within the same config object (malformed JSON),
+             * the last occurrence wins — consistent with JsonElement.EnumerateObject() traversal.
+             */
+            Dictionary<string, JsonElement> conf = new(StringComparer.OrdinalIgnoreCase);
+
+            if (host)
+            {
+                Validate.Assert(
+                    hostEl.ValueKind == JsonValueKind.Object,
+                    message: $"The '{SECRETS_CONFIG_KEY}' configuration element must be a JSON object, but got {hostEl.ValueKind} in host config"
+                );
+
+                foreach (JsonProperty p in hostEl.EnumerateObject())
+                {
+                    conf[p.Name] = p.Value;
+                }
+            }
+
+            if (local)
+            {
+                Validate.Assert(
+                    localEl.ValueKind == JsonValueKind.Object,
+                    message: $"The '{SECRETS_CONFIG_KEY}' configuration element must be a JSON object, but got {localEl.ValueKind} in plugin config"
+                );
+
+                foreach (JsonProperty p in localEl.EnumerateObject())
+                {
+                    conf[p.Name] = p.Value;
+                }
+            }
+
+            // If secret was found ensure it's a string and return it
+            if (conf.TryGetValue(secretName, out JsonElement el))
+            {
+                Validate.Assert(
+                    el.ValueKind == JsonValueKind.String,
+                    message: $"Secret {secretName} config value exists, but is {el.ValueKind} but must be a string."
+                );
+
+                return el.GetString();
+            }
+
+            return null;
+        }       
+
+        private static ISecretResult? GetSecret(PluginSecretState state, string rawValue)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(rawValue);
+
+            /*
+             * See if external secret scheme format is being used, if so
+             * it will need to use an external reader to resolve the secret value.
+             * 
+             * Copy the raw string value to a new secret value. 
+             * Read the security note on the _rawSecretValue field
+             * above.
+             */
+
+            if (!rawValue.Contains("://", StringComparison.Ordinal))
+            {
+                return SecretResult.ToSecret(rawValue);
+            }
+
+            (string scheme, string secretPath) = ParseSchemeAndPath(rawValue);
+
+            return state.Readers.TryGetValue(scheme, out ISecretReader? reader)
+                ? reader.GetSecret(secretPath)
+                : throw new NotSupportedException($"Secret scheme {scheme} is not supported");
+        }
+
+        private static Task<ISecretResult?> GetSecretAsync(
+            PluginSecretState state, 
+            string rawValue, 
+            CancellationToken cancellation
+        )
+        {
+            // Empty or whitespace strings are allowed and will fall through
+            // to raw secret value
+            ArgumentNullException.ThrowIfNull(rawValue);
+
+            /*
+             * See if external secret scheme format is being used, if so
+             * it will need to use an external reader to resolve the secret value.
+             * 
+             * Copy the raw string value to a new secret value. 
+             * Read the security note on the rawValue field
+             * above.
+             */
+
+            if (!rawValue.Contains("://", StringComparison.Ordinal))
+            {
+                return Task.FromResult<ISecretResult?>(SecretResult.ToSecret(rawValue));
+            }
+
+            (string scheme, string secretPath) = ParseSchemeAndPath(rawValue);
+
+            return state.Readers.TryGetValue(scheme, out ISecretReader? reader)
+                ? reader.GetSecretAsync(secretPath, cancellation)
+                : Task.FromException<ISecretResult?>(new NotSupportedException($"Secret scheme {scheme} is not supported"));
+        }       
+
+        private sealed record PluginSecretState(
+            IKvVaultClient? VaultClient,
+            FrozenDictionary<string, ISecretReader> Readers
+        )
+        {
+            public static PluginSecretState LoadState(PluginBase plugin)
+            {
+                // Load the built-in readers, these are always available regardless of vault configuration
+                // since they rely on platform features
+                List<ISecretReader> readers = [
+                    new EnvironmentSecretReader(),
+                    new FileSecretReader()
+                ];
+
+                // Try to load the vault
+                IKvVaultClient? vault = LoadVaultClient(plugin);
+                if (vault != null)
+                {
+                    readers.Add(new VaultSecretReader(vault));
+                }
+
+                // Init state from loaded vault and readers, the readers will be used to resolve secrets
+                // on demand when requested by the plugin
+                return new PluginSecretState(
+                    VaultClient: vault,
+                    Readers: readers.ToFrozenDictionary(r => r.Scheme, StringComparer.OrdinalIgnoreCase)
+                );
+            }
+
+            private static IKvVaultClient? LoadVaultClient(PluginBase plugin)
+            {
+                IConfigScope? customVaultConf = plugin.Config().TryGet(CUSTOM_KV_CONFIG);
+                KvVaultConfig? kvVaultConfig = customVaultConf?.Deserialize<KvVaultConfig>();
+
+                // Try loading custom vault first
+                if (kvVaultConfig is not null)
+                {
+                    if (!string.IsNullOrWhiteSpace(kvVaultConfig.CustomAssemblyPath))
+                    {
+                        return plugin.Deps()
+                            .LoadExternal<IKvVaultClient>(kvVaultConfig.CustomAssemblyPath);
+                    }
+                }
+
+                // Fallback to HCP Vault
+                IConfigScope? hcpVaultConf = plugin.Config().TryGet(VAULT_OBJECT_NAME);
+
+                return hcpVaultConf is null ? null : (IKvVaultClient)LoadHcpVault(hcpVaultConf);
+            }
+
+            private static HCVaultClient LoadHcpVault(IConfigScope conf)
+            {
+                //Get auth token from config, then fall back to environment variable
+                string? envAuthToken =  Environment.GetEnvironmentVariable(VAULT_TOKEN_ENV_NAME);
+                string? authToken = conf.GetValueOrDefault(VAULT_TOKEN_KEY, envAuthToken!);
+
+                _ = authToken ?? throw new KeyNotFoundException($"HCP Vault authentication token required. Set {VAULT_OBJECT_NAME} or env:{VAULT_TOKEN_ENV_NAME}");
+
+                //create vault client, invalid or nulls will raise exceptions here
+                return HCVaultClient.Create(
+                     serverAddress: conf.GetRequiredProperty(VAULT_URL_KEY, p => p.GetString()!),
+                     authToken,
+                     kvVersion: conf.GetValueOrDefault(VAULT_KV_VERSION_KEY, HCVaultDefaultKvVersion),
+                     trustCert: conf.GetValueOrDefault(VAULT_TRUST_CERT_KEY, false),
+                     heap: MemoryUtil.Shared
+                );
+            }
+
+            private sealed class KvVaultConfig
+            {
+                [JsonPropertyName("assembly_name")]
+                public string? CustomAssemblyPath { get; set; }
+            }
+        }
+
+        private sealed class OnDemandSecret(PluginSecretState state, string secretName, string? rawValue) : IOnDemandSecret
+        {
+            public string SecretName { get; } = secretName ?? throw new ArgumentNullException(nameof(secretName));
+
+            /*
+             * Caches the raw config value for on-demand resolution.
+             *
+             * This field stores the value exactly as read from the plugin or host
+             * configuration JSON. It is NOT the resolved secret itself — it may be
+             * a scheme-prefixed URI (e.g. "vault://secret/path?secret=key",
+             * "env://MY_VAR", "file:///path/to/secret") or, in the simplest case,
+             * a plaintext value that IS the secret.
+             *
+             * SECURITY NOTE:
+             * - For scheme-prefixed URIs, the actual secret is never held here;
+             *   it is resolved on demand by the appropriate ISecretReader and
+             *   cleared from memory as soon as the ISecretResult is disposed.
+             * - For plaintext values (no "://" scheme), the value is both the
+             *   config entry and the secret. Storing a second managed string copy
+             *   is no worse than the config document already loaded in memory,
+             *   but consumers should prefer scheme-based references to minimize
+             *   the window during which secret data resides in the managed heap.
+             * - The string is immutable and cannot be zeroed. Prefer the FetchSecret
+             *   or FetchSecretAsync methods which return IDisposable ISecretResult
+             *   instances whose buffers are wiped on disposal.
+             */
+            private readonly string? _rawSecretValue = rawValue;
+
+            ///<inheritdoc/>
+            public ISecretResult? FetchSecret() => _rawSecretValue is null ? null : GetSecret(state, _rawSecretValue);
+
+            ///<inheritdoc/>
+            public Task<ISecretResult?> FetchSecretAsync(CancellationToken cancellation)
+            {
+                return _rawSecretValue is null
+                    ? Task.FromResult<ISecretResult?>(null)
+                    : GetSecretAsync(state, _rawSecretValue, cancellation);
+            }
         }
     }
 }

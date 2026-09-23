@@ -1,15 +1,15 @@
-﻿/*
-* Copyright (c) 2025 Vaughn Nugent
-* 
+/*
+* Copyright (c) 2026 Vaughn Nugent
+*
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql
-* File: SqlDbConnectionLoader.cs 
+* File: SqlDbConnectionLoader.cs
 *
-* SqlDbConnectionLoader.cs is part of VNLib.Plugins.Extensions.Loading.Sql which is part of the larger 
+* SqlDbConnectionLoader.cs is part of VNLib.Plugins.Extensions.Loading.Sql which is part of the larger
 * VNLib collection of libraries and utilities.
 *
-* VNLib.Plugins.Extensions.Loading.Sql is free software: you can redistribute it and/or modify 
-* it under the terms of the GNU Affero General Public License as 
+* VNLib.Plugins.Extensions.Loading.Sql is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Affero General Public License as
 * published by the Free Software Foundation, either version 3 of the
 * License, or (at your option) any later version.
 *
@@ -30,6 +30,8 @@ using System.Collections.Generic;
 
 using Microsoft.EntityFrameworkCore;
 
+using VNLib.Utils.Async;
+using VNLib.Utils.Extensions;
 using VNLib.Utils.Logging;
 using VNLib.Plugins.Extensions.Loading.Sql.DatabaseBuilder;
 
@@ -44,8 +46,30 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         public const string SQL_CONFIG_KEY = "sql";
         public const string SQL_PROVIDER_DLL_KEY = "provider";
 
+        private static IRuntimeDbProvider LoadDbProvider(PluginBase plugin)
+        {
+            //Get the sql configuration scope
+            IConfigScope sqlConf = plugin.Config().Get(SQL_CONFIG_KEY);
+
+            //Get the provider dll path
+            string dllPath = sqlConf.GetRequiredProperty(SQL_PROVIDER_DLL_KEY, k => k.GetString()!);
+
+            /*
+             * I am loading a bare object here and dynamically resolving the required methods
+             * insead of forcing a shared interface. This allows the external library to be
+             * more flexible and slimmer.
+             */
+return plugin.Deps().LoadExternal<IRuntimeDbProvider>(dllPath);
+    }
+        private static IRuntimeDbProvider GetDbProvider(PluginBase plugin)
+        {
+            plugin.ThrowIfUnloaded();
+            return plugin.Deps().GetOrCreateSingleton(LoadDbProvider);
+        }
+
+
         /// <summary>
-        /// Gets (or loads) the ambient sql connection factory for the current plugin 
+        /// Gets (or loads) the ambient sql connection factory for the current plugin
         /// and synchronously blocks the current thread until the connection is ready.
         /// </summary>
         /// <param name="plugin"></param>
@@ -71,34 +95,12 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <exception cref="ObjectDisposedException"></exception>
         public static IAsyncLazy<Func<DbConnection>> GetConnectionFactoryAsync(this PluginBase plugin)
         {
-            IRuntimeDbProvider provider = plugin.GetDbProvider();
+            IRuntimeDbProvider provider = GetDbProvider(plugin);
             return provider.GetDbConnectionAsync().AsLazy();
         }
 
-        private static IRuntimeDbProvider GetDbProvider(this PluginBase plugin)
-        {
-            plugin.ThrowIfUnloaded();
-            return LoadingExtensions.GetOrCreateSingleton(plugin, LoadDbProvider);
-        }
-
-        private static IRuntimeDbProvider LoadDbProvider(PluginBase plugin)
-        {
-            //Get the sql configuration scope
-            IConfigScope sqlConf = plugin.Config().Get(SQL_CONFIG_KEY);
-
-            //Get the provider dll path
-            string dllPath = sqlConf.GetRequiredProperty(SQL_PROVIDER_DLL_KEY, k => k.GetString()!);
-
-            /*
-             * I am loading a bare object here and dynamically resolving the required methods
-             * insead of forcing a shared interface. This allows the external library to be
-             * more flexible and slimmer.
-             */
-            return plugin.CreateServiceExternal<IRuntimeDbProvider>(dllPath);
-        }
-
         /// <summary>
-        /// Gets (or loads) the ambient <see cref="DbContextOptions"/> configured from 
+        /// Gets (or loads) the ambient <see cref="DbContextOptions"/> configured from
         /// the ambient sql factory and blocks the current thread until the options are ready
         /// </summary>
         /// <param name="plugin"></param>
@@ -116,7 +118,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         }
 
         /// <summary>
-        /// Gets (or loads) the ambient <see cref="DbContextOptions"/> configured from 
+        /// Gets (or loads) the ambient <see cref="DbContextOptions"/> configured from
         /// the ambient sql factory
         /// </summary>
         /// <param name="plugin"></param>
@@ -126,12 +128,12 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <remarks>If plugin is in debug mode, writes log data to the default log</remarks>
         public static IAsyncLazy<DbContextOptions> GetContextOptionsAsync(this PluginBase plugin)
         {
-            IRuntimeDbProvider provider = plugin.GetDbProvider();
+            IRuntimeDbProvider provider = GetDbProvider(plugin);
             return provider.GetDbOptionsAsync().AsLazy();
         }
 
         /// <summary>
-        /// Ensures the tables that back your desired DbContext exist within the configured database, 
+        /// Ensures the tables that back your desired DbContext exist within the configured database,
         /// or creates them if needed.
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -145,7 +147,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         }
 
         /// <summary>
-        /// Ensures the tables that back your desired DbContext exist within the configured database, 
+        /// Ensures the tables that back your desired DbContext exist within the configured database,
         /// or creates them if needed.
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -164,20 +166,22 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
             dbCreator.OnDatabaseCreating(builder, state);
 
             //Get the abstract database from the connection type
-            IRuntimeDbProvider dbp = plugin.GetDbProvider();
+            IRuntimeDbProvider dbp = GetDbProvider(plugin);
             IDBCommandGenerator cb = dbp.GetCommandGenerator();
 
             //Compile the db command as a text Sql command
             string[] createComands = builder.BuildCreateCommand(cb);
 
             //Wait for the connection factory to load
-            Func<DbConnection> dbConFactory = await dbp.GetDbConnectionAsync();
+            Func<DbConnection> dbConFactory = await dbp.GetDbConnectionAsync()
+                .ConfigureAwait(false);
 
             //Create a new db connection
             await using DbConnection connection = dbConFactory();
 
             //begin connection
-            await connection.OpenAsync(plugin.UnloadToken);
+            await connection.OpenAsync(plugin.UnloadToken)
+                .ConfigureAwait(false);
 
             //Transaction
             await using DbTransaction transaction = await connection.BeginTransactionAsync(IsolationLevel.Serializable, plugin.UnloadToken);
@@ -198,11 +202,13 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
                 command.CommandText = createCmd;
 
                 //Excute the command, it may return 0 if the table's already exist
-                _ = await command.ExecuteNonQueryAsync(plugin.UnloadToken);
+                _ = await command.ExecuteNonQueryAsync(plugin.UnloadToken)
+                    .ConfigureAwait(false);
             }
 
             //Commit transaction now were complete
-            await transaction.CommitAsync(plugin.UnloadToken);
+            await transaction.CommitAsync(plugin.UnloadToken)
+                .ConfigureAwait(false);
 
             //All done!
             plugin.Log.Debug("Successfully created tables for {type}", typeof(T).Name);

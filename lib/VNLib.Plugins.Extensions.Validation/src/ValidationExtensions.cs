@@ -132,18 +132,5 @@ namespace VNLib.Plugins.Extensions.Validation
             }
             return result.IsValid;
         }
-
-        /// <summary>
-        /// Validates the specified instance, and stores errors to the specified <paramref name="webMessage"/>
-        /// </summary>
-        /// <param name="instance">The instance to validate</param>
-        /// <param name="validator"></param>
-        /// <param name="webMessage">The <see cref="ValErrWebMessage"/> to store errors to</param>
-        /// <returns>True if the result of the validation is valid, false otherwise and the <paramref name="webMessage"/> is not modified</returns>
-        [Obsolete("Use WebMessage instead")]
-        public static bool Validate<T>(this IValidator<T> validator, T instance, ValErrWebMessage webMessage)
-        {
-            return Validate(validator, instance, (WebMessage)webMessage);
-        }
     }
 }

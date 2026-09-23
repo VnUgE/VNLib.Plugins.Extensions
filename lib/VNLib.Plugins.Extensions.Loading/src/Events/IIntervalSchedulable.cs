@@ -1,11 +1,11 @@
-/*
+﻿/*
 * Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: IntervalResultionType.cs 
+* File: IIntervalSchedulable.cs 
 *
-* IntervalResultionType.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
+* IIntervalSchedulable.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
 * VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
@@ -22,28 +22,24 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
+using System.Threading;
+using System.Threading.Tasks;
+
+using VNLib.Utils.Logging;
+
 namespace VNLib.Plugins.Extensions.Loading.Events
 {
     /// <summary>
-    /// Defines the resolution type for configurable event intervals.
+    /// Defines a method for asynchronous event scheduling on an interval.
     /// </summary>
-    public enum IntervalResultionType
+    public interface IIntervalSchedulable
     {
         /// <summary>
-        /// Specifies event interval resolution in milliseconds.
+        /// Invoked when the scheduled interval time has elapsed.
         /// </summary>
-        Milliseconds,
-        /// <summary>
-        /// Specifies event interval resolution in seconds.
-        /// </summary>
-        Seconds,
-        /// <summary>
-        /// Specifies event interval resolution in minutes.
-        /// </summary>
-        Minutes,
-        /// <summary>
-        /// Specifies event interval resolution in hours.
-        /// </summary>
-        Hours
+        /// <param name="log">The plugin's default log provider.</param>
+        /// <param name="cancellationToken">A cancellation token that signals when the plugin is being unloaded.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        Task OnIntervalAsync(ILogProvider log, CancellationToken cancellationToken);
     }
 }

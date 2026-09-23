@@ -3,10 +3,10 @@
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: UserPassValResult.cs 
+* File: IntervalResolutionType.cs 
 *
-* UserPassValResult.cs is part of VNLib.Plugins.Extensions.Loading which is 
-* part of the larger VNLib collection of libraries and utilities.
+* IntervalResolutionType.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
+* VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
 * it under the terms of the GNU Affero General Public License as 
@@ -22,31 +22,28 @@
 * along with this program.  If not, see https://www.gnu.org/licenses/.
 */
 
-using System.Threading;
-
-using VNLib.Utils.Memory;
-using VNLib.Plugins.Essentials.Users;
-
-namespace VNLib.Plugins.Extensions.Loading.Users
+namespace VNLib.Plugins.Extensions.Loading.Events
 {
     /// <summary>
-    /// Defines result codes for password validation.
+    /// Defines the resolution type for configurable event intervals.
     /// </summary>
-    public static class UserPassValResult
+    public enum IntervalResolutionType
     {
         /// <summary>
-        /// Indicates the passwords matched.
+        /// Specifies event interval resolution in milliseconds.
         /// </summary>
-        public const int Success = 1;
-
+        Milliseconds,
         /// <summary>
-        /// Indicates the user did not have a password stored.
+        /// Specifies event interval resolution in seconds.
         /// </summary>
-        public const int Null = 0;
-
+        Seconds,
         /// <summary>
-        /// Indicates the passwords did not match.
+        /// Specifies event interval resolution in minutes.
         /// </summary>
-        public const int Failed = -1;
+        Minutes,
+        /// <summary>
+        /// Specifies event interval resolution in hours.
+        /// </summary>
+        Hours
     }
 }

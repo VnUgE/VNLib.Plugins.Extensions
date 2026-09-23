@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2025 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql.Mysql
@@ -36,6 +36,7 @@ using MySqlConnector;
 
 using VNLib.Utils.Logging;
 using VNLib.Plugins.Extensions.Loading;
+using VNLib.Plugins.Extensions.Loading.Secrets;
 using VNLib.Plugins.Extensions.Loading.Sql;
 using VNLib.Plugins.Extensions.Loading.Sql.DatabaseBuilder;
 
@@ -189,7 +190,7 @@ namespace VNLib.Plugins.Extensions.Sql
             const int MAX_VARIABLE_SIZE = 8000;
 
             ///<inheritdoc/>
-            public void BuildCreateStatment(StringBuilder builder, DataTable table)
+            public void BuildCreateStatement(StringBuilder builder, DataTable table)
             {
                 builder.AppendLine("CREATE TABLE IF NOT EXISTS `@tableName` (");
 

@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql
@@ -29,16 +29,16 @@ using System.Text;
 namespace VNLib.Plugins.Extensions.Loading.Sql.DatabaseBuilder
 {
     /// <summary>
-    /// Generates specialized statments used to modify a database 
+    /// Generates specialized statements used to modify a database 
     /// </summary>
     public interface IDBCommandGenerator
     {
         /// <summary>
-        /// Compiles a valid database table creation statment from the <see cref="DataTable"/>
+        /// Compiles a valid database table creation statement from the <see cref="DataTable"/>
         /// defining data columns
         /// </summary>
-        /// <param name="builder">The string builder used to build the creation statment</param>
+        /// <param name="builder">The string builder used to build the creation statement</param>
         /// <param name="table">The <see cref="DataTable"/> that defines the columns within the table</param>
-        void BuildCreateStatment(StringBuilder builder, DataTable table);
+        void BuildCreateStatement(StringBuilder builder, DataTable table);
     }
 }

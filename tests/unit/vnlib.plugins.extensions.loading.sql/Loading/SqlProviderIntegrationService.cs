@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 *
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql.Tests
@@ -27,6 +27,8 @@ using System.Data.Common;
 using System.Threading.Tasks;
 
 using Microsoft.EntityFrameworkCore;
+
+using VNLib.Utils.Async;
 
 namespace VNLib.Plugins.Extensions.Loading.Sql.Tests.Loading
 {

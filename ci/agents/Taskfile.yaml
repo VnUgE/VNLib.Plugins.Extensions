@@ -1,4 +1,4 @@
-version: '3'
+version: '3.45'
 
 vars:
   MODEL: '{{ .MODEL | default "github-copilot/gpt-5-mini" }}'

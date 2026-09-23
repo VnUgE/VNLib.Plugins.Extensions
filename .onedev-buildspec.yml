@@ -2,7 +2,7 @@ version: 53
 
 properties:
 - name: deps_core_version
-  value: develop::HEAD
+  value: master::v0.2.0
   archived: false
 
 jobs:

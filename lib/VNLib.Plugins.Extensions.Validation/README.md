@@ -7,3 +7,6 @@ Debug build w/ symbols & xml docs, release builds, NuGet packages, and individua
 ## FluentValidation
 
 This library includes a package reference to [FluentValidation](https://github.com/FluentValidation/FluentValidation) which can also be found on nuget.org.
+
+## License
+The software in this package is distributed under the GNU AGPL version 3.0 (or any later version). See the [LICENSE](../../LICENSE) file for more information.

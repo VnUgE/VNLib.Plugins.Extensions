@@ -28,7 +28,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql-providers", "sql-providers", "{A03C3E08-6EAA-4D4A-A434-E9455E9B3868}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNLib.Plugins.Extensions.Loading.Sql.MYSql", "lib\sql-providers\mysql\VNLib.Plugins.Extensions.Loading.Sql.MySql\src\VNLib.Plugins.Extensions.Loading.Sql.MYSql.csproj", "{50B5D5B8-2944-43E3-9CB0-F19D46F42984}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNLib.Plugins.Extensions.Loading.Sql.MySQL", "lib\sql-providers\mysql\VNLib.Plugins.Extensions.Loading.Sql.MySql\src\VNLib.Plugins.Extensions.Loading.Sql.MySQL.csproj", "{50B5D5B8-2944-43E3-9CB0-F19D46F42984}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNLib.Plugins.Extensions.Loading.Sql.SQLite", "lib\sql-providers\sqlite\VNLib.Plugins.Extensions.Loading.Sql.SQLite\src\VNLib.Plugins.Extensions.Loading.Sql.SQLite.csproj", "{F6520193-1C5B-4A7C-8E5A-05D910AC9139}"
 EndProject

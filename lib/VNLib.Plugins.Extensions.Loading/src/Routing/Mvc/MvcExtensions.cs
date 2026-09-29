@@ -170,6 +170,12 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
                     message: $"Endpoint '{method.Name}' path '{routePath}' is not a valid path. It must start with a '/' and contain no whitespace."
                 );
 
+                //Only a single http method is supported per route, combined flags are a developer error
+                Validate.Assert(
+                    condition: (BitOperations.PopCount((uint)route.Method) == 1),
+                    message: $"Endpoint '{method.Name}' must specify exactly one HTTP method. Combined methods are not supported."
+                );                
+
                 routes.Add(new(
                     Controller:     controller,
                     RouteHandler:   method,

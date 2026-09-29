@@ -147,12 +147,11 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
             return BuildStaticRoutes(controller, logger, guards, staticRoutes);
         }
 
-        private static MvcHttpRouteInfo[] GetStaticRoutes<T>(T controller, IConfigScope? config)
-            where T : IHttpController
+        private static MvcHttpRouteInfo[] GetStaticRoutes(IHttpController controller, IConfigScope? config)
         {
             List<MvcHttpRouteInfo> routes = [];
 
-            foreach (MethodInfo method in typeof(T).GetMethods())
+            foreach (MethodInfo method in controller.GetType().GetMethods())
             {
                 HttpStaticRouteAttribute? route = method.GetCustomAttribute<HttpStaticRouteAttribute>();
 
@@ -183,6 +182,14 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
                     Path:           routePath                   
                 ));
             }
+
+            //Detect duplicate (path, method) pairs within this controller            
+            bool hasDuplicates = routes
+                .GroupBy(static r => (r.Path, r.Method))
+                .Where(static g => g.Count() > 1)
+                .Any();
+
+            Validate.Assert(!hasDuplicates, $"Duplicate route found on controller {controller.GetType().Name}");         
 
             return [.. routes];           
         }

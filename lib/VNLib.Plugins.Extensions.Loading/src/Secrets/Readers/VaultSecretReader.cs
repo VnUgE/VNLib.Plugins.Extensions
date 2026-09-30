@@ -96,7 +96,10 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
             }
 
             // Get the secret table key
-            secretTableKey = query.SliceAfterParam("secret=").SliceBeforeParam('&').ToString();
+            secretTableKey = query
+                .SliceAfterParam("secret=")
+                .SliceBeforeParam('&')
+                .ToString();
 
             // get mount and path
             int lastSep = path.IndexOf('/');

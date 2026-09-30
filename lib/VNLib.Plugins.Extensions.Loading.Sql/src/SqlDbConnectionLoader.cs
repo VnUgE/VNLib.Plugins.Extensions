@@ -56,11 +56,11 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
 
             /*
              * I am loading a bare object here and dynamically resolving the required methods
-             * insead of forcing a shared interface. This allows the external library to be
+             * instead of forcing a shared interface. This allows the external library to be
              * more flexible and slimmer.
              */
-return plugin.Deps().LoadExternal<IRuntimeDbProvider>(dllPath);
-    }
+            return plugin.Deps().LoadExternal<IRuntimeDbProvider>(dllPath);
+        }
         private static IRuntimeDbProvider GetDbProvider(PluginBase plugin)
         {
             plugin.ThrowIfUnloaded();

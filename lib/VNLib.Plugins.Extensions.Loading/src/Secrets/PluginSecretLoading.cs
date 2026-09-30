@@ -230,14 +230,9 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <returns>A task whose result the base64 decoded secret as a byte[]</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="InternalBufferTooSmallException"></exception>
-        public static async Task<byte[]> ToBase64Bytes(this Task<ISecretResult> secret)
-        {
-            ArgumentNullException.ThrowIfNull(secret);
-
-            using ISecretResult sec = await secret.ConfigureAwait(false);
-
-            return sec?.GetFromBase64();
-        }
+        [Obsolete("Use ToLazy() with transformer")]
+        public static Task<byte[]> ToBase64Bytes(this Task<ISecretResult> secret) 
+            => secret.ToLazy(static s => s.GetFromBase64()).AsTask();
 
         /// <summary>
         /// Gets a task that resolves a <see cref="ReadOnlyJsonWebKey"/>
@@ -246,14 +241,9 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <param name="secret"></param>
         /// <returns>The <see cref="ReadOnlyJsonWebKey"/> from the secret, or null if the secret was not found</returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public static async Task<ReadOnlyJsonWebKey> ToJsonWebKey(this Task<ISecretResult> secret) 
-        {
-            ArgumentNullException.ThrowIfNull(secret);
-
-            using ISecretResult sec = await secret.ConfigureAwait(false);
-
-            return sec?.GetJsonWebKey();
-        }
+        [Obsolete("Use ToLazy() with transformer")]
+        public static Task<ReadOnlyJsonWebKey> ToJsonWebKey(this Task<ISecretResult> secret) 
+            => secret.ToLazy(static s => s.GetJsonWebKey()).AsTask();
 
         /// <summary>
         /// Gets a task that resolves a <see cref="ReadOnlyJsonWebKey"/>
@@ -267,16 +257,15 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <returns>The <see cref="ReadOnlyJsonWebKey"/> from the secret, or throws <see cref="KeyNotFoundException"/> if the key was not found</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="KeyNotFoundException"></exception>
+        [Obsolete("Use ToLazy() with transformer")]
         public static async Task<ReadOnlyJsonWebKey> ToJsonWebKey(this Task<ISecretResult> secret, bool required)
         {
-            ArgumentNullException.ThrowIfNull(secret);
-            
-            using ISecretResult sec = await secret.ConfigureAwait(false);
-            
-            //If required is true and result is null, raise an exception
-            return required && sec == null 
+            ReadOnlyJsonWebKey result = await ToJsonWebKey(secret)
+                .ConfigureAwait(false);
+
+            return result is null && required 
                 ? throw new KeyNotFoundException("A required secret was missing") 
-                : (sec?.GetJsonWebKey()!);
+                : result;
         }
 
         /// <summary>

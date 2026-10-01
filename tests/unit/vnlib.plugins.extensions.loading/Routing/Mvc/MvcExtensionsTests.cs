@@ -134,7 +134,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Routing.Mvc
         }
 
         /// <summary>
-        /// Verifies that a guard passed to Add receives the discovered route table 
+        /// Verifies that a guard passed to Add receives the discovered route table
         /// via <see cref="IHttpControllerGuard.OnRoutesConfigured"/>.
         /// </summary>
         [TestMethod]
@@ -175,7 +175,7 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Routing.Mvc
         /// throws at routing time.
         /// </summary>
         [TestMethod]
-        public void Add_ControllerWithMissingConfigVariable_Throws()
+        public void Add_ControllerWithMissingConfigVariable_ThrowsConfigurationException()
         {
             // Config scope exists but does not define the referenced variable
             object pluginConfig = new { test_controller = new { other_key = "value" } };

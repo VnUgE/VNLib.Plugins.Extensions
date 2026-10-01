@@ -169,11 +169,11 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
                     message: $"Endpoint '{method.Name}' path '{routePath}' is not a valid path. It must start with a '/' and contain no whitespace."
                 );
 
-                //Only a single http method is supported per route, combined flags are a developer error
+                // Only a single HTTP method is supported per route, combined flags indicate a developer error
                 Validate.Assert(
                     condition: (BitOperations.PopCount((uint)route.Method) == 1),
                     message: $"Endpoint '{method.Name}' must specify exactly one HTTP method. Combined methods are not supported."
-                );                
+                );
 
                 routes.Add(new(
                     Controller:     controller,
@@ -183,13 +183,13 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
                 ));
             }
 
-            //Detect duplicate (path, method) pairs within this controller            
+            // Detect duplicate (path, method) pairs within this controller.
             bool hasDuplicates = routes
                 .GroupBy(static r => (r.Path, r.Method))
                 .Where(static g => g.Count() > 1)
                 .Any();
 
-            Validate.Assert(!hasDuplicates, $"Duplicate route found on controller {controller.GetType().Name}");         
+            Validate.Assert(!hasDuplicates, $"Duplicate route found on controller {controller.GetType().Name}.");
 
             return [.. routes];           
         }

@@ -25,16 +25,17 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
 using VNLib.Utils.Memory;
+using VNLib.Utils.Resources;
 
 using VNLib.Plugins.Extensions.Loading.Configuration;
 using VNLib.Plugins.Extensions.Loading.Secrets.Readers;
-using static VNLib.Plugins.Extensions.Loading.Secrets.PluginSecretConstants;
 
 namespace VNLib.Plugins.Extensions.Loading.Secrets
 {
@@ -45,13 +46,25 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
     public readonly struct PluginSecretStore(PluginBase plugin) : IEquatable<PluginSecretStore>
     {
         /// <summary>
-        /// The default HashiCorp Vault KV secrets engine version used when 
-        /// <see cref="VAULT_KV_VERSION_KEY"/> is not specified in configuration.
+        /// The default HashiCorp Vault KV secrets engine version used when
+        /// <c>kv_version</c> is not specified in the <c>hcp_vault</c> configuration.
         /// </summary>
         private const int HCVaultDefaultKvVersion = 2;
 
+        /// <summary>
+        /// The object property within the configuration store that identifies secrets within the host 
+        /// and plugin configuration document.
+        /// </summary>
+        private const string SecretsConfigKey = "secrets";
+
+        /// <summary>
+        /// The environment variable name/key string used to identify the HCP Vault token from an 
+        /// environment variable. This matches Hashicorp default name for tokens.
+        /// </summary>
+        private const string VaultTokenEnvName = "VAULT_TOKEN";
+
         private readonly PluginBase _plugin = plugin;
-        private readonly PluginSecretState _state = plugin.Deps().GetOrCreateSingleton(PluginSecretState.LoadState);
+        private readonly PluginSecretState _state = plugin.Deps().GetOrCreateSingleton<PluginSecretState>();
 
         /// <summary>
         /// Gets the ambient vault client for the current plugin
@@ -60,7 +73,13 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <returns>The ambient <see cref="IKvVaultClient"/> if configuration is loaded; otherwise, <see langword="null" />.</returns>
         /// <exception cref="KeyNotFoundException">The vault configuration is missing required keys.</exception>
         /// <exception cref="ObjectDisposedException">The plugin has been disposed.</exception>
-        public IKvVaultClient? GetVaultClient() => _state.VaultClient;
+        public IKvVaultClient? GetVaultClient()
+        {
+            // If config is defined, attempt to load the vault client
+            return _plugin.Config().HasForType<LazyVaultClient>() 
+                ? _plugin.Deps().GetOrCreateSingleton<LazyVaultClient>().Client.Instance 
+                : null;
+        }
 
         /// <summary>
         /// Checks if a named secret is set in the plugin configuration. 
@@ -83,14 +102,14 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             // have the case-insensitive name.
             static bool HasNamedSecret(JsonElement secretEl, string secretName)
             {
-                if (!secretEl.TryGetProperty(SECRETS_CONFIG_KEY, out JsonElement el))
+                if (!secretEl.TryGetProperty(SecretsConfigKey, out JsonElement el))
                 {
                     return false;
                 }
 
                 Validate.Assert(
                     el.ValueKind == JsonValueKind.Object,
-                    message: $"The '{SECRETS_CONFIG_KEY}' configuration element must be a JSON object, but got {el.ValueKind} in plugin/host config"
+                    message: $"The '{SecretsConfigKey}' configuration element must be a JSON object, but got {el.ValueKind} in plugin/host config"
                 );
 
                 foreach (JsonProperty prop in el.EnumerateObject())
@@ -221,8 +240,8 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
 
         private static string? TryGetSecretFromConfig(PluginBase plugin, string secretName)
         {
-            bool local = plugin.PluginConfig.TryGetProperty(SECRETS_CONFIG_KEY, out JsonElement localEl);
-            bool host = plugin.HostConfig.TryGetProperty(SECRETS_CONFIG_KEY, out JsonElement hostEl);
+            bool local = plugin.PluginConfig.TryGetProperty(SecretsConfigKey, out JsonElement localEl);
+            bool host = plugin.HostConfig.TryGetProperty(SecretsConfigKey, out JsonElement hostEl);
 
             if (!local && !host)
             {
@@ -243,7 +262,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             {
                 Validate.Assert(
                     hostEl.ValueKind == JsonValueKind.Object,
-                    message: $"The '{SECRETS_CONFIG_KEY}' configuration element must be a JSON object, but got {hostEl.ValueKind} in host config"
+                    message: $"The '{SecretsConfigKey}' configuration element must be a JSON object, but got {hostEl.ValueKind} in host config"
                 );
 
                 foreach (JsonProperty p in hostEl.EnumerateObject())
@@ -256,7 +275,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             {
                 Validate.Assert(
                     localEl.ValueKind == JsonValueKind.Object,
-                    message: $"The '{SECRETS_CONFIG_KEY}' configuration element must be a JSON object, but got {localEl.ValueKind} in plugin config"
+                    message: $"The '{SecretsConfigKey}' configuration element must be a JSON object, but got {localEl.ValueKind} in plugin config"
                 );
 
                 foreach (JsonProperty p in localEl.EnumerateObject())
@@ -338,12 +357,11 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             return Task.FromResult<ISecretResult?>(SecretResult.ToSecret(rawValue));         
         }       
 
-        private sealed record PluginSecretState(
-            IKvVaultClient? VaultClient,
-            FrozenDictionary<string, ISecretReader> Readers
-        )
+        private sealed class PluginSecretState
         {
-            public static PluginSecretState LoadState(PluginBase plugin)
+            public readonly FrozenDictionary<string, ISecretReader> Readers;
+
+            public PluginSecretState(PluginBase plugin)
             {
                 // Load the built-in readers, these are always available regardless of vault configuration
                 // since they rely on platform features
@@ -352,64 +370,125 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
                     new FileSecretReader()
                 ];
 
-                // Try to load the vault
-                IKvVaultClient? vault = LoadVaultClient(plugin);
-                if (vault != null)
+                // If config is loaded for the vault, 
+                if (plugin.Config().HasForType<LazyVaultClient>())
                 {
-                    readers.Add(new VaultSecretReader(vault));
+                    LazyVaultClient client = plugin.Deps()
+                                                   .GetOrCreateSingleton<LazyVaultClient>();
+
+                    readers.Add(new VaultSecretReader(client.Client));
                 }
 
                 // Init state from loaded vault and readers, the readers will be used to resolve secrets
                 // on demand when requested by the plugin
-                return new PluginSecretState(
-                    VaultClient: vault,
-                    Readers: readers.ToFrozenDictionary(r => r.Scheme, StringComparer.OrdinalIgnoreCase)
-                );
-            }
+                Readers = readers.ToFrozenDictionary(r => r.Scheme, StringComparer.OrdinalIgnoreCase);
+            }          
+        }
 
-            private static IKvVaultClient? LoadVaultClient(PluginBase plugin)
+        [ConfigurationName("vault_client")]
+        private sealed class LazyVaultClient
+        {
+            public readonly LazyInitializer<IKvVaultClient> Client;
+
+            public LazyVaultClient(PluginBase plugin, IConfigScope config)
             {
-                IConfigScope? customVaultConf = plugin.Config().TryGet(CUSTOM_KV_CONFIG);
-                KvVaultConfig? kvVaultConfig = customVaultConf?.Deserialize<KvVaultConfig>();
+                KvVaultConfig kvVaultConfig = config.DeserializeAndValidate<KvVaultConfig>();
 
-                // Try loading custom vault first
-                if (kvVaultConfig is not null)
+                switch (kvVaultConfig.Type)
                 {
-                    if (!string.IsNullOrWhiteSpace(kvVaultConfig.CustomAssemblyPath))
-                    {
-                        return plugin.Deps()
-                            .LoadExternal<IKvVaultClient>(kvVaultConfig.CustomAssemblyPath);
-                    }
-                }
+                    case "hcp":
+                        Client = new(() => LoadHcpVault(kvVaultConfig.HcpVaultConfig!));
+                        break;
 
-                // Fallback to HCP Vault
-                IConfigScope? hcpVaultConf = plugin.Config().TryGet(VAULT_OBJECT_NAME);
+                    case "external":
+                        Client = new(
+                            () => plugin.Deps().LoadExternal<IKvVaultClient>(kvVaultConfig.CustomAssemblyPath!)
+                        );
 
-                return hcpVaultConf is null ? null : (IKvVaultClient)LoadHcpVault(hcpVaultConf);
+                        break;
+
+                    default:
+                        Debug.Fail("Config validation failed to detect config type");
+                        throw new NotSupportedException("Invalid vault type detected with validation failure. This is a bug");
+                }      
             }
 
-            private static HCVaultClient LoadHcpVault(IConfigScope conf)
+            private static HCVaultClient LoadHcpVault(HcpVaultConfig conf)
             {
                 //Get auth token from config, then fall back to environment variable
-                string? envAuthToken =  Environment.GetEnvironmentVariable(VAULT_TOKEN_ENV_NAME);
-                string? authToken = conf.GetValueOrDefault(VAULT_TOKEN_KEY, envAuthToken!);
-
-                _ = authToken ?? throw new KeyNotFoundException($"HCP Vault authentication token required. Set {VAULT_OBJECT_NAME} or env:{VAULT_TOKEN_ENV_NAME}");
+                string authToken = conf.Token 
+                    ?? Environment.GetEnvironmentVariable(VaultTokenEnvName)
+                    ?? throw new KeyNotFoundException($"HCP Vault authentication token required. Set 'hcp_vault.token' or env:{VaultTokenEnvName}");
 
                 //create vault client, invalid or nulls will raise exceptions here
                 return HCVaultClient.Create(
-                     serverAddress: conf.GetRequiredProperty(VAULT_URL_KEY, p => p.GetString()!),
+                     serverAddress: conf.Url!,
                      authToken,
-                     kvVersion: conf.GetValueOrDefault(VAULT_KV_VERSION_KEY, HCVaultDefaultKvVersion),
-                     trustCert: conf.GetValueOrDefault(VAULT_TRUST_CERT_KEY, false),
+                     kvVersion: conf.KvVersion,
+                     trustCert: conf.TrustCert,
                      heap: MemoryUtil.Shared
                 );
             }
 
-            private sealed class KvVaultConfig
+            private sealed class KvVaultConfig : IOnConfigValidation
             {
+                [JsonPropertyName("type")]
+                public string Type { get; init; } = "";
+
                 [JsonPropertyName("assembly_name")]
-                public string? CustomAssemblyPath { get; set; }
+                public string? CustomAssemblyPath { get; init; }
+
+                [JsonPropertyName("hcp_vault")]
+                public HcpVaultConfig? HcpVaultConfig { get; init; }
+
+                public void OnValidate()
+                {
+                    switch (Type)
+                    {
+                        case "hcp":
+                            Validate.NotNull(HcpVaultConfig, "'hcp_vault' property must not be null when using HCP Vault mode");
+                            HcpVaultConfig.OnValidate();
+                            break;
+
+                        case "external":
+                            Validate.NotNull(CustomAssemblyPath, "'assembly_name' must not be null or empty when using type 'external'");
+                            Validate.Matches(
+                                CustomAssemblyPath,
+                                pattern: @"(?i)\.dll$",
+                                message: "'assembly_name' must reference a .NET assembly (.dll) file."
+                            );
+                            break;
+
+                        default:
+                            throw new ConfigurationException($"Vault client type '{Type}' is not supported");
+                    }
+                }
+            }
+
+            private sealed class HcpVaultConfig : IOnConfigValidation
+            {
+                [JsonPropertyName("url")]
+                public string? Url { get; init; }
+
+                [JsonPropertyName("token")]
+                public string? Token { get; init; }
+
+                [JsonPropertyName("kv_version")]
+                public int KvVersion { get; init; } = HCVaultDefaultKvVersion;
+
+                [JsonPropertyName("trust_certificate")]
+                public bool TrustCert { get; init; } = false;              
+
+                public void OnValidate()
+                {
+                    Validate.NotNull(Url, "HCP Vault url may not be empty or whitespace when declaring vault");
+                    Validate.Assert(
+                        Uri.TryCreate(Url, UriKind.Absolute, out Uri? _),
+                        message: "HCP Vault 'url' is not a valid absolute http(s) url."
+                    );
+
+                    Validate.Range(KvVersion, 1, 2, "vault_client::hcp_vault::kv_version");
+                }
             }
         }
 

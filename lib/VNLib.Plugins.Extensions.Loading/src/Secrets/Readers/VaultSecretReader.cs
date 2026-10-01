@@ -27,6 +27,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using VNLib.Utils.Extensions;
+using VNLib.Utils.Resources;
 
 namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
 {
@@ -36,7 +37,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
     /// (e.g., <c>vault://mount/path?secret=key</c>). The scheme prefix is stripped before
     /// the path is passed to this reader.
     /// </summary>
-    internal sealed class VaultSecretReader(IKvVaultClient vaultClient) : ISecretReader
+    internal sealed class VaultSecretReader(LazyInitializer<IKvVaultClient> vaultClient) : ISecretReader
     {
         /// <inheritdoc/>
         public string Scheme => "vault";
@@ -53,7 +54,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
                 out string secretTableKey
            );
 
-            return vaultClient.ReadSecret(secret, mount, secretTableKey);
+            return vaultClient.Instance.ReadSecret(secret, mount, secretTableKey);
         }
         /// <inheritdoc/>
         public Task<ISecretResult?> GetSecretAsync(string secretPath, CancellationToken cancellationToken)
@@ -67,7 +68,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets.Readers
                 out string secretTableKey
             );
 
-            return vaultClient.ReadSecretAsync(secret, mount, secretTableKey);
+            return vaultClient.Instance.ReadSecretAsync(secret, mount, secretTableKey);
         }
 
         /*

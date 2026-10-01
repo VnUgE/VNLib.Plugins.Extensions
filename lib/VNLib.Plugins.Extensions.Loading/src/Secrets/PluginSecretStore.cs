@@ -292,16 +292,18 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
              * above.
              */
 
-            if (!rawValue.Contains("://", StringComparison.Ordinal))
+            if (rawValue.Contains("://", StringComparison.Ordinal))
             {
-                return SecretResult.ToSecret(rawValue);
+                // Try to process the scheme and see if a reader has a handler registered
+                (string scheme, string secretPath) = ParseSchemeAndPath(rawValue);
+                if (state.Readers.TryGetValue(scheme, out ISecretReader? reader))
+                {
+                    return reader.GetSecret(secretPath);
+                }
             }
 
-            (string scheme, string secretPath) = ParseSchemeAndPath(rawValue);
-
-            return state.Readers.TryGetValue(scheme, out ISecretReader? reader)
-                ? reader.GetSecret(secretPath)
-                : throw new NotSupportedException($"Secret scheme {scheme} is not supported");
+            // Fall back to return raw value
+            return SecretResult.ToSecret(rawValue);         
         }
 
         private static Task<ISecretResult?> GetSecretAsync(
@@ -323,16 +325,17 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
              * above.
              */
 
-            if (!rawValue.Contains("://", StringComparison.Ordinal))
+            if (rawValue.Contains("://", StringComparison.Ordinal))
             {
-                return Task.FromResult<ISecretResult?>(SecretResult.ToSecret(rawValue));
+                (string scheme, string secretPath) = ParseSchemeAndPath(rawValue);
+
+                if (state.Readers.TryGetValue(scheme, out ISecretReader? reader))
+                {
+                    return reader.GetSecretAsync(secretPath, cancellation);
+                }
             }
 
-            (string scheme, string secretPath) = ParseSchemeAndPath(rawValue);
-
-            return state.Readers.TryGetValue(scheme, out ISecretReader? reader)
-                ? reader.GetSecretAsync(secretPath, cancellation)
-                : Task.FromException<ISecretResult?>(new NotSupportedException($"Secret scheme {scheme} is not supported"));
+            return Task.FromResult<ISecretResult?>(SecretResult.ToSecret(rawValue));         
         }       
 
         private sealed record PluginSecretState(

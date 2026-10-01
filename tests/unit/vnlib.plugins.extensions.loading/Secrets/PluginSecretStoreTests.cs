@@ -626,36 +626,60 @@ object hostConfig = new { secrets = new { mykey = "hostValue" } };
         #region Unknown URI scheme
 
         /// <summary>
-        /// Verifies that <see cref="PluginSecretStore.TryGet"/> throws
-        /// <see cref="NotSupportedException"/> when the secret value references
-        /// an unrecognized URI scheme — no reader is registered for it.
+        /// Verifies that <see cref="PluginSecretStore.TryGet"/> falls back to the
+        /// raw literal value when the secret value references an unrecognized URI
+        /// scheme — no reader is registered for it.
         /// </summary>
         [TestMethod]
-        public void TryGet_ThrowsNotSupportedException_WhenSchemeIsUnknown()
+        public void TryGet_ReturnsLiteral_WhenSchemeIsUnknown()
         {
             object pluginConfig = new { secrets = new { foo = "unknownscheme://some-path" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
-            Assert.ThrowsExactly<NotSupportedException>(
-                () => plugin.Secrets().TryGet("foo")
-            );
+            using ISecretResult? result = plugin.Secrets().TryGet("foo");
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual("unknownscheme://some-path", result.Result.ToString());
         }
 
         /// <summary>
-        /// Verifies that <see cref="PluginSecretStore.TryGetAsync"/> returns a faulted task
-        /// carrying a <see cref="NotSupportedException"/> when the scheme is unrecognized.
+        /// Verifies that <see cref="PluginSecretStore.TryGetAsync"/> falls back to the
+        /// raw literal value when the scheme is unrecognized.
         /// </summary>
         [TestMethod]
-        public async Task TryGetAsync_ThrowsNotSupportedException_WhenSchemeIsUnknown()
+        public async Task TryGetAsync_ReturnsLiteral_WhenSchemeIsUnknown()
         {
             object pluginConfig = new { secrets = new { foo = "unknownscheme://some-path" } };
 
             using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
 
-            await Assert.ThrowsExactlyAsync<NotSupportedException>(
-                () => plugin.Secrets().TryGetAsync("foo")
-            );
+            using ISecretResult? result = await plugin.Secrets().TryGetAsync("foo");
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual("unknownscheme://some-path", result.Result.ToString());
+        }
+
+        /// <summary>
+        /// Verifies that a <c>vault://</c> secret value falls back to the raw literal
+        /// value when no vault is configured — the vault reader is only registered
+        /// when vault configuration is present.
+        /// </summary>
+        [TestMethod]
+        public async Task TryGet_VaultSchemeWithoutVaultConfig_ReturnsLiteral()
+        {
+            object pluginConfig = new { secrets = new { foo = "vault://mount/secret?secret=key" } };
+
+            using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
+
+            // Sync and async paths both fall back to literal
+            using ISecretResult? syncResult = plugin.Secrets().TryGet("foo");
+            Assert.IsNotNull(syncResult);
+            Assert.AreEqual("vault://mount/secret?secret=key", syncResult.Result.ToString());
+
+            using ISecretResult? asyncResult = await plugin.Secrets().TryGetAsync("foo");
+            Assert.IsNotNull(asyncResult);
+            Assert.AreEqual("vault://mount/secret?secret=key", asyncResult.Result.ToString());
         }
 
         #endregion

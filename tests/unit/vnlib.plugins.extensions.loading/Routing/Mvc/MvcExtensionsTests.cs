@@ -175,13 +175,13 @@ namespace VNLib.Plugins.Extensions.Loading.Tests.Routing.Mvc
         /// throws at routing time.
         /// </summary>
         [TestMethod]
-        public void Add_ControllerWithMissingConfigVariable_ThrowsConfigurationException()
+        public void Add_ControllerWithMissingConfigVariable_ThrowsConfigurationValidationException()
         {
             // Config scope exists but does not define the referenced variable
             object pluginConfig = new { test_controller = new { other_key = "value" } };
             using TestPluginBase plugin = new(pluginConfig, new { });
 
-            Assert.ThrowsExactly<ConfigurationException>(
+            Assert.ThrowsExactly<ConfigurationValidationException>(
                 () => plugin.Host().Routes().Add<ConfigSubstitutionController>()
             );
         }

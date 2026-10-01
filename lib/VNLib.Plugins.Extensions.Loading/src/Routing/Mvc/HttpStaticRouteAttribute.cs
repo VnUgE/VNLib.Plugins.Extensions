@@ -38,7 +38,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
     /// form of <c>{{ var_name }}</c>, which will be replaced at startup with the configured value.
     /// </remarks>
     /// <param name="path">The static route path, which may include configuration substitution variables.</param>
-    /// <param name="method">The HTTP method or methods allowed for this endpoint.</param>
+    /// <param name="method">The single HTTP method allowed for this endpoint.</param>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public sealed class HttpStaticRouteAttribute(string path, HttpMethod method) : Attribute
     {
@@ -48,7 +48,7 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
         public string Path { get; } = path;
 
         /// <summary>
-        /// Gets the HTTP method of the endpoint. More than one method may be set for a given endpoint.
+        /// Gets the HTTP method of the endpoint. Exactly one method must be set per attribute.
         /// </summary>
         public HttpMethod Method { get; } = method;
     }

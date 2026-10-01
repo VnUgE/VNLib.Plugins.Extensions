@@ -147,12 +147,11 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
             return BuildStaticRoutes(controller, logger, guards, staticRoutes);
         }
 
-        private static MvcHttpRouteInfo[] GetStaticRoutes<T>(T controller, IConfigScope? config)
-            where T : IHttpController
+        private static MvcHttpRouteInfo[] GetStaticRoutes(IHttpController controller, IConfigScope? config)
         {
             List<MvcHttpRouteInfo> routes = [];
 
-            foreach (MethodInfo method in typeof(T).GetMethods())
+            foreach (MethodInfo method in controller.GetType().GetMethods())
             {
                 HttpStaticRouteAttribute? route = method.GetCustomAttribute<HttpStaticRouteAttribute>();
 
@@ -170,6 +169,12 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
                     message: $"Endpoint '{method.Name}' path '{routePath}' is not a valid path. It must start with a '/' and contain no whitespace."
                 );
 
+                // Only a single HTTP method is supported per route, combined flags indicate a developer error
+                Validate.Assert(
+                    condition: (BitOperations.PopCount((uint)route.Method) == 1),
+                    message: $"Endpoint '{method.Name}' must specify exactly one HTTP method. Combined methods are not supported."
+                );
+
                 routes.Add(new(
                     Controller:     controller,
                     RouteHandler:   method,
@@ -177,6 +182,14 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
                     Path:           routePath                   
                 ));
             }
+
+            // Detect duplicate (path, method) pairs within this controller.
+            bool hasDuplicates = routes
+                .GroupBy(static r => (r.Path, r.Method))
+                .Where(static g => g.Count() > 1)
+                .Any();
+
+            Validate.Assert(!hasDuplicates, $"Duplicate route found on controller {controller.GetType().Name}.");
 
             return [.. routes];           
         }

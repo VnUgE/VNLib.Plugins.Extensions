@@ -18,7 +18,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.onedev-buildspec.yml = .onedev-buildspec.yml
 		CHANGELOG.md = CHANGELOG.md
 		Directory.Build.props = Directory.Build.props
-		Extensions.sln.licenseheader = Extensions.sln.licenseheader
 		GitVersion.yml = GitVersion.yml
 		LICENSE = LICENSE
 		Module.Taskfile.yaml = Module.Taskfile.yaml

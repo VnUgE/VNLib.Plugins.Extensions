@@ -289,7 +289,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             {
                 Validate.Assert(
                     el.ValueKind == JsonValueKind.String,
-                    message: $"Secret {secretName} config value exists, but is {el.ValueKind} but must be a string."
+                    message: $"Secret {secretName} config value exists, but is {el.ValueKind} and must be a string."
                 );
 
                 return el.GetString();

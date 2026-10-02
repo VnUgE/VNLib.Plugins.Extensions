@@ -113,7 +113,9 @@ namespace VNLib.Plugins.Extensions.Loading.Routing.Mvc
         /// <summary>
         /// Routes all endpoints for the specified controller.
         /// </summary>
+        /// <typeparam name="T">The <see cref="IHttpController"/> type to route.</typeparam>
         /// <param name="plugin">The plugin for which to route the controller.</param>
+        /// <returns>The routed controller.</returns>
         /// <exception cref="ObjectDisposedException">The plugin or its dependencies have been disposed.</exception>
         /// <exception cref="InvalidOperationException">The controller or endpoint configuration is invalid.</exception>
         [Obsolete("This method is deprecated, please use the Routes().Add() method.")]

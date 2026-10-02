@@ -46,7 +46,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <summary>
         /// Gets a wrapper for the secret store for the current plugin
         /// </summary>
-        /// <param name="plugin"></param>
+        /// <param name="plugin">The plugin to resolve secrets for.</param>
         /// <returns>The secret store structure</returns>
         public static PluginSecretStore Secrets(this PluginBase plugin) => new(plugin);
 
@@ -55,11 +55,11 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// Gets a secret from the "secrets" element. 
         /// </para>
         /// <para>
-        /// Secrets elements are merged from the host config and plugin local config 'secrets' element.
+        /// Secrets elements are merged from the host config and plugin local config 'secrets' element
         /// before searching. The plugin config takes precedence over the host config.
         /// </para>
         /// </summary>
-        /// <param name="plugin"></param>
+        /// <param name="plugin">The plugin to resolve secrets for.</param>
         /// <param name="secretName">The name of the secret property to get</param>
         /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
         /// <exception cref="KeyNotFoundException"></exception>
@@ -76,11 +76,11 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// Gets a secret from the "secrets" element. 
         /// </para>
         /// <para>
-        /// Secrets elements are merged from the host config and plugin local config 'secrets' element.
+        /// Secrets elements are merged from the host config and plugin local config 'secrets' element
         /// before searching. The plugin config takes precedence over the host config.
         /// </para>
         /// </summary>
-        /// <param name="plugin"></param>
+        /// <param name="plugin">The plugin to resolve secrets for.</param>
         /// <param name="secretName">The name of the secret property to get</param>
         /// <returns>The element from the configuration file with the given name, or null if the configuration or property does not exist</returns>
         /// <exception cref="KeyNotFoundException"></exception>
@@ -97,7 +97,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <summary>
         /// Gets the Secret value as a byte buffer
         /// </summary>
-        /// <param name="secret"></param>
+        /// <param name="secret">The secret result containing the base64 encoded value.</param>
         /// <returns>The base64 decoded secret as a byte[]</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="InternalBufferTooSmallException"></exception>
@@ -128,7 +128,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <summary>
         /// Recovers a certificate from a PEM encoded secret
         /// </summary>
-        /// <param name="secret"></param>
+        /// <param name="secret">The secret result containing the PEM encoded certificate.</param>
         /// <returns>The <see cref="X509Certificate2"/> parsed from the PEM encoded data</returns>
         /// <exception cref="ArgumentNullException"></exception>
         public static X509Certificate2 GetCertificate(this ISecretResult secret)
@@ -140,7 +140,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <summary>
         /// Gets the secret value as a <see cref="JsonDocument"/>
         /// </summary>
-        /// <param name="secret"></param>
+        /// <param name="secret">The secret result containing the JSON value.</param>
         /// <returns>The document parsed from the secret value</returns>
         public static JsonDocument GetJsonDocument(this ISecretResult secret)
         {
@@ -172,7 +172,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <summary>
         /// Gets a SPKI encoded public key from a secret
         /// </summary>
-        /// <param name="secret"></param>
+        /// <param name="secret">The secret result containing the SPKI encoded public key.</param>
         /// <returns>The <see cref="PublicKey"/> parsed from the SPKI public key</returns>
         /// <exception cref="ArgumentNullException"></exception>
         public static PublicKey GetPublicKey(this ISecretResult secret)
@@ -192,7 +192,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <summary>
         /// Gets a <see cref="ReadOnlyJsonWebKey"/> whose key material is provided in the secret.
         /// </summary>
-        /// <param name="secret"></param>
+        /// <param name="secret">The secret result containing the JSON web key.</param>
         /// <returns>The <see cref="ReadOnlyJsonWebKey"/> from the result</returns>
         /// <exception cref="JsonException"></exception>
         /// <exception cref="ArgumentException"></exception>
@@ -226,8 +226,8 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <summary>
         /// Converts the secret recovery task to return the base64 decoded secret as a byte[]
         /// </summary>
-        /// <param name="secret"></param>
-        /// <returns>A task whose result the base64 decoded secret as a byte[]</returns>
+        /// <param name="secret">The secret recovery task to decode.</param>
+        /// <returns>A task whose result is the base64 decoded secret as a byte[]</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="InternalBufferTooSmallException"></exception>
         [Obsolete("Use ToLazy() with transformer")]
@@ -238,7 +238,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// Gets a task that resolves a <see cref="ReadOnlyJsonWebKey"/>
         /// from a <see cref="SecretResult"/> task
         /// </summary>
-        /// <param name="secret"></param>
+        /// <param name="secret">The secret recovery task to resolve the key from.</param>
         /// <returns>The <see cref="ReadOnlyJsonWebKey"/> from the secret, or null if the secret was not found</returns>
         /// <exception cref="ArgumentNullException"></exception>
         [Obsolete("Use ToLazy() with transformer")]
@@ -249,7 +249,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// Gets a task that resolves a <see cref="ReadOnlyJsonWebKey"/>
         /// from a <see cref="SecretResult"/> task
         /// </summary>
-        /// <param name="secret"></param>
+        /// <param name="secret">The secret recovery task to resolve the key from.</param>
         /// <param name="required">
         /// A value that indicates that a value is required from the result, 
         /// or a <see cref="KeyNotFoundException"/> is raised
@@ -272,8 +272,8 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// Converts a <see cref="SecretResult"/> async operation to a lazy result that can be awaited, that transforms the result
         /// to your desired type. If the result is null, the default value of <typeparamref name="TResult"/> is returned
         /// </summary>
-        /// <typeparam name="TResult"></typeparam>
-        /// <param name="result"></param>
+        /// <typeparam name="TResult">The type of the transformed secret value.</typeparam>
+        /// <param name="result">The secret recovery task to convert to a lazy result.</param>
         /// <param name="transformer">Your function to transform the secret to its output form</param>
         /// <returns>A <see cref="IAsyncLazy{T}"/> </returns>
         /// <exception cref="ArgumentNullException"></exception>
@@ -292,15 +292,8 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             return Run(result, transformer).AsLazy();
         }
 
-        /// <summary>
-        /// Converts a <see cref="SecretResult"/> async operation to a lazy result that can be awaited, that transforms the result
-        /// to your desired type. If the result is null, the default value of <typeparamref name="TResult"/> is returned
-        /// </summary>
-        /// <typeparam name="TResult"></typeparam>
-        /// <param name="result"></param>
+        /// <inheritdoc cref="ToLazy``1(Task{ISecretResult}, Func{ISecretResult, TResult})"/>
         /// <param name="transformer">Your function to transform the secret to its output form</param>
-        /// <returns>A <see cref="IAsyncLazy{T}"/> </returns>
-        /// <exception cref="ArgumentNullException"></exception>
         public static IAsyncLazy<TResult> ToLazy<TResult>(this Task<ISecretResult> result, Func<ISecretResult, Task<TResult>> transformer)
         {
             ArgumentNullException.ThrowIfNull(result);

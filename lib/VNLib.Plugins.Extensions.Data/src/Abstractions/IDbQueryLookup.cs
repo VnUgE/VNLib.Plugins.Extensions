@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -27,9 +27,9 @@ using System.Linq;
 namespace VNLib.Plugins.Extensions.Data.Abstractions
 {
     /// <summary>
-    /// Represents a collection of queries that can be used to execute operations against a a database
+    /// Represents a collection of queries that can be used to execute operations against a database
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">The entity type.</typeparam>
     public interface IDbQueryLookup<T> where T : class, IDbModel
     {
         /// <summary>
@@ -80,7 +80,7 @@ namespace VNLib.Plugins.Extensions.Data.Abstractions
         /// <returns>A query that can be counted</returns>
         virtual IQueryable<T> GetCollectionQueryBuilder(IDbContextHandle context, string specifier)
         {
-            return GetCollectionQueryBuilder(context, new string[] { specifier });
+            return GetCollectionQueryBuilder(context, [specifier]);
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace VNLib.Plugins.Extensions.Data.Abstractions
         /// </para>
         /// </summary>
         /// <param name="context">The context to execute query against</param>
-        /// <param name="record">A record to referrence the lookup</param>
+        /// <param name="record">A record to reference the lookup</param>
         /// <returns>A query that yields a single record</returns>
         virtual IQueryable<T> GetSingleQueryBuilder(IDbContextHandle context, T record)
         {

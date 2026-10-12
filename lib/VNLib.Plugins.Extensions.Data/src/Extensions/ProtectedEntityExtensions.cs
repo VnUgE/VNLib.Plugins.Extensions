@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -36,89 +36,84 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
     /// </summary>
     public static class ProtectedEntityExtensions
     {
-        /// <summary>
-        /// Updates the specified record within the store
-        /// </summary>
-        /// <param name="store"></param>
-        /// <param name="record">The record to update</param>
         /// <param name="userId">The userid of the record owner</param>
-        /// <param name="cancellation">A token to cancel the operation</param>
-        /// <returns>A task that evaluates to the number of records modified</returns>
-        public static Task<ERRNO> UpdateUserRecordAsync<TEntity>(this IDataStore<TEntity> store, TEntity record, string userId, CancellationToken cancellation = default)
-            where TEntity : class, IDbModel, IUserEntity
+        /// <inheritdoc cref="DbStoreExtensions.UpdateAsync{T}(IDataStore{T}, T, CancellationToken)"/>
+        public static Task<ERRNO> UpdateUserRecordAsync<TEntity>(
+            this IDataStore<TEntity> store, 
+            TEntity record, 
+            string userId, 
+            CancellationToken cancellation = default
+        ) where TEntity : class, IDbModel, IUserEntity
         {
             record.UserId = userId;
-            return store.UpdateAsync(record, cancellation);
+            return DbStoreExtensions.UpdateAsync(store, record, cancellation);
         }
 
-        /// <summary>
-        /// Updates the specified record within the store
-        /// </summary>
-        /// <param name="store"></param>
-        /// <param name="record">The record to update</param>
         /// <param name="userId">The userid of the record owner</param>
-        /// <param name="cancellation">A token to cancel the operation</param>
-        /// <returns>A task that evaluates to the number of records modified</returns>
-        public static Task<ERRNO> CreateUserRecordAsync<TEntity>(this IDataStore<TEntity> store, TEntity record, string userId, CancellationToken cancellation = default)
-            where TEntity : class, IDbModel, IUserEntity
+        /// <inheritdoc cref="DbStoreExtensions.CreateAsync{T}(IDataStore{T}, T, CancellationToken)"/>
+        public static Task<ERRNO> CreateUserRecordAsync<TEntity>(
+            this IDataStore<TEntity> store, 
+            TEntity record, 
+            string userId, 
+            CancellationToken cancellation = default
+        ) where TEntity : class, IDbModel, IUserEntity
         {
             record.UserId = userId;
-            return store.CreateAsync(record, cancellation);
+            return DbStoreExtensions.CreateAsync(store, record, cancellation);
         }
 
         /// <summary>
         /// Gets a single entity from its ID and user-id
         /// </summary>
-        /// <param name="store"></param>
-        /// <param name="key">The unique id of the entity</param>
         /// <param name="userId">The user's id that owns the resource</param>
-        /// <returns>A task that resolves the entity or null if not found</returns>
-        public static Task<TEntity?> GetSingleUserRecordAsync<TEntity>(this IDataStore<TEntity> store, string key, string userId) where TEntity : class, IDbModel, IUserEntity
+        /// <inheritdoc cref="DbStoreExtensions.GetSingleAsync{T}(IDataStore{T}, string[])"/>
+        public static Task<TEntity?> GetSingleUserRecordAsync<TEntity>(this IDataStore<TEntity> store, string key, string userId) 
+            where TEntity : class, IDbModel, IUserEntity
         {
-            return store.GetSingleAsync(key, userId);
+            return DbStoreExtensions.GetSingleAsync(store, key, userId);
         }
 
         /// <summary>
         /// Gets a page by its number offset constrained by its limit, 
         /// for the given user id
         /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="store"></param>
-        /// <param name="collection">The collection to store found records</param>
         /// <param name="userId">The user to get the page for</param>
-        /// <param name="page">The page offset</param>
-        /// <param name="limit">The record limit for the page</param>
-        /// <returns>A task that resolves the number of entities added to the collection</returns>
-        public static Task<int> GetUserPageAsync<TEntity>(this IDataStore<TEntity> store, ICollection<TEntity> collection, string userId, int page, int limit)
+        /// <inheritdoc cref="DbStoreExtensions.GetPageAsync{T}(IDataStore{T}, ICollection{T}, int, int, string[])"/>
+        public static Task<int> GetUserPageAsync<TEntity>(
+            this IDataStore<TEntity> store, 
+            ICollection<TEntity> collection, 
+            string userId, 
+            int page,
+            int limit
+        )
             where TEntity : class, IDbModel, IUserEntity
         {
-            return store.GetPageAsync(collection, page, limit, userId);
+            return DbStoreExtensions.GetPageAsync(store, collection, page, limit, [userId], CancellationToken.None);
         }
 
         /// <summary>
-        /// Deletes a single entiry by its ID only if it belongs to the speicifed user
+        /// Deletes a single entry by its ID only if it belongs to the specified user
         /// </summary>
-        /// <param name="store"></param>
-        /// <param name="key">The unique id of the entity</param>
         /// <param name="userId">The user's id that owns the resource</param>
-        /// <returns>A task the resolves the number of eneities deleted (should evaluate to true or false)</returns>
-        public static Task<ERRNO> DeleteUserRecordAsync<TEntity>(this IDataStore<TEntity> store, string key, string userId) where TEntity : class, IDbModel, IUserEntity
-        {
-            return store.DeleteAsync(key, userId);
-        }
+        /// <inheritdoc cref="DbStoreExtensions.DeleteAsync{T}(IDataStore{T}, string, CancellationToken)"/>
+        public static Task<ERRNO> DeleteUserRecordAsync<TEntity>(this IDataStore<TEntity> store, string key, string userId)
+            where TEntity : class, IDbModel, IUserEntity 
+            => DbStoreExtensions.DeleteAsync(store, key, userId);
 
         /// <summary>
         /// Gets the record count for the specified userId
         /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="store"></param>
         /// <param name="userId">The unique id of the user to query record count</param>
-        /// <param name="cancellation">A token to cancel the operation</param>
         /// <returns>A task that resolves the number of records belonging to the specified user</returns>
-        public static Task<long> GetUserRecordCountAsync<TEntity>(this IDataStore<TEntity> store, string userId, CancellationToken cancellation = default)
+        /// <inheritdoc cref="DbStoreExtensions.GetCountAsync{T}(IDataStore{T}, string, CancellationToken)"/>
+        public static Task<long> GetUserRecordCountAsync<TEntity>(
+            this IDataStore<TEntity> store, 
+            string userId, 
+            CancellationToken cancellation = default
+        )
             where TEntity : class, IDbModel, IUserEntity
         {
-            return store.GetCountAsync(userId, cancellation);
+            return DbStoreExtensions.GetCountAsync(store, userId, cancellation);
         }
 
     }

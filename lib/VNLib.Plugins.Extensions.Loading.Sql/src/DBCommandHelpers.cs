@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2025 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql
@@ -82,10 +82,10 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <summary>
         /// Gets the <see cref="DbType"/> from the given .NET runtime type information.
         /// </summary>
-        /// <param name="col"></param>
+        /// <param name="col">The data column to get the database type from.</param>
         /// <returns>The columns <see cref="DbType"/> or an exception if the type is not supported</returns>
-        /// <exception cref="NotSupportedException"></exception>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="NotSupportedException">Thrown when the column's data type is not supported.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="col"/> or its data type is <see langword="null"/>.</exception>
         public static DbType GetDbType(this DataColumn col)
         {
             ArgumentNullException.ThrowIfNull(col);
@@ -93,7 +93,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
 
             if (!TypeMap.TryGetValue(col.DataType, out DbType dbType))
             {
-                throw new NotSupportedException($"The type {col.DataType} is not a supporeted database type");
+                throw new NotSupportedException($"The type {col.DataType} is not a supported database type");
             }
 
             return dbType;
@@ -103,8 +103,8 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// Sets the column ordinal index, or column position, within the table.
         /// </summary>
         /// <typeparam name="T">The entity type</typeparam>
-        /// <param name="builder"></param>
-        /// <param name="columOridinalIndex">The column's ordinal postion with the database</param>
+        /// <param name="builder">The column builder to extend.</param>
+        /// <param name="columOridinalIndex">The column's ordinal position with the database</param>
         /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
         public static IDbColumnBuilder<T> SetPosition<T>(this IDbColumnBuilder<T> builder, int columOridinalIndex)
         {
@@ -119,7 +119,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// </summary>
         /// <param name="seed">The starting (seed) of the increment parameter</param>
         /// <param name="increment">The increment/step parameter</param>
-        /// <param name="builder"></param>
+        /// <param name="builder">The column builder to extend.</param>
         /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
         public static IDbColumnBuilder<T> AutoIncrement<T>(this IDbColumnBuilder<T> builder, int seed = 1, int increment = 1)
         {
@@ -139,7 +139,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// that value.
         /// </summary>
         /// <param name="maxLength">Override the maxium length property on the column</param>
-        /// <param name="builder"></param>
+        /// <param name="builder">The column builder to extend.</param>
         /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
         public static IDbColumnBuilder<T> MaxLength<T>(this IDbColumnBuilder<T> builder, int maxLength)
         {
@@ -150,8 +150,8 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <summary>
         /// Override the <see cref="DataColumn.AllowDBNull"/>
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
+        /// <typeparam name="T">The entity type.</typeparam>
+        /// <param name="builder">The column builder to extend.</param>
         /// <param name="value">A value that indicate if you allow null in the column</param>
         /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
         public static IDbColumnBuilder<T> AllowNull<T>(this IDbColumnBuilder<T> builder, bool value)
@@ -164,7 +164,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// Sets the <see cref="DataColumn.Unique"/> property to true
         /// </summary>
         /// <typeparam name="T">The entity type</typeparam>
-        /// <param name="builder"></param>
+        /// <param name="builder">The column builder to extend.</param>
         /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
         public static IDbColumnBuilder<T> Unique<T>(this IDbColumnBuilder<T> builder)
         {
@@ -176,7 +176,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// Sets the default value for the column
         /// </summary>
         /// <typeparam name="T">The entity type</typeparam>
-        /// <param name="builder"></param>
+        /// <param name="builder">The column builder to extend.</param>
         /// <param name="defaultValue">The column default value</param>
         /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
         public static IDbColumnBuilder<T> WithDefault<T>(this IDbColumnBuilder<T> builder, object defaultValue)
@@ -189,11 +189,11 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// Specifies this column is a RowVersion/TimeStamp for optimistic concurrency for some 
         /// databases.
         /// <para>
-        /// This vaule is set by default if the entity property specifies a <see cref="TimestampAttribute"/>
+        /// This value is set by default if the entity property specifies a <see cref="TimestampAttribute"/>
         /// </para>
         /// </summary>
         /// <typeparam name="T">The entity type</typeparam>
-        /// <param name="builder"></param>
+        /// <param name="builder">The column builder to extend.</param>
         /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
         public static IDbColumnBuilder<T> TimeStamp<T>(this IDbColumnBuilder<T> builder)
         {
@@ -207,7 +207,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <see cref="KeyAttribute"/> on the property.
         /// </summary>
         /// <typeparam name="T">The entity type</typeparam>
-        /// <param name="builder"></param>
+        /// <param name="builder">The column builder to extend.</param>
         /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
         public static IDbColumnBuilder<T> SetIsKey<T>(this IDbColumnBuilder<T> builder)
         {
@@ -219,8 +219,8 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <summary>
         /// Gets a value that determines if the current column is a primary key
         /// </summary>
-        /// <param name="col"></param>
-        /// <returns>True if the collumn is part of the primary keys</returns>
+        /// <param name="col">The data column to get the database type from.</param>
+        /// <returns>True if the column is part of the primary keys</returns>
         public static bool IsPrimaryKey(this DataColumn col)
         {
             ArgumentNullException.ThrowIfNull(col);
@@ -230,7 +230,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
 
         /*
          * I am bypassing the DataColumn.MaxLength property because it does more validation
-         * than we need against the type and can cause unecessary issues, so im just bypassing it 
+         * than we need against the type and can cause unnecessary issues, so im just bypassing it 
          * for now
          */
 
@@ -242,7 +242,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <summary>
         /// Gets the max length of the column
         /// </summary>
-        /// <param name="column"></param>
+        /// <param name="column">The data column to configure.</param>
         /// <returns></returns>
         public static int MaxLength(this DataColumn column)
         {
@@ -266,7 +266,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <summary>
         /// Gets a value that indicates if the column is a timestamp
         /// </summary>
-        /// <param name="column"></param>
+        /// <param name="column">The data column to configure.</param>
         /// <returns>True if the column is a timestamp column</returns>
         public static bool IsTimeStamp(this DataColumn column)
         {
@@ -276,13 +276,14 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         internal static void AddToPrimaryKeys(this DataColumn col)
         {
             //Add the column to the table's primary key array
-            List<DataColumn> cols = new(col.Table!.PrimaryKey)
-            {
+            List<DataColumn> cols =
+            [
+                .. col.Table!.PrimaryKey,                 
                 col
-            };
+            ];
 
             //Update the table primary keys now that this col has been added
-            col.Table.PrimaryKey = cols.Distinct().ToArray();
+            col.Table.PrimaryKey = [.. cols.Distinct()];
         }
     }
 }

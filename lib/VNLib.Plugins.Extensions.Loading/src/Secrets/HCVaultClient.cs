@@ -187,7 +187,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         }
 
         ///<inheritdoc/>
-        ///<exception cref="TimeoutException"></exception>
+        ///<exception cref="TimeoutException">Thrown when the request to the Vault server times out.</exception>
         public ISecretResult? ReadSecret(string path, string mountPoint, string secretName)
         {
             /*

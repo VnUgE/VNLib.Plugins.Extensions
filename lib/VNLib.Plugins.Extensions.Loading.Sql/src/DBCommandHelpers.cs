@@ -138,7 +138,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// via a <see cref="MaxLengthAttribute"/> if defined on the property, this method will override
         /// that value.
         /// </summary>
-        /// <param name="maxLength">Override the maxium length property on the column</param>
+        /// <param name="maxLength">Override the maximum length property on the column</param>
         /// <param name="builder">The column builder to extend.</param>
         /// <returns>The chainable <see cref="IDbColumnBuilder{T}"/></returns>
         public static IDbColumnBuilder<T> MaxLength<T>(this IDbColumnBuilder<T> builder, int maxLength)

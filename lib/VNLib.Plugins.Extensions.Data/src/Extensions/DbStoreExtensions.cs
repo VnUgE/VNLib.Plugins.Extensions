@@ -47,7 +47,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="store">The database store to operate on.</param>
         /// <param name="record">The record to add to the store</param>
         /// <param name="cancellation">A cancellation token to cancel the operation</param>
-        /// <returns>A task the resolves the result of the operation</returns>
+        /// <returns>A task that resolves the result of the operation</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="store"/> is <see langword="null"/>.</exception>
         public static async Task<ERRNO> AddOrUpdateAsync<T>(this IDataStore<T> store, T record, CancellationToken cancellation = default)
               where T : class, IDbModel
@@ -102,7 +102,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="store">The database store to operate on.</param>
         /// <param name="record">The record to update</param>
         /// <param name="cancellation">A cancellation token to cancel the operation</param>
-        /// <returns>A task the resolves an error code (should evaluate to false on failure, and true on success)</returns>
+        /// <returns>A task that resolves an error code (should evaluate to false on failure, and true on success)</returns>
         public static async Task<ERRNO> UpdateAsync<T>(this IDataStore<T> store, T record, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
@@ -136,7 +136,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="store">The database store to operate on.</param>
         /// <param name="record">The record to add to the store</param>
         /// <param name="cancellation">A cancellation token to cancel the operation</param>
-        /// <returns>A task the resolves an error code (should evaluate to false on failure, and true on success)</returns>
+        /// <returns>A task that resolves an error code (should evaluate to false on failure, and true on success)</returns>
         public static async Task<ERRNO> CreateAsync<T>(this IDataStore<T> store, T record, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
@@ -275,7 +275,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="store">The database store to operate on.</param>
         /// <param name="record">The partial model used to query the store</param>
         /// <param name="cancellation">A cancellation token to cancel the operation</param>
-        /// <returns>A task the resolves the completed data-model</returns>
+        /// <returns>A task that resolves the completed data-model</returns>
         public static async Task<T?> GetSingleAsync<T>(this IDataStore<T> store, T record, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
@@ -305,7 +305,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="specifier">A specifier argument to constrain results</param>
         /// <param name="limit">The maximum number of elements to retrieve</param>
         /// <param name="cancellation">A cancellation token to cancel the operation</param>
-        /// <returns>A Task the resolves to the number of items added to the collection</returns>
+        /// <returns>A Task that resolves to the number of items added to the collection</returns>
         public static async Task<ERRNO> GetCollectionAsync<T>(
             this IDataStore<T> store, 
             ICollection<T> collection, 
@@ -347,7 +347,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="limit">The maximum number of elements to retrieve</param>
         /// <param name="constraints">An array of string constraints to pass to the query builder</param>
         /// <param name="cancellation">A token to cancel the operation</param>
-        /// <returns>A Task the resolves to the number of items added to the collection</returns>
+        /// <returns>A Task that resolves to the number of items added to the collection</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="store"/> is <see langword="null"/>.</exception>
         public static async Task<ERRNO> GetCollectionAsync<T>(
             this IDataStore<T> store, 
@@ -396,7 +396,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="store">The database store to operate on.</param>
         /// <param name="record">The record to remove from the store</param>
         /// <param name="cancellation">A cancellation token to cancel the operation</param>
-        /// <returns>A task the resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
+        /// <returns>A task that resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
         public static async Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, T record, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
@@ -435,7 +435,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="store">The database store to operate on.</param>
         /// <param name="key">The unique key that identifies the record</param>
         /// <param name="cancellation">A cancellation token to cancel the operation</param>
-        /// <returns>A task the resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
+        /// <returns>A task that resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
         public static async Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, string key, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
@@ -472,7 +472,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// </summary>
         /// <param name="store">The database store to operate on.</param>
         /// <param name="specifiers">A variable length array of specifiers used to delete one or more entries</param>
-        /// <returns>A task the resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
+        /// <returns>A task that resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
         public static Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, params string[] specifiers)
               where T : class, IDbModel 
             => DeleteAsync(store, specifiers, CancellationToken.None);
@@ -484,7 +484,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="store">The database store to operate on.</param>
         /// <param name="specifiers">A variable length array of specifiers used to delete one or more entries</param>
         /// <param name="cancellation">A cancellation token to cancel the operation</param>
-        /// <returns>A task the resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
+        /// <returns>A task that resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
         public static async Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, string[] specifiers, CancellationToken cancellation)
               where T : class, IDbModel
         {
@@ -651,7 +651,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// </summary>
         /// <typeparam name="T">The entity type.</typeparam>
         /// <param name="current">The current entity instance.</param>
-        /// <param name="now">A structure to the time to set search record's last modified, and optionally created time</param>
+        /// <param name="now">A structure to the time to set each record's last modified, and optionally created time</param>
         /// <param name="overwriteTime">A value that indicates if the record's created time should be overwritten or ignored</param>
         /// <returns>A new enumeration that will updated record times upon enumerating</returns>
         public static IEnumerable<T> WithTime<T>(this IEnumerable<T> current, DateTime now, bool overwriteTime)
@@ -678,7 +678,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="store">The database store to operate on.</param>
         /// <param name="records">The collection of records to add</param>
         /// <param name="cancellation">A token to cancel the operation</param>
-        /// <returns>A task the completes with the number of records update</returns>
+        /// <returns>A task that completes with the number of records updated</returns>
         public static async Task<ERRNO> AddBulkAsync<T>(this IDataStore<T> store, IEnumerable<T> records, CancellationToken cancellation = default)
           where T : class, IDbModel
         {

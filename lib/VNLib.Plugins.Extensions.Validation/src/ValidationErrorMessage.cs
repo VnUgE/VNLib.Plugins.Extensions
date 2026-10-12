@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2025 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Validation
@@ -26,11 +26,20 @@ using System.Text.Json.Serialization;
 
 namespace VNLib.Plugins.Extensions.Validation
 {
+    /// <summary>
+    /// A serializable model that describes a single validation failure for the client.
+    /// </summary>
     public class ValidationErrorMessage
     {
+        /// <summary>
+        /// Gets the name of the property that failed validation.
+        /// </summary>
         [JsonPropertyName("property")]
         public required string PropertyName { get; init; }
 
+        /// <summary>
+        /// Gets the human-readable error message describing why the property failed validation.
+        /// </summary>
         [JsonPropertyName("message")]
         public required string ErrorMessage { get; init; }
     }

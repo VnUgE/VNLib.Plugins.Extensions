@@ -230,7 +230,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
 
         /*
          * I am bypassing the DataColumn.MaxLength property because it does more validation
-         * than we need against the type and can cause unnecessary issues, so im just bypassing it 
+         * than we need against the type and can cause unnecessary issues, so im just bypassing it
          * for now
          */
 
@@ -278,7 +278,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
             //Add the column to the table's primary key array
             List<DataColumn> cols =
             [
-                .. col.Table!.PrimaryKey,                 
+                .. col.Table!.PrimaryKey,
                 col
             ];
 

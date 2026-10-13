@@ -59,7 +59,7 @@ namespace VNLib.Plugins.Extensions.Validation
         }
 
         /// <summary>
-        /// Tests the property against <see cref="PhoneRegex"/> 
+        /// Tests the property against <see cref="PhoneRegex"/>
         /// to determine if the string matches the proper phone number form
         /// </summary>
         /// <typeparam name="T">The type of the entity being validated.</typeparam>
@@ -72,7 +72,7 @@ namespace VNLib.Plugins.Extensions.Validation
         }
 
         /// <summary>
-        /// Tests the property against <see cref="PhoneRegex"/> 
+        /// Tests the property against <see cref="PhoneRegex"/>
         /// to determine if the string matches the proper phone number form, or allows empty strings
         /// </summary>
         /// <typeparam name="T">The type of the entity being validated.</typeparam>

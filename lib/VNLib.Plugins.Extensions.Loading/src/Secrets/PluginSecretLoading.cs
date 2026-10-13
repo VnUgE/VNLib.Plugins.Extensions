@@ -276,7 +276,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <param name="result">The secret recovery task to convert to a lazy result.</param>
         /// <param name="transformer">Your function to transform the secret to its output form</param>
         /// <returns>A <see cref="IAsyncLazy{T}"/> </returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="secret"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="transformer"/> is <see langword="null"/>.</exception>
         public static IAsyncLazy<TResult> ToLazy<TResult>(this Task<ISecretResult> result, Func<ISecretResult, TResult> transformer)
         {
             ArgumentNullException.ThrowIfNull(result);
@@ -292,8 +292,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             return Run(result, transformer).AsLazy();
         }
 
-        /// <inheritdoc cref="ToLazy``1(Task{ISecretResult}, Func{ISecretResult, TResult})"/>
-        /// <param name="transformer">Your function to transform the secret to its output form</param>
+        /// <inheritdoc cref="ToLazy{TResult}(Task{ISecretResult}, Func{ISecretResult, TResult})"/>
         public static IAsyncLazy<TResult> ToLazy<TResult>(this Task<ISecretResult> result, Func<ISecretResult, Task<TResult>> transformer)
         {
             ArgumentNullException.ThrowIfNull(result);

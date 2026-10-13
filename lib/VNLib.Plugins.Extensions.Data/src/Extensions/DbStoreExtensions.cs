@@ -239,7 +239,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
             //close db and transaction
             await ctx.SaveAndCloseAsync(true, cancellation)
                      .ConfigureAwait(false);
-            
+
             return record;
         }
 
@@ -307,10 +307,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="cancellation">A cancellation token to cancel the operation</param>
         /// <returns>A Task that resolves to the number of items added to the collection</returns>
         public static async Task<ERRNO> GetCollectionAsync<T>(
-            this IDataStore<T> store, 
-            ICollection<T> collection, 
-            string specifier, 
-            int limit, 
+            this IDataStore<T> store,
+            ICollection<T> collection,
+            string specifier,
+            int limit,
             CancellationToken cancellation = default
         ) where T : class, IDbModel
         {
@@ -336,7 +336,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
 
             //Return the number of elements add to the collection
             return collection.Count - previous;
-        }       
+        }
 
         /// <summary>
         /// Fills a collection with entries retrieved from the store using a variable length specifier
@@ -416,14 +416,14 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
             {
                 await ctx.SaveAndCloseAsync(false, cancellation)
                          .ConfigureAwait(false);
-                
+
                 return false;
             }
             else
             {
                 //Remove the entry
                 ctx.Remove(entry);
-                
+
                 return await ctx.SaveAndCloseAsync(true, cancellation)
                                 .ConfigureAwait(false);
             }
@@ -474,7 +474,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="specifiers">A variable length array of specifiers used to delete one or more entries</param>
         /// <returns>A task that resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
         public static Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, params string[] specifiers)
-              where T : class, IDbModel 
+              where T : class, IDbModel
             => DeleteAsync(store, specifiers, CancellationToken.None);
 
 
@@ -553,10 +553,10 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
 
             //Return the number of records added
             return collection.Count - previous;
-        }      
+        }
 
         /// <summary>
-        /// Gets a collection of records using a pagination style query with constraint arguments, 
+        /// Gets a collection of records using a pagination style query with constraint arguments,
         /// and adds the records to the collection
         /// </summary>
         /// <param name="store">The database store to operate on.</param>
@@ -634,7 +634,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// with the current time in UTC.
         /// </summary>
         /// <inheritdoc cref="WithTime{T}(IEnumerable{T}, DateTime, bool)"/>
-        public static IEnumerable<T> WithCurrentUtcTime<T>(this IEnumerable<T> current, bool overwriteTime) where T : IDbModel 
+        public static IEnumerable<T> WithCurrentUtcTime<T>(this IEnumerable<T> current, bool overwriteTime) where T : IDbModel
             => WithTime(current, DateTime.UtcNow, overwriteTime);
 
         /// <summary>
@@ -642,7 +642,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// with the current system local time.
         /// </summary>
         /// <inheritdoc cref="WithTime{T}(IEnumerable{T}, DateTime, bool)"/>
-        public static IEnumerable<T> WithCurrentLocalTime<T>(this IEnumerable<T> current, bool overwriteTime) where T : IDbModel 
+        public static IEnumerable<T> WithCurrentLocalTime<T>(this IEnumerable<T> current, bool overwriteTime) where T : IDbModel
             => WithTime(current, DateTime.Now, overwriteTime);
 
         /// <summary>

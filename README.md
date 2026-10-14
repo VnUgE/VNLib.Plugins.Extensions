@@ -16,9 +16,9 @@ The easiest way to access the .NET libraries is by adding the [VNLib NuGet feed]
 - [Documentation and Guides](https://www.vaughnnugent.com/resources/software/articles?tags=docs,_VNLib.Plugins.Extensions)
 
 #### Release Cycle & Distribution
-VNLib follows a Continuous Delivery model, which allows for rapid and incremental development, aiming for small weekly releases. Projects are distributed as individual packages, and official distributions include:
-- Pre-built binaries for most platforms that support Ahead-of-Time (AOT) compilation.
-- Component-level source code and build scripts.
+VNLib follows a Continuous Delivery model with incremental development and periodic stable releases. Projects are distributed as individual packages, and official distributions include:
+- Pre-compiled Windows DLLs for native C libraries.
+- .NET packages, component-level source code and build scripts.
 - SHA256 checksums and PGP cryptographic signatures for all packages.
 
 #### API Stability & Versioning
@@ -32,8 +32,11 @@ A core pillar of VNLib is runtime stability. Great care is taken to ensure that 
 
 VNLib is designed to be cross-platform. Components should work on any platform that supports a C compiler or a modern .NET runtime. While integration testing is not performed on all operating systems, the architecture is platform-agnostic by design.
 
+#### Licensing
+This repository is licensed as a whole - see the `LICENSE` file at the repository root.
+
 #### Contributing
-Note that GitHub and Codeberg integrations are disabled. VNLib takes its independence seriously and does not use third-party platforms for development, issue tracking, or pull requests. Information about contributing to the project can be found on the official website. While the reach of free platforms is respected, project independence is a core value.
+Note that GitHub and Codeberg integrations are disabled. VNLib takes its independence seriously and does not use third-party platforms for development, issue tracking, or pull requests. Information about contributing to the project can be found on the [module page](https://www.vaughnnugent.com/resources/software/modules/vnlib.plugins.extensions). While the reach of free platforms is respected, project independence is a core value.
 
 The project is, however, very interested in seeing what is built with VNLib! If you have created a plugin or a project you would like to share, please get in touch via the contact information on the official website.
 

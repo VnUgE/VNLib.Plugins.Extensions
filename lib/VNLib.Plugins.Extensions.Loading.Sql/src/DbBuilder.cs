@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql
@@ -109,7 +109,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
                     throw new ArgumentException("The selector expression type is not supported", nameof(selector));
                 }
 
-                //try to see if an altername column name is defined on the type
+                //try to see if an alternate column name is defined on the type
                 string? colNameAttr = GetPropertyColumnName(selectorData.Key);
 
                 /*
@@ -137,7 +137,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
                     col.AddToPrimaryKeys();
                 }
 
-                //Set the colum as timestamp
+                //Set the column as timestamp
                 if (GetPropertyIsRowVersion(selectorData.Key))
                 {
                     col.SetTimeStamp();
@@ -148,7 +148,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
             }
 
             ///<inheritdoc/>
-            public void WriteCommand(StringBuilder sb, IDBCommandGenerator commandBuilder) => commandBuilder.BuildCreateStatment(sb, Table);
+            public void WriteCommand(StringBuilder sb, IDBCommandGenerator commandBuilder) => commandBuilder.BuildCreateStatement(sb, Table);
 
 
             private int? GetPropertyMaxLen(string propertyName) 

@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -38,7 +38,6 @@ using VNLib.Utils;
 using VNLib.Utils.IO;
 using VNLib.Utils.Memory;
 using VNLib.Utils.Extensions;
-using VNLib.Plugins.Extensions.Loading.Secrets;
 using VNLib.Plugins.Extensions.Loading.Configuration;
 
 /*
@@ -49,12 +48,11 @@ using VNLib.Plugins.Extensions.Loading.Configuration;
  * VaultSharp package which adds at least 600kb to the final package size.
  */
 
-namespace VNLib.Plugins.Extensions.Loading
+namespace VNLib.Plugins.Extensions.Loading.Secrets
 {
 
     /// <summary>
-    /// A concret implementation of a Hashicorp Vault client instance used to 
-    /// retrieve key-value secrets from a server
+    /// Represents a concrete implementation of a <see cref="IKvVaultClient"/> that retrieves key-value secrets from a Hashicorp Vault server.
     /// </summary>
     public sealed class HCVaultClient : VnDisposeable, IKvVaultClient
     {
@@ -101,16 +99,16 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// Creates a new Hashicorp vault client with the given server address, token, and KV storage version
+        /// Creates a new Hashicorp vault client with the given server address, token, and KV storage version.
         /// </summary>
-        /// <param name="serverAddress">The vault server address</param>
-        /// <param name="token">The vault token used to connect to the vault server</param>
-        /// <param name="kvVersion">The hc vault Key value store version (must be 1 or 2)</param>
-        /// <param name="trustCert">A value that tells the HTTP client to trust the Vault server's certificate even if it's not valid</param>
-        /// <param name="heap">Heap instance to allocate internal buffers from</param>
-        /// <returns>The new client instance</returns>
-        /// <exception cref="ArgumentException"></exception>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <param name="serverAddress">The vault server address.</param>
+        /// <param name="token">The vault token used to connect to the vault server.</param>
+        /// <param name="kvVersion">The Hashicorp Vault key-value store version (must be 1 or 2).</param>
+        /// <param name="trustCert"><see langword="true" /> to trust the vault server's certificate even if it is not valid; otherwise, <see langword="false" />.</param>
+        /// <param name="heap">The heap instance to allocate internal buffers from.</param>
+        /// <returns>A new <see cref="HCVaultClient"/> instance.</returns>
+        /// <exception cref="ArgumentException">The KV storage version is not supported.</exception>
+        /// <exception cref="ArgumentNullException">A required argument is null.</exception>
         public static HCVaultClient Create(string serverAddress, string token, int kvVersion, bool trustCert, IUnmanagedHeap heap)
         {
             ArgumentException.ThrowIfNullOrEmpty(serverAddress);
@@ -126,16 +124,15 @@ namespace VNLib.Plugins.Extensions.Loading
         }
 
         /// <summary>
-        /// Creates a new Hashicorp vault client from the default Vault environment 
-        /// variables VAULT_ADDR and VAULT_TOKEN. From client documentation
+        /// Creates a new <see cref="HCVaultClient"/> from the default Vault environment variables.
         /// </summary>
-        /// <param name="kvVersion">The hc vault Key value store version (must be 1 or 2)</param>
-        /// <param name="trustCert">A value that tells the HTTP client to trust the Vault server's certificate even if it's not valid</param>
-        /// <param name="heap">Heap instance to allocate internal buffers from</param>
-        /// <returns>The new client instance</returns>
-        /// <exception cref="ArgumentException"></exception>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="KeyNotFoundException"></exception>
+        /// <param name="kvVersion">The Hashicorp Vault key-value store version (must be 1 or 2).</param>
+        /// <param name="trustCert"><see langword="true" /> to trust the vault server's certificate even if it is not valid; otherwise, <see langword="false" />.</param>
+        /// <param name="heap">The heap instance to allocate internal buffers from.</param>
+        /// <returns>A new <see cref="HCVaultClient"/> instance.</returns>
+        /// <exception cref="ArgumentException">The KV storage version is not supported.</exception>
+        /// <exception cref="ArgumentNullException">A required environment variable is not set.</exception>
+        /// <exception cref="KeyNotFoundException">A required vault environment variable is missing.</exception>
         public static HCVaultClient CreateFromEnv(int kvVersion, bool trustCert, IUnmanagedHeap heap)
         {
             string? address = Environment.GetEnvironmentVariable("VAULT_ADDR");
@@ -161,13 +158,16 @@ namespace VNLib.Plugins.Extensions.Loading
 
             try
             {
-                using HttpResponseMessage response = await _client.SendAsync(ms, HttpCompletionOption.ResponseHeadersRead);
+                using HttpResponseMessage response = await _client.SendAsync(ms, HttpCompletionOption.ResponseHeadersRead)
+                                                        .ConfigureAwait(false);
 
-                //Check if an error occured in the response 
-                await ProcessVaultErrorResponseAsync(secretName, response);
+                //Check if an error occurred in the response 
+                await ProcessVaultErrorResponseAsync(secretName, response)
+                    .ConfigureAwait(false);
 
                 //Read the response async
-                using SecretResponse res = await ReadSecretResponse(response.Content);
+                using SecretResponse res = await ReadSecretResponse(response.Content)
+                                                .ConfigureAwait(false);
 
                 return FromResponse(res, secretName);
             }
@@ -182,25 +182,25 @@ namespace VNLib.Plugins.Extensions.Loading
             }
             catch (Exception ex)
             {
-                throw new HCVaultException("Failed to retreive secret from Hashicorp Vault server, see inner exception", ex);
+                throw new HCVaultException("Failed to retrieve secret from Hashicorp Vault server, see inner exception", ex);
             }
         }
 
         ///<inheritdoc/>
-        ///<exception cref="TimeoutException"></exception>
+        ///<exception cref="TimeoutException">Thrown when the request to the Vault server times out.</exception>
         public ISecretResult? ReadSecret(string path, string mountPoint, string secretName)
         {
             /*
-             * Since this method will syncrhonously block the calling thread, a new 
+             * Since this method will synchronously block the calling thread, a new 
              * task must be created to ignore the current async context and run the 
-             * funciton in an new context to block safely without causing a deadlock.
+             * function in a new context to block safely without causing a deadlock.
              */
 
             Task<ISecretResult?> asAsync = Task.Run(() => ReadSecretAsync(path, mountPoint, secretName));
 
             if (!asAsync.Wait(ClientDefaultTimeout))
             {
-                throw new TimeoutException("Failed to retreive the secret from the vault in the configured timeout period");
+                throw new TimeoutException("Failed to retrieve the secret from the vault in the configured timeout period");
             }
 
             return asAsync.Result;
@@ -212,7 +212,8 @@ namespace VNLib.Plugins.Extensions.Loading
 
             try
             {
-                await content.CopyToAsync(response.StreamData);
+                await content.CopyToAsync(response.StreamData)
+                    .ConfigureAwait(false);
 
                 response.ResetStream();
 
@@ -326,10 +327,14 @@ namespace VNLib.Plugins.Extensions.Loading
             static async ValueTask ExceptionsFromContentAsync(string secretName, HttpResponseMessage response)
             {
                 //Read stream async and deserialize async
-                using Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                VaultErrorMessage? errs = await JsonSerializer.DeserializeAsync<VaultErrorMessage>(stream);
+                using Stream stream = await response.Content.ReadAsStreamAsync()
+                                        .ConfigureAwait(false);
 
-                await ExceptionFromVaultErrors(secretName, response.StatusCode, errs);
+                VaultErrorMessage? errs = await JsonSerializer.DeserializeAsync<VaultErrorMessage>(stream)
+                                            .ConfigureAwait(false);
+
+                await ExceptionFromVaultErrors(secretName, response.StatusCode, errs)
+                    .ConfigureAwait(false);
             }
         }
 
@@ -353,9 +358,9 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             /// <summary>
-            /// Gets a <see cref="JsonDocument"/> from the response data
+            /// Gets a <see cref="JsonDocument"/> from the response data.
             /// </summary>
-            /// <returns></returns>
+            /// <returns>A <see cref="JsonDocument"/> parsed from the response data.</returns>
             public JsonDocument AsJson()
             {
                 //read the data as a raw span then parse it as json
@@ -364,7 +369,7 @@ namespace VNLib.Plugins.Extensions.Loading
             }
 
             /// <summary>
-            /// Resets the stream to the beginning
+            /// Resets the stream to the beginning.
             /// </summary>
             public void ResetStream() => StreamData.Seek(0, SeekOrigin.Begin);
 
@@ -383,3 +388,4 @@ namespace VNLib.Plugins.Extensions.Loading
         }
     }
 }
+

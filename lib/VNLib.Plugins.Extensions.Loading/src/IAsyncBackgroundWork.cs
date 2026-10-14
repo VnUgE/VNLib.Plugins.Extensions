@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -30,18 +30,16 @@ using VNLib.Utils.Logging;
 namespace VNLib.Plugins.Extensions.Loading
 {
     /// <summary>
-    /// Represents a low priority or long running work task to be done 
-    /// and observed by a loaded plugin
+    /// Represents a low-priority or long-running work task to be performed and observed by a loaded plugin.
     /// </summary>
     public interface IAsyncBackgroundWork
     {
         /// <summary>
-        /// Called when low priority work is ready to be run and its results 
-        /// marshaled back to the plugin context
+        /// Performs low-priority or long-running work when ready, marshaling results back to the plugin context.
         /// </summary>
-        /// <param name="pluginLog">The plugins default log provider</param>
-        /// <param name="exitToken">A token that signals when the plugin is unloading and work should be cancelled</param>
-        /// <returns>A task representing the low priority work to observed</returns>
+        /// <param name="pluginLog">The plugin's default log provider.</param>
+        /// <param name="exitToken">A token that signals when the plugin is unloading and work should be cancelled.</param>
+        /// <returns>A task that represents the low-priority work to be observed.</returns>
         Task DoWorkAsync(ILogProvider pluginLog, CancellationToken exitToken);
     }
 }

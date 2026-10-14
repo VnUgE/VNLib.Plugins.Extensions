@@ -8,7 +8,7 @@
 
 #this file must be in the same directory as the solution file
 
-version: '3'
+version: '3.45'
 
 vars:  
   ARCHIVE_FILE_NAME: '{{ .ARCHIVE_FILE_NAME | default "archive.tgz" }}'
@@ -18,7 +18,12 @@ tasks:
   default:
     desc: 'Builds the managed libraries in this module for development'
     cmds:
-      - cmd: dotnet build -c debug {{ .CLI_ARGS }}
+      - cmd: dotnet build 
+          --nologo
+          --configuration debug
+          --verbosity normal
+          --no-incremental
+          {{ .CLI_ARGS }}
 
 #called by build pipeline to sync repo
   update:
@@ -48,8 +53,8 @@ tasks:
     requires:
       vars: [DEP_REPO, DEP_REVISION]
     vars:
-      DEP_BRANCH: '{{ splitList "/" .DEP_REVISION | first }}'
-      DEP_VERSION: '{{ splitList "/" .DEP_REVISION | last }}'
+      DEP_BRANCH: '{{ splitList "::" .DEP_REVISION | first }}'
+      DEP_VERSION: '{{ splitList "::" .DEP_REVISION | last }}'
       IMPLICIT_DIR: '{{ splitList "/" .DEP_REPO | last }}'
       DEP_DIR: '{{ default .IMPLICIT_DIR .DEP_DIR }}'
     cmds:
@@ -98,11 +103,7 @@ tasks:
   test:
     desc: "Runs managed tests against the entire solution and all loaded test projects"
     cmds:
-      - cmd: dotnet build 
-          --nologo
-          --configuration debug
-          --verbosity normal
-          --no-incremental
+      - task: default
 
       - cmd: dotnet test
           --no-build

@@ -1,11 +1,11 @@
-﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
-* File: ConfigurationExtensions.cs 
+* File: EndpointLogNameAttribute.cs 
 *
-* ConfigurationExtensions.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
+* EndpointLogNameAttribute.cs is part of VNLib.Plugins.Extensions.Loading which is part of the larger 
 * VNLib collection of libraries and utilities.
 *
 * VNLib.Plugins.Extensions.Loading is free software: you can redistribute it and/or modify 
@@ -28,18 +28,18 @@ namespace VNLib.Plugins.Extensions.Loading.Routing
 {
 
     /// <summary>
-    /// Defines configurable settings for an endpoint
+    /// Defines the configurable log name for an endpoint.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class EndpointLogNameAttribute(string logName) : Attribute
     {
         /// <summary>
-        /// The name of the logging scope for the endpoint
+        /// Gets the name of the logging scope for the endpoint.
         /// </summary>
         public string LogName { get; } = logName;
 
         /// <summary>
-        /// Optional default name for the endpoint
+        /// Gets or sets the optional default name for the endpoint.
         /// </summary>
         public string? DefaultName { get; set; }
     }

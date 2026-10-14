@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading
@@ -25,13 +25,12 @@
 namespace VNLib.Plugins.Extensions.Loading
 {
     /// <summary>
-    /// Called when a configuration deserialzation occurs, to validate
-    /// the configuration.
+    /// Handles configuration validation during deserialization.
     /// </summary>
     public interface IOnConfigValidation
     {
         /// <summary>
-        /// Validates a json configuration during deserialzation
+        /// Validates the JSON configuration during deserialization.
         /// </summary>
         void OnValidate();
     }

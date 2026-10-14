@@ -1,5 +1,5 @@
-# VNLib.Plugins.Extensions.Sql.MySql
-*A runtime asset library that provides access to MySql database features for plugins that are configured to load the provider*
+# VNLib.Plugins.Extensions.Sql.MySQL
+*A runtime asset library that provides access to MySQL database features for plugins that are configured to load the provider*
 
 **This library contains 3rd-party dependencies**
 
@@ -14,4 +14,4 @@ Documentation, specifications, and setup guides are available on my website.
 [Nuget Feeds](https://www.vaughnnugent.com/resources/software/modules)  
 
 ## License
-Source files in for this project are licensed to you under the GNU Affero General Public License (or any later version). See the LICENSE files for more information.
+Source files for this project are licensed to you under the GNU Affero General Public License (or any later version). See the [LICENSE](../../../../LICENSE) file for more information.

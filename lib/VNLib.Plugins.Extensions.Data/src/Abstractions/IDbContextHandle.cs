@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2024 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Data
@@ -33,8 +33,8 @@ using VNLib.Utils;
 namespace VNLib.Plugins.Extensions.Data.Abstractions
 {
     /// <summary>
-    /// Represents an open database connection and interfaces with the database,
-    /// allows queries, and modifications of the set
+    /// Represents an open database connection that interfaces with the database
+    /// and allows queries and modifications of the set
     /// </summary>
     public interface IDbContextHandle : IAsyncDisposable
     {
@@ -42,21 +42,21 @@ namespace VNLib.Plugins.Extensions.Data.Abstractions
         /// Gets a supported set of the desired entity type within the context
         /// </summary>
         /// <typeparam name="T">The entity model type</typeparam>
-        /// <returns>A querriable instance to execute queries on</returns>
+        /// <returns>A queryable instance to execute queries on</returns>
         IQueryable<T> Set<T>() where T : class;
 
         /// <summary>
         /// Adds a new entity to the set
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">The entity model type</typeparam>
         /// <param name="entity">The entity instance to add to the set</param>
         void Add<T>(T entity) where T : class;
 
         /// <summary>
         /// Adds a range of entities to the set of the given type
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="entities">The range of entitites to add to the set</param>
+        /// <typeparam name="T">The entity model type</typeparam>
+        /// <param name="entities">The range of entities to add to the set</param>
         void AddRange<T>(IEnumerable<T> entities) where T : class;
 
         /// <summary>
@@ -69,14 +69,14 @@ namespace VNLib.Plugins.Extensions.Data.Abstractions
         /// <summary>
         /// Removes a range of entities of a given type from the set
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">The entity type to remove</typeparam>
         /// <param name="entities">The range of entities to remove</param>
         void RemoveRange<T>(IEnumerable<T> entities) where T : class;
 
         /// <summary>
-        /// Commits saves changes on the context and optionally commits changes to the database
+        /// Saves changes on the context and optionally commits them to the database
         /// </summary>
-        /// <param name="commit">A value that indicates whether the changes should be commited to the database</param>
+        /// <param name="commit">A value that indicates whether the changes should be committed to the database</param>
         /// <param name="cancellation">A token to cancel the operation</param>
         /// <returns>The result of the database commit</returns>
         Task<ERRNO> SaveAndCloseAsync(bool commit, CancellationToken cancellation = default);

@@ -18,7 +18,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.onedev-buildspec.yml = .onedev-buildspec.yml
 		CHANGELOG.md = CHANGELOG.md
 		Directory.Build.props = Directory.Build.props
-		Extensions.sln.licenseheader = Extensions.sln.licenseheader
 		GitVersion.yml = GitVersion.yml
 		LICENSE = LICENSE
 		Module.Taskfile.yaml = Module.Taskfile.yaml
@@ -28,7 +27,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql-providers", "sql-providers", "{A03C3E08-6EAA-4D4A-A434-E9455E9B3868}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNLib.Plugins.Extensions.Loading.Sql.MYSql", "lib\sql-providers\mysql\VNLib.Plugins.Extensions.Loading.Sql.MySql\src\VNLib.Plugins.Extensions.Loading.Sql.MYSql.csproj", "{50B5D5B8-2944-43E3-9CB0-F19D46F42984}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNLib.Plugins.Extensions.Loading.Sql.MySQL", "lib\sql-providers\mysql\VNLib.Plugins.Extensions.Loading.Sql.MySql\src\VNLib.Plugins.Extensions.Loading.Sql.MySQL.csproj", "{50B5D5B8-2944-43E3-9CB0-F19D46F42984}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VNLib.Plugins.Extensions.Loading.Sql.SQLite", "lib\sql-providers\sqlite\VNLib.Plugins.Extensions.Loading.Sql.SQLite\src\VNLib.Plugins.Extensions.Loading.Sql.SQLite.csproj", "{F6520193-1C5B-4A7C-8E5A-05D910AC9139}"
 EndProject
@@ -52,6 +51,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ci", "ci", "{A9DDA30C-0EE6-
 	ProjectSection(SolutionItems) = preProject
 		ci\cliff.toml = ci\cliff.toml
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VNLib.Plugins.Extensions.Ipc", "lib\VNLib.Plugins.Extensions.Ipc\src\VNLib.Plugins.Extensions.Ipc.csproj", "{49FF5B8A-3A7B-D6DF-C20D-E3352B194F67}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VNLib.Plugins.Extensions.Ipc.Tests", "tests\unit\vnlib.plugins.extensions.ipc\VNLib.Plugins.Extensions.Ipc.Tests.csproj", "{10D2F30E-B74F-D46B-17DB-D8BCF3F3B1AF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -103,6 +106,14 @@ Global
 		{BA1C4E26-6A33-4BFE-8B2D-2C6C01CF7F61}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BA1C4E26-6A33-4BFE-8B2D-2C6C01CF7F61}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BA1C4E26-6A33-4BFE-8B2D-2C6C01CF7F61}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49FF5B8A-3A7B-D6DF-C20D-E3352B194F67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49FF5B8A-3A7B-D6DF-C20D-E3352B194F67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49FF5B8A-3A7B-D6DF-C20D-E3352B194F67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49FF5B8A-3A7B-D6DF-C20D-E3352B194F67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10D2F30E-B74F-D46B-17DB-D8BCF3F3B1AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10D2F30E-B74F-D46B-17DB-D8BCF3F3B1AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10D2F30E-B74F-D46B-17DB-D8BCF3F3B1AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10D2F30E-B74F-D46B-17DB-D8BCF3F3B1AF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -121,6 +132,8 @@ Global
 		{CFF3325F-1D04-4E8D-BB91-4C63A2F6EAE7} = {F9BE1445-0A6A-47FE-A01C-3586AF110ED2}
 		{2F3288D7-3E9A-4396-9D5C-6D35B328B332} = {F9BE1445-0A6A-47FE-A01C-3586AF110ED2}
 		{BA1C4E26-6A33-4BFE-8B2D-2C6C01CF7F61} = {F9BE1445-0A6A-47FE-A01C-3586AF110ED2}
+		{49FF5B8A-3A7B-D6DF-C20D-E3352B194F67} = {08831534-2028-460F-992D-24A1E4525DE2}
+		{10D2F30E-B74F-D46B-17DB-D8BCF3F3B1AF} = {F9BE1445-0A6A-47FE-A01C-3586AF110ED2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BC28944A-A5ED-4433-AAC7-82840C94387A}

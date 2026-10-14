@@ -38,15 +38,15 @@ namespace VNLib.Plugins.Extensions.Validation
     {
         public static readonly Regex PhoneRegex = new(@"^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$", RegexOptions.Compiled);
 
-        public static readonly Regex AlphaRegx = new(@"[a-zA-Z]*", RegexOptions.Compiled);
-        public static readonly Regex NumericRegx = new(@"[0-9]*", RegexOptions.Compiled);
-        public static readonly Regex AlphaNumRegx = new(@"[a-zA-Z0-9]*", RegexOptions.Compiled);
+        public static readonly Regex AlphaRegex = new(@"[a-zA-Z]*", RegexOptions.Compiled);
+        public static readonly Regex NumericRegex = new(@"[0-9]*", RegexOptions.Compiled);
+        public static readonly Regex AlphaNumRegex = new(@"[a-zA-Z0-9]*", RegexOptions.Compiled);
 
-        public static readonly Regex OnlyAlphaRegx = new(@"^[a-zA-Z\s]*$", RegexOptions.Compiled);
-        public static readonly Regex OnlyNumericRegx = new(@"^[0-9]*$", RegexOptions.Compiled);
-        public static readonly Regex OnlyAlphaNumRegx = new(@"^[a-zA-Z0-9\s]*$", RegexOptions.Compiled);       
-        public static readonly Regex IllegalRegx = new(@"[\r\n\t\a\b\e\f|^~`<>{}]", RegexOptions.Compiled);
-        public static readonly Regex SpecialCharactersRegx = new(@"[\r\n\t\a\b\e\f#?!@$%^&*\+\-\~`|<>\{}]", RegexOptions.Compiled);
+        public static readonly Regex OnlyAlphaRegex = new(@"^[a-zA-Z\s]*$", RegexOptions.Compiled);
+        public static readonly Regex OnlyNumericRegex = new(@"^[0-9]*$", RegexOptions.Compiled);
+        public static readonly Regex OnlyAlphaNumRegex = new(@"^[a-zA-Z0-9\s]*$", RegexOptions.Compiled);       
+        public static readonly Regex IllegalRegex = new(@"[\r\n\t\a\b\e\f|^~`<>{}]", RegexOptions.Compiled);
+        public static readonly Regex SpecialCharactersRegex = new(@"[\r\n\t\a\b\e\f#?!@$%^&*\+\-\~`|<>\{}]", RegexOptions.Compiled);
 
         /// <summary>
         /// Gets a collection of Json-serializable validation errors
@@ -85,7 +85,7 @@ namespace VNLib.Plugins.Extensions.Validation
         }
 
         /// <summary>
-        /// Checks a string against <see cref="SpecialCharactersRegx"/>.
+        /// Checks a string against <see cref="SpecialCharactersRegex"/>.
         /// If the string is null or empty, it is allowed.
         /// </summary>
         /// <typeparam name="T">The type of the entity being validated.</typeparam>
@@ -93,12 +93,12 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string?> SpecialCharacters<T>(this IRuleBuilder<T, string?> builder)
         {
-            return builder.Must(static str => str == null || !SpecialCharactersRegx.IsMatch(str))
+            return builder.Must(static str => str == null || !SpecialCharactersRegex.IsMatch(str))
                           .WithMessage("{PropertyName} contains illegal characters");
         }
 
         /// <summary>
-        /// Checks a string against <see cref="IllegalRegx"/>.
+        /// Checks a string against <see cref="IllegalRegex"/>.
         /// If the string is null or empty, it is allowed.
         /// </summary>
         /// <typeparam name="T">The type of the entity being validated.</typeparam>
@@ -106,7 +106,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string?> IllegalCharacters<T>(this IRuleBuilder<T, string?> builder)
         {
-            return builder.Must(static str => str == null || !IllegalRegx.IsMatch(str))
+            return builder.Must(static str => str == null || !IllegalRegex.IsMatch(str))
                           .WithMessage("{PropertyName} contains illegal characters");
         }
 
@@ -118,7 +118,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string?> Alpha<T>(this IRuleBuilder<T, string?> builder)
         {
-            return builder.Must(static str => str == null || AlphaRegx.IsMatch(str))
+            return builder.Must(static str => str == null || AlphaRegex.IsMatch(str))
                           .WithMessage("{PropertyName} requires at least one a-Z character.");
         }
 
@@ -130,7 +130,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string> AlphaOnly<T>(this IRuleBuilder<T, string> builder)
         {
-            return builder.Must(static str => str == null || OnlyAlphaRegx.IsMatch(str))
+            return builder.Must(static str => str == null || OnlyAlphaRegex.IsMatch(str))
                           .WithMessage("{PropertyName} can only be a alpha character from a-Z.");
         }
 
@@ -142,7 +142,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string> Numeric<T>(this IRuleBuilder<T, string> builder)
         {
-            return builder.Must(static str => str == null || NumericRegx.IsMatch(str))
+            return builder.Must(static str => str == null || NumericRegex.IsMatch(str))
                           .WithMessage("{PropertyName} requires at least one number.");
         }
 
@@ -154,7 +154,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string?> NumericOnly<T>(this IRuleBuilder<T, string?> builder)
         {
-            return builder.Must(static str => str == null || OnlyNumericRegx.IsMatch(str))
+            return builder.Must(static str => str == null || OnlyNumericRegex.IsMatch(str))
                           .WithMessage("{PropertyName} can only be a number 0-9.");
         }
 
@@ -166,7 +166,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string?> AlphaNumeric<T>(this IRuleBuilder<T, string?> builder)
         {
-            return builder.Must(static str => str == null || AlphaNumRegx.IsMatch(str))
+            return builder.Must(static str => str == null || AlphaNumRegex.IsMatch(str))
                           .WithMessage("{PropertyName} must contain at least one alpha-numeric character.");
         }
 
@@ -178,7 +178,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string?> AlphaNumericOnly<T>(this IRuleBuilder<T, string?> builder)
         {
-            return builder.Must(static str => str == null || OnlyAlphaNumRegx.IsMatch(str))
+            return builder.Must(static str => str == null || OnlyAlphaNumRegex.IsMatch(str))
                           .WithMessage("{PropertyName} can only contain alpha numeric characters.");
         }
        

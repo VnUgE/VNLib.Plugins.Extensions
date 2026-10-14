@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-10-14
 
 ### Added
 
@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking Change:** Remove PluginBase.ProcessHostCommand console handler after upstream core update - (loading) [44065e4](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=44065e4df074ff717925a2381f96376c2a64af69)
 - **Breaking Change:** Fix spelling of EventManagement, IIntervalSchedulable, and IntervalResolutionType - (events) [f2cc559](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=f2cc55982a105e0d8ee2117f76fe195d130fd9ed)
 - **Breaking Change:** Correct typos on Sql interfaces - (sql) [9151f51](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=9151f51917263cdc69d6ec8d4c11eeb744554e08)
+- **Breaking Change:** Rename public `ValidatorExtensions` regex fields from `*Regx` to `*Regex` - (validation) [01e7f25](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=01e7f259156b45f571e28ff5f8d3526b15645b67)
+- **Breaking Change:** Move the public `PluginConfigStore` type under `PluginConfigExtensions` - (config) [76d0fd0](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=76d0fd014e9766c2cf17b2d31c93d0cffb04cd4e)
 - Expand and simplify configuration helpers - (config) [940f151](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=940f151f2f4e708282deb5569cffe5b0935f5c3b), [c8567e5](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=c8567e58dc1d4135da1f6cefa6fa66af5fcd7b19), [9bc2480](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=9bc24801735884e0c03aa00e83804448c466bdf2), [db5747a](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=db5747a20600a2e2c5e8d915cf0bdbe4ec6df6a2)
 - Improve validation in multiple places - (loading) [e23ca45](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=e23ca45b875c66b036e7ad58cbef239706400374), [9487d0b](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=9487d0ba923fc189158acd345e7b5ec5a1ed3eaa), [c3c86c8](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=c3c86c8774942c20f1e774b3a8fb6cd963a0352b)
 - Improve secret readers validation and docs - (secrets) [901fda3](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=901fda3edc7418d38f367333aead42fc7dd56ab)
@@ -38,11 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Obsolete S3Config type - (loading) [caf15b0](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=caf15b0fad1bb3de696f105a8423632a84061d2b)
 - Obsolete Password() validator extension method - (validation) [4fd16f7](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=4fd16f7b373546b1720f5a276957ef97e0b81a07)
 - Obsolete GetSecretAsync() and TryGetSecretAsync() extension methods - (secrets) [d47e800](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=d47e800145e60d5f98f90917dd559169ccc43e63)
-- Update EFCore to 8.0.24 - (deps) [f20f6da](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=f20f6da7071758a2156ac1f8109ae0533b878efd)
-- Update EFCore SQL Server to 8.0.24 - (deps) [d5ca6e7](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=d5ca6e7c7753f49db2f69ca4c2bd1b0af647c2f2)
-- Update EFCore Sqlite to 8.0.24 - (deps) [aed6d04](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=aed6d04211722e09a3c01f61ca3b3477ad65aeab)
-- Update FluentValidation to 12.1.1 - (deps) [1aa460d](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=1aa460d696b1c168d5bc35bca7a7f93969953840)
-- Update MSTest packages to v4 and test dependencies to latest stable versions - (deps) [512f653](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=512f653b38e60428f304cf3c54a3181da14a6649), [b4c191b](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=b4c191bacade3ed7235074f1bc4b504de62377bf)
+- Update Microsoft.EntityFrameworkCore family (core, SqlServer, Sqlite, InMemory) to 8.0.31 - (deps) [b3875d7](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=b3875d7)
+- Update FluentValidation to 12.2.0 - (deps) [b3875d7](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=b3875d7)
+- Update test frameworks: MSTest.TestAdapter + MSTest.TestFramework to 4.5.1, Microsoft.NET.Test.Sdk to 18.10.1, coverlet.collector to 10.1.0 - (deps) [b3875d7](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=b3875d7)
+- Update build tools in mise.toml: Task 3.54, .NET SDK patch 8.0.426 - (build) [b3875d7](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=b3875d7)
 - Remove ErrorProne.NET analyzers breaking builds - (deps) [cd46d58](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=cd46d58f0adccaaa78851895fed6cc270c9c70ec)
 - Centralize MSBuild config via Directory.Build.props and enable warnings as errors - (build) [a70ce82](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=a70ce827239c19398e73700c7ce6135225e6a4e5), [f9d7e39](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=f9d7e39e4bfedde1ff473f10fb57ffc986142084)
 - Improve module and default taskfiles for vnbuild and update solution file - (build) [a971cc5](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=a971cc55bd270da01e8ef41f77b880e839f6eb68), [a93d5c8](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=a93d5c89d329ee91341a9209a0e8ac4b83cfebac)
@@ -74,7 +75,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Breaking Change:** Remove ManagedPasswordHashing, UserManager, and UserPassValResult - (passwords) [b79c411](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=b79c411de04722689429e2f5af226f01239f8596)
 - **Breaking Change:** Remove local IAsyncLazy interface, use VNLib.Utils.Async instead - (loading) [2aae1ae](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=2aae1ae8d9991d57cd76e99d8c6cc40d214be494), [66d29b9](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=66d29b9863fabfa025ad123ead630dfae913b229)
-- Remove previously obsoleted APIs and fix build errors from removed members - (loading) [df957f5](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=df957f5e9e088fc0a46ec4760956d37343a655a7)
+- **Breaking Change:** Remove `ConfigurationExtensions` and `ConfigurableAsyncIntervalAttribute`; configuration extensions now live on `PluginConfigExtensions` and interval scheduling uses `IIntervalSchedulable` - (loading) [df957f5](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=df957f5e9e088fc0a46ec4760956d37343a655a7)
+- Remove obsolete APIs and fix build errors from removed members - (loading) [df957f5](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=df957f5e9e088fc0a46ec4760956d37343a655a7)
+- Correct SQL provider project filename casing from `MYSql` to `MySQL` - (build) [3bebbcf](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=3bebbcf)
 
 ## [0.1.5] - 2026-01-31
 
@@ -215,6 +218,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Endpoint initialization - [3f6a803](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=3f6a80306935afbd9cc74bd2bec83977a2ae12ae)
 - Fix unexpected raw secret erasure - [4237750](https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/commit/?id=42377501eb066f99c8e9d3f4a89b7595329e519b)
 
+[0.2.0]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.2.0&id2=v0.1.5
 [0.1.5]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.5&id2=v0.1.4
 [0.1.4]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.4&id2=v0.1.3
 [0.1.3]: https://git.vaughnnugent.com/cgit/vnuge/vnlib-plugins-extensions.git/diff?id=v0.1.3&id2=v0.1.2

@@ -115,7 +115,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="store">The database store to operate on.</param>
         /// <param name="key">The unique key that identifies the record</param>
         /// <param name="userId">The user's id that owns the resource</param>
-        /// <returns>A task that resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
+        /// <returns>A task that resolves to an error code that evaluates to <see langword="false"/> on failure and to the deleted-record count on success.</returns>
         public static Task<ERRNO> DeleteUserRecordAsync<TEntity>(this IDataStore<TEntity> store, string key, string userId)
             where TEntity : class, IDbModel, IUserEntity
             => DbStoreExtensions.DeleteAsync(store, key, userId);

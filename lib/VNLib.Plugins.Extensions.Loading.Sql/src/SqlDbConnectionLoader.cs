@@ -136,7 +136,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// Ensures the tables that back your desired DbContext exist within the configured database,
         /// or creates them if needed.
         /// </summary>
-        /// <typeparam name="T">The entity type.</typeparam>
+        /// <typeparam name="T">The database table definition type.</typeparam>
         /// <param name="pbase">The plugin to resolve the connection factory from.</param>
         /// <param name="state">The state object to pass to the <see cref="IDbTableDefinition.OnDatabaseCreating(IDbContextBuilder, object?)"/></param>
         /// <returns>A task that resolves when the tables have been created</returns>
@@ -150,7 +150,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// Ensures the tables that back your desired DbContext exist within the configured database,
         /// or creates them if needed.
         /// </summary>
-        /// <typeparam name="T">The entity type.</typeparam>
+        /// <typeparam name="T">The database table definition type.</typeparam>
         /// <param name="plugin">The plugin to resolve the connection factory from.</param>
         /// <param name="dbCreator">The instance of the <see cref="IDbTableDefinition"/> to build the database from</param>
         /// <param name="state">The state object to pass to the <see cref="IDbTableDefinition.OnDatabaseCreating(IDbContextBuilder, object?)"/></param>
@@ -217,12 +217,12 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <summary>
         /// A helper method to define a table for a <see cref="IDbContextBuilder"/>
         /// </summary>
-        /// <typeparam name="T">The entity type.</typeparam>
+        /// <typeparam name="T">The database table definition type.</typeparam>
         /// <param name="builder">The table builder to extend.</param>
         /// <param name="tableName">The optional name of the table to create</param>
         /// <param name="callback">The table creation callback function</param>
         /// <returns>The original context builder instance</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="builder"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="builder"/> or <paramref name="callback"/> is <see langword="null"/>.</exception>
         public static IDbContextBuilder DefineTable<T>(this IDbContextBuilder builder, string tableName, Action<IDbTableBuilder<T>> callback)
         {
             ArgumentNullException.ThrowIfNull(builder);
@@ -235,11 +235,11 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <summary>
         /// A helper method to define a table for a <see cref="IDbContextBuilder"/>
         /// </summary>
-        /// <typeparam name="T">The entity type.</typeparam>
+        /// <typeparam name="T">The database table definition type.</typeparam>
         /// <param name="builder">The table builder to extend.</param>
         /// <param name="callback">The table creation callback function</param>
         /// <returns>The original context builder instance</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="builder"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="builder"/> or <paramref name="callback"/> is <see langword="null"/>.</exception>
         public static IDbContextBuilder DefineTable<T>(this IDbContextBuilder builder, Action<IDbTableBuilder<T>> callback)
         {
             ArgumentNullException.ThrowIfNull(builder);

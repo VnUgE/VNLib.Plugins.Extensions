@@ -83,7 +83,6 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <param name="plugin">The plugin to resolve secrets for.</param>
         /// <param name="secretName">The name of the secret property to get</param>
         /// <returns>The element from the configuration file with the given name, or null if the configuration or property does not exist</returns>
-        /// <exception cref="KeyNotFoundException">Thrown when the secret is not found in the plugin configuration.</exception>
         /// <exception cref="ObjectDisposedException">Thrown when the plugin has been disposed.</exception>
         [Obsolete("Use plugin.Secrets().TryGetAsync() instead")]
         public static Task<ISecretResult?> TryGetSecretAsync(this PluginBase plugin, string secretName)
@@ -269,14 +268,18 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         }
 
         /// <summary>
-        /// Converts a <see cref="SecretResult"/> async operation to a lazy result that can be awaited, that transforms the result
-        /// to your desired type. If the result is null, the default value of <typeparamref name="TResult"/> is returned
+        /// Converts a <see cref="ISecretResult"/> async operation to a lazy result that can be awaited, that transforms the result
+        /// to your desired type. If the result is null, the default value of <typeparamref name="TResult"/> is returned. 
         /// </summary>
         /// <typeparam name="TResult">The type of the transformed secret value.</typeparam>
         /// <param name="result">The secret recovery task to convert to a lazy result.</param>
         /// <param name="transformer">Your function to transform the secret to its output form</param>
         /// <returns>A <see cref="IAsyncLazy{T}"/> </returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="transformer"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// Takes ownership of the lifetime of the <see cref="ISecretResult"/>, properly disposing the secret value after the 
+        /// operation completes (failed or successful).
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="result"/> or <paramref name="transformer"/> is <see langword="null"/>.</exception>
         public static IAsyncLazy<TResult> ToLazy<TResult>(this Task<ISecretResult> result, Func<ISecretResult, TResult> transformer)
         {
             ArgumentNullException.ThrowIfNull(result);

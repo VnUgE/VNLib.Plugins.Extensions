@@ -48,7 +48,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="record">The record to add to the store</param>
         /// <param name="cancellation">A cancellation token to cancel the operation</param>
         /// <returns>A task that resolves the result of the operation</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="store"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="store"/> or <paramref name="record"/> is <see langword="null"/>.</exception>
         public static async Task<ERRNO> AddOrUpdateAsync<T>(this IDataStore<T> store, T record, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
@@ -348,7 +348,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="constraints">An array of string constraints to pass to the query builder</param>
         /// <param name="cancellation">A token to cancel the operation</param>
         /// <returns>A Task that resolves to the number of items added to the collection</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="store"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="store"/> or <paramref name="collection"/> is <see langword="null"/>.</exception>
         public static async Task<ERRNO> GetCollectionAsync<T>(
             this IDataStore<T> store, 
             ICollection<T> collection, 
@@ -381,7 +381,15 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
             return collection.Count - previous;
         }
 
-        /// <inheritdoc cref="GetCollectionAsync{T}(IDataStore{T}, ICollection{T}, int, string[], CancellationToken)"/>
+        /// <summary>
+        /// Fills a collection with entries retrieved from the store using the specified constraints.
+        /// </summary>
+        /// <param name="store">The database store to query.</param>
+        /// <param name="collection">The collection to add entries to.</param>
+        /// <param name="limit">The maximum number of entries to retrieve.</param>
+        /// <param name="constraints">The constraints to pass to the query builder.</param>
+        /// <returns>A task that resolves to the number of entries added to the collection.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="store"/> or <paramref name="collection"/> is <see langword="null"/>.</exception>
         public static Task<ERRNO> GetCollectionAsync<T>(
             this IDataStore<T> store,
             ICollection<T> collection,
@@ -396,7 +404,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="store">The database store to operate on.</param>
         /// <param name="record">The record to remove from the store</param>
         /// <param name="cancellation">A cancellation token to cancel the operation</param>
-        /// <returns>A task that resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
+        /// <returns>A task that resolves to an error code that evaluates to <see langword="false"/> on failure and to the deleted-record count on success.</returns>
         public static async Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, T record, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
@@ -435,7 +443,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="store">The database store to operate on.</param>
         /// <param name="key">The unique key that identifies the record</param>
         /// <param name="cancellation">A cancellation token to cancel the operation</param>
-        /// <returns>A task that resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
+        /// <returns>A task that resolves to an error code that evaluates to <see langword="false"/> on failure and to the deleted-record count on success.</returns>
         public static async Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, string key, CancellationToken cancellation = default)
               where T : class, IDbModel
         {
@@ -472,7 +480,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// </summary>
         /// <param name="store">The database store to operate on.</param>
         /// <param name="specifiers">A variable length array of specifiers used to delete one or more entries</param>
-        /// <returns>A task that resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
+        /// <returns>A task that resolves to an error code that evaluates to <see langword="false"/> on failure and to the deleted-record count on success.</returns>
         public static Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, params string[] specifiers)
               where T : class, IDbModel
             => DeleteAsync(store, specifiers, CancellationToken.None);
@@ -484,7 +492,7 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// <param name="store">The database store to operate on.</param>
         /// <param name="specifiers">A variable length array of specifiers used to delete one or more entries</param>
         /// <param name="cancellation">A cancellation token to cancel the operation</param>
-        /// <returns>A task that resolves the number of records removed(should evaluate to false on failure, and deleted count on success)</returns>
+        /// <returns>A task that resolves to an error code that evaluates to <see langword="false"/> on failure and to the deleted-record count on success.</returns>
         public static async Task<ERRNO> DeleteAsync<T>(this IDataStore<T> store, string[] specifiers, CancellationToken cancellation)
               where T : class, IDbModel
         {
@@ -602,7 +610,16 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
             return collection.Count - previous;
         }
 
-        /// <inheritdoc cref="GetPageAsync{T}(IDataStore{T}, ICollection{T}, int, int, string[], CancellationToken)"/>
+        /// <summary>
+        /// Gets a page of records matching the specified constraints and adds them to the collection.
+        /// </summary>
+        /// <param name="store">The database store to query.</param>
+        /// <param name="collection">The collection to add records to.</param>
+        /// <param name="page">The zero-based page number to retrieve.</param>
+        /// <param name="limit">The maximum number of records to retrieve.</param>
+        /// <param name="constraints">The constraints to pass to the query builder.</param>
+        /// <returns>A task that resolves to the number of records added to the collection.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="store"/> or <paramref name="collection"/> is <see langword="null"/>.</exception>
         public static Task<int> GetPageAsync<T>(this IDataStore<T> store,
             ICollection<T> collection,
             int page,
@@ -616,8 +633,8 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// during enumeration.
         /// </summary>
         /// <typeparam name="T">The entity type.</typeparam>
-        /// <param name="current">The current entity instance.</param>
-        /// <param name="userId">The user-id to specify</param>
+        /// <param name="current">The sequence of user entities to update.</param>
+        /// <param name="userId">The user ID to assign to each entity.</param>
         /// <returns>A new enumeration instance that will add the new user-id to each record upon enumerating</returns>
         public static IEnumerable<T> WithUserId<T>(this IEnumerable<T> current, string? userId)
              where T : IUserEntity
@@ -630,18 +647,24 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         }
 
         /// <summary>
-        /// Updates the created and last modified times for each record in the collection
-        /// with the current time in UTC.
+        /// Updates the created and last-modified times for each record in the collection
+        /// with the current UTC time.
         /// </summary>
-        /// <inheritdoc cref="WithTime{T}(IEnumerable{T}, DateTime, bool)"/>
+        /// <typeparam name="T">The entity type.</typeparam>
+        /// <param name="current">The sequence of entity instances to update.</param>
+        /// <param name="overwriteTime"><see langword="true"/> to overwrite each record's created time; otherwise, <see langword="false"/>.</param>
+        /// <returns>A sequence that updates record times when enumerated.</returns>
         public static IEnumerable<T> WithCurrentUtcTime<T>(this IEnumerable<T> current, bool overwriteTime) where T : IDbModel
             => WithTime(current, DateTime.UtcNow, overwriteTime);
 
         /// <summary>
-        /// Updates the created and last modified times for each record in the collection
-        /// with the current system local time.
+        /// Updates the created and last-modified times for each record in the collection
+        /// with the current local time.
         /// </summary>
-        /// <inheritdoc cref="WithTime{T}(IEnumerable{T}, DateTime, bool)"/>
+        /// <typeparam name="T">The entity type.</typeparam>
+        /// <param name="current">The sequence of entity instances to update.</param>
+        /// <param name="overwriteTime"><see langword="true"/> to overwrite each record's created time; otherwise, <see langword="false"/>.</param>
+        /// <returns>A sequence that updates record times when enumerated.</returns>
         public static IEnumerable<T> WithCurrentLocalTime<T>(this IEnumerable<T> current, bool overwriteTime) where T : IDbModel
             => WithTime(current, DateTime.Now, overwriteTime);
 
@@ -650,8 +673,8 @@ namespace VNLib.Plugins.Extensions.Data.Extensions
         /// with the specified time.
         /// </summary>
         /// <typeparam name="T">The entity type.</typeparam>
-        /// <param name="current">The current entity instance.</param>
-        /// <param name="now">A structure to the time to set each record's last modified, and optionally created time</param>
+        /// <param name="current">The sequence of entity instances to update.</param>
+        /// <param name="now">The time to assign to each record's last-modified time and, optionally, created time.</param>
         /// <param name="overwriteTime">A value that indicates if the record's created time should be overwritten or ignored</param>
         /// <returns>A new enumeration that will updated record times upon enumerating</returns>
         public static IEnumerable<T> WithTime<T>(this IEnumerable<T> current, DateTime now, bool overwriteTime)

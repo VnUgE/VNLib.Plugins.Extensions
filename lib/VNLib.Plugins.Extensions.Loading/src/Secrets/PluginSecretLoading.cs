@@ -83,7 +83,6 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <param name="plugin">The plugin to resolve secrets for.</param>
         /// <param name="secretName">The name of the secret property to get</param>
         /// <returns>The element from the configuration file with the given name, or null if the configuration or property does not exist</returns>
-        /// <exception cref="KeyNotFoundException">Thrown when the secret is not found in the plugin configuration.</exception>
         /// <exception cref="ObjectDisposedException">Thrown when the plugin has been disposed.</exception>
         [Obsolete("Use plugin.Secrets().TryGetAsync() instead")]
         public static Task<ISecretResult?> TryGetSecretAsync(this PluginBase plugin, string secretName)
@@ -100,23 +99,25 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <param name="secret">The secret result containing the base64 encoded value.</param>
         /// <returns>The base64 decoded secret as a byte[]</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="secret"/> is <see langword="null"/>.</exception>
-        /// <exception cref="InternalBufferTooSmallException">Thrown when the base64 encoded secret is larger than the maximum allowed buffer size.</exception>
+        /// <exception cref="FormatException">Thrown when the secret value is not valid Base64 data and cannot be decoded.</exception>
         public static byte[] GetFromBase64(this ISecretResult secret)
         {
             ArgumentNullException.ThrowIfNull(secret);
             
+            // The base64 input is always longer than the decoded output, so a buffer sized
+            // to the input is guaranteed to be large enough for the decoded value.
             using UnsafeMemoryHandle<byte> buffer = MemoryUtil.UnsafeAlloc(secret.Result.Length);
             
-            //Get base64
+            // Get base64
             if(!Convert.TryFromBase64Chars(secret.Result, buffer.Span, out int count))
             {
-                throw new InternalBufferTooSmallException("internal buffer too small");
+                throw new FormatException("Failed to decode base64 bytes from stored secret.");
             }
 
-            //Copy to array
+            // Copy to array
             byte[] value = buffer.Span[..count].ToArray();
 
-            //Clear block before returning
+            // Clear block before returning
             MemoryUtil.InitializeBlock(
                 ref buffer.GetReference(), 
                 buffer.IntLength
@@ -229,7 +230,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <param name="secret">The secret recovery task to decode.</param>
         /// <returns>A task whose result is the base64 decoded secret as a byte[]</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="secret"/> is <see langword="null"/>.</exception>
-        /// <exception cref="InternalBufferTooSmallException">Thrown when the base64 encoded secret is larger than the maximum allowed buffer size.</exception>
+        /// <exception cref="FormatException">Thrown when the secret value is not valid Base64 data and cannot be decoded.</exception>
         [Obsolete("Use ToLazy() with transformer")]
         public static Task<byte[]> ToBase64Bytes(this Task<ISecretResult> secret) 
             => secret.ToLazy(static s => s.GetFromBase64()).AsTask();
@@ -269,14 +270,18 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         }
 
         /// <summary>
-        /// Converts a <see cref="SecretResult"/> async operation to a lazy result that can be awaited, that transforms the result
-        /// to your desired type. If the result is null, the default value of <typeparamref name="TResult"/> is returned
+        /// Converts a <see cref="ISecretResult"/> async operation to a lazy result that can be awaited, that transforms the result
+        /// to your desired type. If the result is null, the default value of <typeparamref name="TResult"/> is returned. 
         /// </summary>
         /// <typeparam name="TResult">The type of the transformed secret value.</typeparam>
         /// <param name="result">The secret recovery task to convert to a lazy result.</param>
         /// <param name="transformer">Your function to transform the secret to its output form</param>
         /// <returns>A <see cref="IAsyncLazy{T}"/> </returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="transformer"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// Takes ownership of the lifetime of the <see cref="ISecretResult"/>, properly disposing the secret value after the 
+        /// operation completes (failed or successful).
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="result"/> or <paramref name="transformer"/> is <see langword="null"/>.</exception>
         public static IAsyncLazy<TResult> ToLazy<TResult>(this Task<ISecretResult> result, Func<ISecretResult, TResult> transformer)
         {
             ArgumentNullException.ThrowIfNull(result);

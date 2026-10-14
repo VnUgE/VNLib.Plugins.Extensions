@@ -219,8 +219,8 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <summary>
         /// Gets a value that determines if the current column is a primary key
         /// </summary>
-        /// <param name="col">The data column to get the database type from.</param>
-        /// <returns>True if the column is part of the primary keys</returns>
+        /// <param name="col">The data column to test for primary-key membership.</param>
+        /// <returns><see langword="true"/> if the column is part of the primary key; otherwise, <see langword="false"/>.</returns>
         public static bool IsPrimaryKey(this DataColumn col)
         {
             ArgumentNullException.ThrowIfNull(col);
@@ -242,8 +242,8 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <summary>
         /// Gets the max length of the column
         /// </summary>
-        /// <param name="column">The data column to configure.</param>
-        /// <returns></returns>
+        /// <param name="column">The data column whose maximum length to retrieve.</param>
+        /// <returns>The maximum length of the column.</returns>
         public static int MaxLength(this DataColumn column)
         {
             if (column.ExtendedProperties.ContainsKey(MAX_LEN_BYPASS_KEY))
@@ -266,8 +266,8 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <summary>
         /// Gets a value that indicates if the column is a timestamp
         /// </summary>
-        /// <param name="column">The data column to configure.</param>
-        /// <returns>True if the column is a timestamp column</returns>
+        /// <param name="column">The data column to test for the timestamp marker.</param>
+        /// <returns><see langword="true"/> if the column is marked as a timestamp; otherwise, <see langword="false"/>.</returns>
         public static bool IsTimeStamp(this DataColumn column)
         {
             return column.ExtendedProperties.ContainsKey(TIMESTAMP_BYPASS);

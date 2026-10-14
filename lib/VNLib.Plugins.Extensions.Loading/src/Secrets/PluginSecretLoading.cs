@@ -104,7 +104,8 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         {
             ArgumentNullException.ThrowIfNull(secret);
             
-            // Base64 will always be larger than the encoded output, so overalloc is fine.
+            // The base64 input is always longer than the decoded output, so a buffer sized
+            // to the input is guaranteed to be large enough for the decoded value.
             using UnsafeMemoryHandle<byte> buffer = MemoryUtil.UnsafeAlloc(secret.Result.Length);
             
             // Get base64

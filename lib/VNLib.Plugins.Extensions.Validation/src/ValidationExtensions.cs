@@ -40,7 +40,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// If <paramref name="assertion"/> evaluates to false, sets the specified assertion message
         /// to the <see cref="WebMessage.Result"/> to the specified string
         /// </summary>
-        /// <param name="webm"></param>
+        /// <param name="webm">The web message to set the assertion result on.</param>
         /// <param name="assertion">The result of the assertion</param>
         /// <param name="message">The error message to store when the value is false</param>
         /// <returns>The inverse of <paramref name="assertion"/></returns>
@@ -58,7 +58,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// If <paramref name="assertion"/> evaluates to false, sets the specified assertion message
         /// to the <see cref="WebMessage.Result"/> to the specified string
         /// </summary>
-        /// <param name="webm"></param>
+        /// <param name="webm">The web message to set the assertion result on.</param>
         /// <param name="assertion">The result of the assertion</param>
         /// <param name="errors">The error collection to send to the client in response</param>
         /// <returns>The inverse of <paramref name="assertion"/></returns>
@@ -76,7 +76,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// If <paramref name="assertion"/> evaluates to false, sets the specified assertion message
         /// to the <see cref="WebMessage.Errors"/> to the specified string array
         /// </summary>
-        /// <param name="webm"></param>
+        /// <param name="webm">The web message to set the assertion result on.</param>
         /// <param name="assertion">The result of the assertion</param>
         /// <param name="errors">The error collection to send to the client in response</param>
         /// <returns>The inverse of <paramref name="assertion"/></returns>
@@ -89,7 +89,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// If <paramref name="assertion"/> evaluates to false, sets the specified assertion message
         /// to the <see cref="WebMessage.Errors"/> to the specified object array
         /// </summary>
-        /// <param name="webm"></param>
+        /// <param name="webm">The web message to set the assertion result on.</param>
         /// <param name="assertion">The result of the assertion</param>
         /// <param name="errors">The error collection to send to the client in response</param>
         /// <returns>The inverse of <paramref name="assertion"/></returns>
@@ -102,7 +102,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// If <paramref name="assertion"/> evaluates to false, sets the specified assertion message
         /// to the <see cref="WebMessage.Errors"/> to the specified string
         /// </summary>
-        /// <param name="webm"></param>
+        /// <param name="webm">The web message to set the assertion result on.</param>
         /// <param name="assertion">The result of the assertion</param>
         /// <param name="error">A single error to return to the client in the errors field</param>
         /// <returns>The inverse of <paramref name="assertion"/></returns>
@@ -115,7 +115,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// Validates the specified instance, and stores errors to the specified <paramref name="webMessage"/>
         /// </summary>
         /// <param name="instance">The instance to validate</param>
-        /// <param name="validator"></param>
+        /// <param name="validator">The validator to use for validation.</param>
         /// <param name="webMessage">The <see cref="WebMessage"/> to store errors to</param>
         /// <returns>True if the result of the validation is valid, false otherwise and the <paramref name="webMessage"/> is not modified</returns>
         public static bool Validate<T>(this IValidator<T> validator, T instance, WebMessage webMessage)

@@ -24,6 +24,7 @@
 
 using System;
 using System.IO;
+using System.Text;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1085,6 +1086,50 @@ object hostConfig = new { secrets = new { mykey = "hostValue" } };
             {
                 File.Delete(tempFile);
             }
+        }
+
+        #endregion
+
+        #region GetFromBase64
+
+        /// <summary>
+        /// Verifies that <see cref="PluginSecretLoading.GetFromBase64"/> decodes a valid
+        /// Base64 secret value into the expected byte sequence.
+        /// </summary>
+        [TestMethod]
+        public void GetFromBase64_ValidBase64_ReturnsDecodedBytes()
+        {
+            // "aGVsbG8gd29ybGQ=" is the Base64 encoding of "hello world"
+            object pluginConfig = new { secrets = new { foo = "aGVsbG8gd29ybGQ=" } };
+
+            using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
+
+            using ISecretResult result = plugin.Secrets().TryGet("foo")!;
+
+            Assert.IsNotNull(result);
+
+            Assert.AreSequenceEqual(
+                Encoding.UTF8.GetBytes("hello world"), 
+                result.GetFromBase64()
+            );
+        }
+
+        /// <summary>
+        /// Verifies that <see cref="PluginSecretLoading.GetFromBase64"/> throws a
+        /// <see cref="FormatException"/> when the secret value is not valid Base64 data.
+        /// </summary>
+        [TestMethod]
+        public void GetFromBase64_InvalidBase64_ThrowsFormatException()
+        {
+            object pluginConfig = new { secrets = new { foo = "!!!not-valid-base64!!!" } };
+
+            using TestPluginBase plugin = new(pluginConfig, EmptyHostConfig);
+
+            using ISecretResult result = plugin.Secrets().TryGet("foo")!;
+
+            Assert.IsNotNull(result);
+
+            Assert.ThrowsExactly<FormatException>(result.GetFromBase64);
         }
 
         #endregion

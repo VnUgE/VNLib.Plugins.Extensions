@@ -62,8 +62,8 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <param name="plugin">The plugin to resolve secrets for.</param>
         /// <param name="secretName">The name of the secret property to get</param>
         /// <returns>The element from the configuration file with the given name, raises an exception if the secret does not exist</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="KeyNotFoundException">Thrown when the secret is not found in the plugin configuration.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown when the plugin has been disposed.</exception>
         [Obsolete("Use plugin.Secrets().GetAsync() instead")]
         public static async Task<ISecretResult> GetSecretAsync(this PluginBase plugin, string secretName)
         {
@@ -83,8 +83,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <param name="plugin">The plugin to resolve secrets for.</param>
         /// <param name="secretName">The name of the secret property to get</param>
         /// <returns>The element from the configuration file with the given name, or null if the configuration or property does not exist</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="ObjectDisposedException">Thrown when the plugin has been disposed.</exception>
         [Obsolete("Use plugin.Secrets().TryGetAsync() instead")]
         public static Task<ISecretResult?> TryGetSecretAsync(this PluginBase plugin, string secretName)
         {
@@ -99,24 +98,26 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// </summary>
         /// <param name="secret">The secret result containing the base64 encoded value.</param>
         /// <returns>The base64 decoded secret as a byte[]</returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="InternalBufferTooSmallException"></exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="secret"/> is <see langword="null"/>.</exception>
+        /// <exception cref="FormatException">Thrown when the secret value is not valid Base64 data and cannot be decoded.</exception>
         public static byte[] GetFromBase64(this ISecretResult secret)
         {
             ArgumentNullException.ThrowIfNull(secret);
             
+            // The base64 input is always longer than the decoded output, so a buffer sized
+            // to the input is guaranteed to be large enough for the decoded value.
             using UnsafeMemoryHandle<byte> buffer = MemoryUtil.UnsafeAlloc(secret.Result.Length);
             
-            //Get base64
+            // Get base64
             if(!Convert.TryFromBase64Chars(secret.Result, buffer.Span, out int count))
             {
-                throw new InternalBufferTooSmallException("internal buffer too small");
+                throw new FormatException("Failed to decode base64 bytes from stored secret.");
             }
 
-            //Copy to array
+            // Copy to array
             byte[] value = buffer.Span[..count].ToArray();
 
-            //Clear block before returning
+            // Clear block before returning
             MemoryUtil.InitializeBlock(
                 ref buffer.GetReference(), 
                 buffer.IntLength
@@ -130,7 +131,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// </summary>
         /// <param name="secret">The secret result containing the PEM encoded certificate.</param>
         /// <returns>The <see cref="X509Certificate2"/> parsed from the PEM encoded data</returns>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="secret"/> is <see langword="null"/>.</exception>
         public static X509Certificate2 GetCertificate(this ISecretResult secret)
         {
             ArgumentNullException.ThrowIfNull(secret, nameof(secret));
@@ -174,7 +175,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// </summary>
         /// <param name="secret">The secret result containing the SPKI encoded public key.</param>
         /// <returns>The <see cref="PublicKey"/> parsed from the SPKI public key</returns>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="secret"/> is <see langword="null"/>.</exception>
         public static PublicKey GetPublicKey(this ISecretResult secret)
         {          
             ArgumentNullException.ThrowIfNull(secret, nameof(secret));
@@ -194,9 +195,9 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// </summary>
         /// <param name="secret">The secret result containing the JSON web key.</param>
         /// <returns>The <see cref="ReadOnlyJsonWebKey"/> from the result</returns>
-        /// <exception cref="JsonException"></exception>
-        /// <exception cref="ArgumentException"></exception>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="JsonException">Thrown when the secret value is not valid JSON.</exception>
+        /// <exception cref="ArgumentException">Thrown when the secret value is not a valid public key format.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="secret"/> is <see langword="null"/>.</exception>
         public static ReadOnlyJsonWebKey GetJsonWebKey(this ISecretResult secret)
         {
             ArgumentNullException.ThrowIfNull(secret);
@@ -228,8 +229,8 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// </summary>
         /// <param name="secret">The secret recovery task to decode.</param>
         /// <returns>A task whose result is the base64 decoded secret as a byte[]</returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="InternalBufferTooSmallException"></exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="secret"/> is <see langword="null"/>.</exception>
+        /// <exception cref="FormatException">Thrown when the secret value is not valid Base64 data and cannot be decoded.</exception>
         [Obsolete("Use ToLazy() with transformer")]
         public static Task<byte[]> ToBase64Bytes(this Task<ISecretResult> secret) 
             => secret.ToLazy(static s => s.GetFromBase64()).AsTask();
@@ -240,7 +241,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// </summary>
         /// <param name="secret">The secret recovery task to resolve the key from.</param>
         /// <returns>The <see cref="ReadOnlyJsonWebKey"/> from the secret, or null if the secret was not found</returns>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="secret"/> is <see langword="null"/>.</exception>
         [Obsolete("Use ToLazy() with transformer")]
         public static Task<ReadOnlyJsonWebKey> ToJsonWebKey(this Task<ISecretResult> secret) 
             => secret.ToLazy(static s => s.GetJsonWebKey()).AsTask();
@@ -255,8 +256,8 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// or a <see cref="KeyNotFoundException"/> is raised
         /// </param>
         /// <returns>The <see cref="ReadOnlyJsonWebKey"/> from the secret, or throws <see cref="KeyNotFoundException"/> if the key was not found</returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="secret"/> is <see langword="null"/>.</exception>
+        /// <exception cref="KeyNotFoundException">Thrown when the secret is not found in the plugin configuration.</exception>
         [Obsolete("Use ToLazy() with transformer")]
         public static async Task<ReadOnlyJsonWebKey> ToJsonWebKey(this Task<ISecretResult> secret, bool required)
         {
@@ -269,14 +270,18 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         }
 
         /// <summary>
-        /// Converts a <see cref="SecretResult"/> async operation to a lazy result that can be awaited, that transforms the result
-        /// to your desired type. If the result is null, the default value of <typeparamref name="TResult"/> is returned
+        /// Converts a <see cref="ISecretResult"/> async operation to a lazy result that can be awaited, that transforms the result
+        /// to your desired type. If the result is null, the default value of <typeparamref name="TResult"/> is returned. 
         /// </summary>
         /// <typeparam name="TResult">The type of the transformed secret value.</typeparam>
         /// <param name="result">The secret recovery task to convert to a lazy result.</param>
         /// <param name="transformer">Your function to transform the secret to its output form</param>
         /// <returns>A <see cref="IAsyncLazy{T}"/> </returns>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <remarks>
+        /// Takes ownership of the lifetime of the <see cref="ISecretResult"/>, properly disposing the secret value after the 
+        /// operation completes (failed or successful).
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="result"/> or <paramref name="transformer"/> is <see langword="null"/>.</exception>
         public static IAsyncLazy<TResult> ToLazy<TResult>(this Task<ISecretResult> result, Func<ISecretResult, TResult> transformer)
         {
             ArgumentNullException.ThrowIfNull(result);
@@ -292,8 +297,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
             return Run(result, transformer).AsLazy();
         }
 
-        /// <inheritdoc cref="ToLazy``1(Task{ISecretResult}, Func{ISecretResult, TResult})"/>
-        /// <param name="transformer">Your function to transform the secret to its output form</param>
+        /// <inheritdoc cref="ToLazy{TResult}(Task{ISecretResult}, Func{ISecretResult, TResult})"/>
         public static IAsyncLazy<TResult> ToLazy<TResult>(this Task<ISecretResult> result, Func<ISecretResult, Task<TResult>> transformer)
         {
             ArgumentNullException.ThrowIfNull(result);

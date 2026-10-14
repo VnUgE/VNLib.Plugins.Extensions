@@ -1,5 +1,5 @@
-﻿/*
-* Copyright (c) 2023 Vaughn Nugent
+/*
+* Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
 * Package: VNLib.Plugins.Extensions.Loading.Sql
@@ -30,7 +30,7 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
     /// <summary>
     /// A tool used to configure your new columns within the database
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">The entity type.</typeparam>
     public interface IDbColumnBuilder<T>
     {
         /// <summary>

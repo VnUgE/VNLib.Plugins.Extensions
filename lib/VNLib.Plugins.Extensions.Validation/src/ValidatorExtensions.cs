@@ -51,7 +51,7 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <summary>
         /// Gets a collection of Json-serializable validation errors
         /// </summary>
-        /// <param name="result"></param>
+        /// <param name="result">The validation result to extract errors from.</param>
         /// <returns>A collection of json errors to return to a user</returns>
         public static ICollection GetErrorsAsCollection(this ValidationResult result)
         {
@@ -59,12 +59,12 @@ namespace VNLib.Plugins.Extensions.Validation
         }
 
         /// <summary>
-        /// Tests the the property against <see cref="PhoneRegex"/> 
+        /// Tests the property against <see cref="PhoneRegex"/>
         /// to determine if the string matches the proper phone number form
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The type of the entity being validated.</typeparam>
+        /// <param name="builder">The fluent rule builder to extend.</param>
+        /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string?> PhoneNumber<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static phone => phone?.Length > 0 && PhoneRegex.IsMatch(phone))
@@ -72,12 +72,12 @@ namespace VNLib.Plugins.Extensions.Validation
         }
 
         /// <summary>
-        /// Tests the the property against <see cref="PhoneRegex"/> 
-        /// to determine if the string matches the proper phone number form, or allows emtpy strings
+        /// Tests the property against <see cref="PhoneRegex"/>
+        /// to determine whether the string matches the proper phone number form, while allowing null or empty strings
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The type of the entity being validated.</typeparam>
+        /// <param name="builder">The fluent rule builder to extend.</param>
+        /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string> EmptyPhoneNumber<T>(this IRuleBuilder<T, string> builder)
         {
             return builder.Must(static phone => phone == null || phone.Length == 0 || PhoneRegex.IsMatch(phone))
@@ -88,9 +88,9 @@ namespace VNLib.Plugins.Extensions.Validation
         /// Checks a string against <see cref="SpecialCharactersRegx"/>.
         /// If the string is null or empty, it is allowed.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The type of the entity being validated.</typeparam>
+        /// <param name="builder">The fluent rule builder to extend.</param>
+        /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string?> SpecialCharacters<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static str => str == null || !SpecialCharactersRegx.IsMatch(str))
@@ -101,9 +101,9 @@ namespace VNLib.Plugins.Extensions.Validation
         /// Checks a string against <see cref="IllegalRegx"/>.
         /// If the string is null or empty, it is allowed.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The type of the entity being validated.</typeparam>
+        /// <param name="builder">The fluent rule builder to extend.</param>
+        /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string?> IllegalCharacters<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static str => str == null || !IllegalRegx.IsMatch(str))
@@ -113,9 +113,9 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <summary>
         /// Makes sure a field contains at least 1 character a-Z
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The type of the entity being validated.</typeparam>
+        /// <param name="builder">The fluent rule builder to extend.</param>
+        /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string?> Alpha<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static str => str == null || AlphaRegx.IsMatch(str))
@@ -125,9 +125,9 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <summary>
         /// Determines if all characters are only a-Z (allows whitespace)
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The type of the entity being validated.</typeparam>
+        /// <param name="builder">The fluent rule builder to extend.</param>
+        /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string> AlphaOnly<T>(this IRuleBuilder<T, string> builder)
         {
             return builder.Must(static str => str == null || OnlyAlphaRegx.IsMatch(str))
@@ -137,9 +137,9 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <summary>
         /// Makes sure a field contains at least 1 numeral
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The type of the entity being validated.</typeparam>
+        /// <param name="builder">The fluent rule builder to extend.</param>
+        /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string> Numeric<T>(this IRuleBuilder<T, string> builder)
         {
             return builder.Must(static str => str == null || NumericRegx.IsMatch(str))
@@ -149,9 +149,9 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <summary>
         /// Determines if all characters are only 0-9 (not whitespace is allowed)
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The type of the entity being validated.</typeparam>
+        /// <param name="builder">The fluent rule builder to extend.</param>
+        /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string?> NumericOnly<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static str => str == null || OnlyNumericRegx.IsMatch(str))
@@ -161,9 +161,9 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <summary>
         /// Makes sure the field contains at least 1 alpha numeric character (whitespace included)
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The type of the entity being validated.</typeparam>
+        /// <param name="builder">The fluent rule builder to extend.</param>
+        /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string?> AlphaNumeric<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static str => str == null || AlphaNumRegx.IsMatch(str))
@@ -173,9 +173,9 @@ namespace VNLib.Plugins.Extensions.Validation
         /// <summary>
         /// Determines if all characters are only alpha-numeric (whitespace allowed)
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">The type of the entity being validated.</typeparam>
+        /// <param name="builder">The fluent rule builder to extend.</param>
+        /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string?> AlphaNumericOnly<T>(this IRuleBuilder<T, string?> builder)
         {
             return builder.Must(static str => str == null || OnlyAlphaNumRegx.IsMatch(str))
@@ -187,10 +187,10 @@ namespace VNLib.Plugins.Extensions.Validation
         /// Validation will fail if the length of the string is outside of the specified range.
         /// The range is inclusive
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
+        /// <typeparam name="T">The type of the entity being validated.</typeparam>
+        /// <param name="builder">The fluent rule builder to extend.</param>
         /// <param name="lengthRange">The length range of the specified string</param>
-        /// <returns></returns>
+        /// <returns>The updated rule builder with the new validation rule applied.</returns>
         public static IRuleBuilderOptions<T, string> Length<T>(this IRuleBuilder<T, string> builder, Range lengthRange)
         {
             return builder.Length(lengthRange.Start.Value, lengthRange.End.Value);

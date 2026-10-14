@@ -72,10 +72,10 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// Gets (or loads) the ambient sql connection factory for the current plugin
         /// and synchronously blocks the current thread until the connection is ready.
         /// </summary>
-        /// <param name="plugin"></param>
+        /// <param name="plugin">The plugin to resolve the connection factory from.</param>
         /// <returns>The ambient <see cref="DbConnection"/> factory</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="KeyNotFoundException">Thrown when the database provider is not configured for the plugin.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown when the plugin has been disposed.</exception>
         public static Func<DbConnection> GetConnectionFactory(this PluginBase plugin)
         {
             //Get the async factory
@@ -89,10 +89,10 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// Gets (or loads) the ambient sql connection factory for the current plugin
         /// asynchronously
         /// </summary>
-        /// <param name="plugin"></param>
+        /// <param name="plugin">The plugin to resolve the connection factory from.</param>
         /// <returns>The ambient <see cref="DbConnection"/> factory</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="KeyNotFoundException">Thrown when the database provider is not configured for the plugin.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown when the plugin has been disposed.</exception>
         public static IAsyncLazy<Func<DbConnection>> GetConnectionFactoryAsync(this PluginBase plugin)
         {
             IRuntimeDbProvider provider = GetDbProvider(plugin);
@@ -103,10 +103,10 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// Gets (or loads) the ambient <see cref="DbContextOptions"/> configured from
         /// the ambient sql factory and blocks the current thread until the options are ready
         /// </summary>
-        /// <param name="plugin"></param>
+        /// <param name="plugin">The plugin to resolve the connection factory from.</param>
         /// <returns>The ambient <see cref="DbContextOptions"/> for the current plugin</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="KeyNotFoundException">Thrown when the database provider is not configured for the plugin.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown when the plugin has been disposed.</exception>
         /// <remarks>If plugin is in debug mode, writes log data to the default log</remarks>
         public static DbContextOptions GetContextOptions(this PluginBase plugin)
         {
@@ -121,10 +121,10 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// Gets (or loads) the ambient <see cref="DbContextOptions"/> configured from
         /// the ambient sql factory
         /// </summary>
-        /// <param name="plugin"></param>
+        /// <param name="plugin">The plugin to resolve the connection factory from.</param>
         /// <returns>The ambient <see cref="DbContextOptions"/> for the current plugin</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="ObjectDisposedException"></exception>
+        /// <exception cref="KeyNotFoundException">Thrown when the database provider is not configured for the plugin.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown when the plugin has been disposed.</exception>
         /// <remarks>If plugin is in debug mode, writes log data to the default log</remarks>
         public static IAsyncLazy<DbContextOptions> GetContextOptionsAsync(this PluginBase plugin)
         {
@@ -136,8 +136,8 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// Ensures the tables that back your desired DbContext exist within the configured database,
         /// or creates them if needed.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="pbase"></param>
+        /// <typeparam name="T">The database table definition type.</typeparam>
+        /// <param name="pbase">The plugin to resolve the connection factory from.</param>
         /// <param name="state">The state object to pass to the <see cref="IDbTableDefinition.OnDatabaseCreating(IDbContextBuilder, object?)"/></param>
         /// <returns>A task that resolves when the tables have been created</returns>
         public static Task EnsureDbCreatedAsync<T>(this PluginBase pbase, object? state) where T : IDbTableDefinition, new()
@@ -150,8 +150,8 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// Ensures the tables that back your desired DbContext exist within the configured database,
         /// or creates them if needed.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="plugin"></param>
+        /// <typeparam name="T">The database table definition type.</typeparam>
+        /// <param name="plugin">The plugin to resolve the connection factory from.</param>
         /// <param name="dbCreator">The instance of the <see cref="IDbTableDefinition"/> to build the database from</param>
         /// <param name="state">The state object to pass to the <see cref="IDbTableDefinition.OnDatabaseCreating(IDbContextBuilder, object?)"/></param>
         /// <returns>A task that resolves when the tables have been created</returns>
@@ -217,12 +217,12 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <summary>
         /// A helper method to define a table for a <see cref="IDbContextBuilder"/>
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
+        /// <typeparam name="T">The database table definition type.</typeparam>
+        /// <param name="builder">The table builder to extend.</param>
         /// <param name="tableName">The optional name of the table to create</param>
         /// <param name="callback">The table creation callback function</param>
         /// <returns>The original context builder instance</returns>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentNullException"><paramref name="builder"/> or <paramref name="callback"/> is <see langword="null"/>.</exception>
         public static IDbContextBuilder DefineTable<T>(this IDbContextBuilder builder, string tableName, Action<IDbTableBuilder<T>> callback)
         {
             ArgumentNullException.ThrowIfNull(builder);
@@ -235,11 +235,11 @@ namespace VNLib.Plugins.Extensions.Loading.Sql
         /// <summary>
         /// A helper method to define a table for a <see cref="IDbContextBuilder"/>
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="builder"></param>
+        /// <typeparam name="T">The database table definition type.</typeparam>
+        /// <param name="builder">The table builder to extend.</param>
         /// <param name="callback">The table creation callback function</param>
         /// <returns>The original context builder instance</returns>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentNullException"><paramref name="builder"/> or <paramref name="callback"/> is <see langword="null"/>.</exception>
         public static IDbContextBuilder DefineTable<T>(this IDbContextBuilder builder, Action<IDbTableBuilder<T>> callback)
         {
             ArgumentNullException.ThrowIfNull(builder);

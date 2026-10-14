@@ -222,17 +222,14 @@ namespace VNLib.Plugins.Extensions.Ipc
         }
 
         /// <summary>
-        /// Waits for an export to become available, using a linked cancellation token that combines 
-        /// a timeout-based token with this bridge's disposal token. This method blocks until the 
-        /// named instance is published, the timeout expires, or this bridge is disposed.
+        /// Waits asynchronously until the named export becomes available or this bridge is disposed.
         /// </summary>
         /// <param name="symbolName">The name of the IPC export symbol to wait for.</param>
-        /// <returns>A task that represents the asynchronous operation. The task result contains the IPC export object.</returns>
-        /// <exception cref="ArgumentException">Thrown if <paramref name="symbolName"/> is <see langword="null"/> or empty.</exception>
-        /// <exception cref="ObjectDisposedException">Thrown if this bridge has been disposed.</exception>
-        /// <exception cref="OperationCanceledException">Thrown if the wait operation is cancelled because this bridge is being disposed.</exception>
+        /// <returns>A task that completes with the initialized export when it becomes available.</returns>
+        /// <exception cref="ArgumentException"><paramref name="symbolName"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">This bridge is disposed before the export becomes available.</exception>
         /// <remarks>
-        /// This function polls the IPC export table indefinitely until the specified export becomes available or this bridge connection is closed.
+        /// The export table is polled indefinitely until the named export becomes available or this bridge is disposed.
         /// </remarks>
         public async Task<IpcObjectExport> WaitForExport(string symbolName)
         {
@@ -251,20 +248,17 @@ namespace VNLib.Plugins.Extensions.Ipc
         }
 
         /// <summary>
-        /// Waits asynchronously for an object export with the specified symbol name to become 
-        /// available, then returns it.
+        /// Waits asynchronously until the named export becomes available, a timeout expires, or this bridge is disposed.
         /// </summary>
         /// <param name="symbolName">The name of the IPC export symbol to wait for.</param>
-        /// <param name="cancellation">An optional cancellation token to cancel the wait operation.</param>
-        /// <returns>A task that represents the asynchronous operation. The task result contains the IPC export object.</returns>
-        /// <exception cref="ArgumentException">Thrown if <paramref name="symbolName"/> is <see langword="null"/> or empty.</exception>
-        /// <exception cref="ObjectDisposedException">Thrown if this bridge has been disposed.</exception>
-        /// <exception cref="OperationCanceledException">
-        /// Thrown if the wait operation is cancelled because this bridge is being disposed or the supplied cancellation 
-        /// token was triggered.
-        /// </exception>
+        /// <param name="cancellation">An additional cancellation token to cancel the wait operation.</param>
+        /// <returns>A task that completes with the initialized export when it becomes available.</returns>
+        /// <exception cref="ArgumentException"><paramref name="symbolName"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">This bridge is disposed before the export becomes available.</exception>
+        /// <exception cref="OperationCanceledException">The wait is cancelled by the supplied <paramref name="cancellation"/> token or this bridge is disposed.</exception>
         /// <remarks>
-        /// This function polls the IPC export table indefinitely until the specified export becomes available or the operation is cancelled. 
+        /// Combines the supplied <paramref name="cancellation"/> token with the bridge's disposal token so the wait responds to either source.
+        /// The export table is polled indefinitely until the named export becomes available or the operation is cancelled.
         /// </remarks>
         public async Task<IpcObjectExport> WaitForExport(string symbolName, CancellationToken cancellation)
         {
@@ -293,11 +287,17 @@ namespace VNLib.Plugins.Extensions.Ipc
             }
         }
 
-        /// <inheritdoc cref="WaitForExport(string, CancellationToken)"/>
+        /// <summary>
+        /// Waits asynchronously until the named export becomes available, the timeout expires, or this bridge is disposed.
+        /// </summary>
         /// <param name="symbolName">The name of the IPC export symbol to wait for.</param>
-        /// <param name="timeout">The maximum amount of time to wait for the IPC export to become available.</param>
+        /// <param name="timeout">The maximum time to wait for the IPC export to become available.</param>
+        /// <returns>A task that completes with the initialized export when it becomes available.</returns>
+        /// <exception cref="ArgumentException"><paramref name="symbolName"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ObjectDisposedException">This bridge is disposed before the export becomes available.</exception>
+        /// <exception cref="TimeoutException">The export does not become available before <paramref name="timeout"/> expires.</exception>
         /// <remarks>
-        /// This function polls the IPC export table until the specified export becomes available, the timeout is reached, or the operation is cancelled. 
+        /// The IPC export table is polled until the named export becomes available, the timeout expires, or this bridge is disposed.
         /// </remarks>
         public async Task<IpcObjectExport> WaitForExport(string symbolName, TimeSpan timeout)
         {

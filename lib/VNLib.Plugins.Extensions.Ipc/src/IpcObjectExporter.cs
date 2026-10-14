@@ -93,6 +93,7 @@ namespace VNLib.Plugins.Extensions.Ipc
         /// NOTE: Should only be called by the shared memory region owner to establish the internal
         /// structures and schema.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">The table is already initialized.</exception>
         public readonly void Initialize()
         {
             ref SharedHeader header = ref GetHeader();
@@ -165,7 +166,6 @@ namespace VNLib.Plugins.Extensions.Ipc
         /// <exception cref="ArgumentException"><paramref name="exportName"/> is empty, whitespace, or a symbol with that name already exists.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="exportName"/> exceeds the maximum allowed name length.</exception>
         /// <exception cref="InvalidOperationException">The store is not initialized or no export slots are available.</exception>
-        /// <exception cref="ObjectDisposedException">The plugin has been unloaded.</exception>
         public readonly void Publish(ReadOnlySpan<char> exportName, object instance)
         {
             ArgumentNullException.ThrowIfNull(instance);
@@ -221,7 +221,6 @@ namespace VNLib.Plugins.Extensions.Ipc
         /// <returns><see langword="true"/> if a matching export was found and removed; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentException"><paramref name="exportName"/> is empty or whitespace.</exception>
         /// <exception cref="InvalidOperationException">The store is not initialized.</exception>
-        /// <exception cref="ObjectDisposedException">The plugin has been unloaded.</exception>
         public readonly bool Unpublish(ReadOnlySpan<char> exportName)
         {
             if (exportName.IsEmpty || exportName.IsWhiteSpace())

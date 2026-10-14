@@ -2,7 +2,7 @@
 * Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
-* Package: VNLib.Plugins.Extensions.Loading.Sql.SQLServer
+* Package: VNLib.Plugins.Extensions.Sql.SqlServer
 * File: SQLServerExport.cs 
 *
 * SQLServerExport.cs is part of VNLib.Plugins.Extensions.Loading.Sql.SQLServer which 

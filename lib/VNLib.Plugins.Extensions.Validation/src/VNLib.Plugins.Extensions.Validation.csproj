@@ -4,7 +4,6 @@
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>VNLib.Plugins.Extensions.Validation</RootNamespace>
     <AssemblyName>VNLib.Plugins.Extensions.Validation</AssemblyName>
-    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
   
   <PropertyGroup>

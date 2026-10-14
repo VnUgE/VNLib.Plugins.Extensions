@@ -2,7 +2,7 @@
 * Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
-* Package: VNLib.Plugins.Extensions.Loading.Sql.SQLite
+* Package: VNLib.Plugins.Extensions.Sql.SQLite
 * File: SQLiteExport.cs 
 *
 * SQLiteExport.cs is part of VNLib.Plugins.Extensions.Loading.Sql.SQLite which 

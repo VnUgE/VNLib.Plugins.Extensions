@@ -2,7 +2,7 @@
 * Copyright (c) 2026 Vaughn Nugent
 * 
 * Library: VNLib
-* Package: VNLib.Plugins.Extensions.Loading.Sql.Mysql
+* Package: VNLib.Plugins.Extensions.Sql.MySQL
 * File: MySqlExport.cs 
 *
 * MySqlExport.cs is part of VNLib.Plugins.Extensions.Loading.Sql which 

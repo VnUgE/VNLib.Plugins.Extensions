@@ -4,7 +4,6 @@
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>VNLib.Plugins.Extensions.Ipc</RootNamespace>
     <AssemblyName>VNLib.Plugins.Extensions.Ipc</AssemblyName>
-    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <WarningsAsErrors>True</WarningsAsErrors>
   </PropertyGroup>
   

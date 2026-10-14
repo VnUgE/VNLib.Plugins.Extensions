@@ -4,7 +4,6 @@
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>VNLib.Plugins.Extensions.Loading.Sql</RootNamespace>
     <AssemblyName>VNLib.Plugins.Extensions.Loading.Sql</AssemblyName>
-    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
   
   <PropertyGroup>

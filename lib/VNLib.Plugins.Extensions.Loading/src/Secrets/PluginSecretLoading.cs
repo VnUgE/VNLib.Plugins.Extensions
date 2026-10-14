@@ -99,23 +99,24 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <param name="secret">The secret result containing the base64 encoded value.</param>
         /// <returns>The base64 decoded secret as a byte[]</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="secret"/> is <see langword="null"/>.</exception>
-        /// <exception cref="InternalBufferTooSmallException">Thrown when the base64 encoded secret is larger than the maximum allowed buffer size.</exception>
+        /// <exception cref="FormatException">Thrown when the secret value is not valid Base64 data and cannot be decoded.</exception>
         public static byte[] GetFromBase64(this ISecretResult secret)
         {
             ArgumentNullException.ThrowIfNull(secret);
             
+            // Base64 will always be larger than the encoded output, so overalloc is fine.
             using UnsafeMemoryHandle<byte> buffer = MemoryUtil.UnsafeAlloc(secret.Result.Length);
             
-            //Get base64
+            // Get base64
             if(!Convert.TryFromBase64Chars(secret.Result, buffer.Span, out int count))
             {
-                throw new InternalBufferTooSmallException("internal buffer too small");
+                throw new FormatException("Failed to decode base64 bytes from stored secret.");
             }
 
-            //Copy to array
+            // Copy to array
             byte[] value = buffer.Span[..count].ToArray();
 
-            //Clear block before returning
+            // Clear block before returning
             MemoryUtil.InitializeBlock(
                 ref buffer.GetReference(), 
                 buffer.IntLength
@@ -228,7 +229,7 @@ namespace VNLib.Plugins.Extensions.Loading.Secrets
         /// <param name="secret">The secret recovery task to decode.</param>
         /// <returns>A task whose result is the base64 decoded secret as a byte[]</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="secret"/> is <see langword="null"/>.</exception>
-        /// <exception cref="InternalBufferTooSmallException">Thrown when the base64 encoded secret is larger than the maximum allowed buffer size.</exception>
+        /// <exception cref="FormatException">Thrown when the secret value is not valid Base64 data and cannot be decoded.</exception>
         [Obsolete("Use ToLazy() with transformer")]
         public static Task<byte[]> ToBase64Bytes(this Task<ISecretResult> secret) 
             => secret.ToLazy(static s => s.GetFromBase64()).AsTask();

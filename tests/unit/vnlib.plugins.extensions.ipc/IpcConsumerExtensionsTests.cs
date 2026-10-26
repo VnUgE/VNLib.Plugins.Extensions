@@ -23,6 +23,7 @@
 */
 
 using System;
+using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,6 +34,7 @@ using VNLib.Utils.Async;
 using VNLib.Utils.Extensions;
 using VNLib.Utils.Memory;
 using VNLib.Plugins.Extensions.Loading.Tests;
+using VNLib.Plugins.Ipc.SharedMemory;
 
 using static VNLib.Plugins.Extensions.Ipc.IpcObjectExporter;
 
@@ -41,16 +43,21 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
     [TestClass]
     public class IpcConsumerExtensionsTests : VnDisposeable
     {
-
         private readonly IMemoryHandle<byte> _sharedBuffer;
         private readonly object _sharedLock;
 
         public TestContext TestContext { get; set; }
 
+        private MockRegion TestMockRegion { get; }
+        private MockRegionAccessor TestMockAccessor { get; }
+
         public IpcConsumerExtensionsTests()
         {
             _sharedBuffer = MemoryUtil.SafeAlloc(RequiredBufferSize);
             _sharedLock = new();
+
+            TestMockRegion = new(_sharedBuffer, _sharedLock);
+            TestMockAccessor = new();
         }
 
         protected override void Free()
@@ -75,7 +82,7 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
         private IpcExportBridge ProducerBridge()
         {
             return IpcExportBridge.Create(_sharedLock, () => _sharedBuffer.Span);
-        }
+        }      
 
         [TestMethod]
         public async Task HappyPath()
@@ -115,7 +122,8 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
 
                     // Delay because consume will use the plugin scheduler for async tasks 50ms should be
                     // more than enough when publish is already called
-                    await proxy.WaitForChangeAsync(TestContext.CancellationToken);
+                    await proxy.WaitForChangeAsync(TestContext.CancellationToken)
+                        .ConfigureAwait(false);
 
                     // Should be ready to use now
                     Assert.AreEqual(1, proxy.OnInstanceChangedCounter);
@@ -145,7 +153,8 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
                           .Consume(nameof(TestExportType), proxy);
 
                 // Wait for consumer threads
-                await proxy.WaitForChangeAsync(TestContext.CancellationToken);
+                await proxy.WaitForChangeAsync(TestContext.CancellationToken)
+                    .ConfigureAwait(false);
 
                 Assert.AreEqual(1, proxy.OnInstanceChangedCounter);
                 Assert.IsNotNull(proxy.Instance);
@@ -155,7 +164,8 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
                 producer.Dispose();
 
                 // need to wait for the consumer threads to cleanup
-                await proxy.WaitForChangeAsync(TestContext.CancellationToken);
+                await proxy.WaitForChangeAsync(TestContext.CancellationToken)
+                    .ConfigureAwait(false);
 
                 // Ensure consumer proxy unloaded the type
                 Assert.AreEqual(2, proxy.OnInstanceChangedCounter);
@@ -189,7 +199,8 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
                 instance: new TestExportType()
             );
 
-            await proxy.WaitForChangeAsync(TestContext.CancellationToken);
+            await proxy.WaitForChangeAsync(TestContext.CancellationToken)
+                .ConfigureAwait(false);
 
             Assert.AreEqual(1, proxy.OnInstanceChangedCounter);
             Assert.IsNotNull(proxy.Instance);
@@ -228,7 +239,8 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
             // Resolve the bridge so the worker can proceed to poll the already-published export
             bridgeTcs.SetResult(bridge);
 
-            await proxy.WaitForChangeAsync(TestContext.CancellationToken);
+            await proxy.WaitForChangeAsync(TestContext.CancellationToken)
+                .ConfigureAwait(false);
 
             Assert.AreEqual(1, proxy.OnInstanceChangedCounter);
             Assert.IsNotNull(proxy.Instance);
@@ -257,24 +269,36 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
                       .Consume(nameof(TestExportType), proxy);
 
             // Wait for the initial notification
-            await proxy.WaitForChangeAsync(TestContext.CancellationToken);
-            Assert.AreEqual(1, proxy.OnInstanceChangedCounter);
-            Assert.IsNotNull(proxy.Instance);
+            {
+                await proxy.WaitForChangeAsync(TestContext.CancellationToken)
+                    .ConfigureAwait(false);
+                
+                Assert.AreEqual(1, proxy.OnInstanceChangedCounter);
+                Assert.IsNotNull(proxy.Instance);
+            }
 
             // Unpublish the export, worker should clear the instance and re-enter the loop
-            producer.Unpublish(nameof(TestExportType));
+            {
+                producer.Unpublish(nameof(TestExportType));
 
-            await proxy.WaitForChangeAsync(TestContext.CancellationToken);
-            Assert.AreEqual(2, proxy.OnInstanceChangedCounter);
-            Assert.IsNull(proxy.Instance);
+                await proxy.WaitForChangeAsync(TestContext.CancellationToken)
+                    .ConfigureAwait(false);
+                
+                Assert.AreEqual(2, proxy.OnInstanceChangedCounter);
+                Assert.IsNull(proxy.Instance);
+            }
 
             // Republish the same symbol, worker should pick it up again
-            producer.Publish(nameof(TestExportType), new TestExportType());
+            {
+                producer.Publish(nameof(TestExportType), new TestExportType());
 
-            await proxy.WaitForChangeAsync(TestContext.CancellationToken);
-            Assert.AreEqual(3, proxy.OnInstanceChangedCounter);
-            Assert.IsNotNull(proxy.Instance);
-            Assert.IsExactInstanceOfType<TestExportType>(proxy.Instance);
+                await proxy.WaitForChangeAsync(TestContext.CancellationToken)
+                    .ConfigureAwait(false);
+                
+                Assert.AreEqual(3, proxy.OnInstanceChangedCounter);
+                Assert.IsNotNull(proxy.Instance);
+                Assert.IsExactInstanceOfType<TestExportType>(proxy.Instance);
+            }
         }
 
         /// <summary>
@@ -297,7 +321,8 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
                       .Consume(nameof(TestExportType), proxy);
 
             // Allow the worker to enter its polling loop before unloading
-            await Task.Delay(50, TestContext.CancellationToken);
+            await Task.Delay(50, TestContext.CancellationToken)
+                .ConfigureAwait(false);
 
             // Dispose blocks until all scheduled tasks (including the worker) complete.
             // If the worker does not honor the exit token, this call hangs and the test times out.
@@ -338,7 +363,7 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
             await Task.WhenAll(
                proxyA.WaitForChangeAsync(TestContext.CancellationToken),
                proxyB.WaitForChangeAsync(TestContext.CancellationToken)
-            );
+            ).ConfigureAwait(false);
 
             Assert.AreEqual(1, proxyA.OnInstanceChangedCounter);
             Assert.IsNotNull(proxyA.Instance);
@@ -378,7 +403,7 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
             await Task.WhenAll(
                 proxyA.WaitForChangeAsync(TestContext.CancellationToken),
                 proxyB.WaitForChangeAsync(TestContext.CancellationToken)
-            );
+            ).ConfigureAwait(false);
 
             Assert.AreEqual(1, proxyA.OnInstanceChangedCounter);
             Assert.AreSame(exportA, proxyA.Instance);
@@ -419,7 +444,8 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
             // Resolve the lazy bridge so the worker can proceed
             bridgeTcs.SetResult(bridge);
 
-            await proxy.WaitForChangeAsync(TestContext.CancellationToken);
+            await proxy.WaitForChangeAsync(TestContext.CancellationToken)
+                .ConfigureAwait(false);
 
             Assert.AreEqual(1, proxy.OnInstanceChangedCounter);
             Assert.IsNotNull(proxy.Instance);
@@ -684,12 +710,203 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
             stopCts.Cancel();
 
             // Allow the worker to observe cancellation
-            await Task.Delay(150, TestContext.CancellationToken);
+            await Task.Delay(150, TestContext.CancellationToken)
+                .ConfigureAwait(false);
 
             // Verify the published instance remains in the table after the worker exits
             IpcObjectExport finalExport = bridge.TryGetExport(nameof(TestExportType));
             Assert.IsTrue(finalExport.Initialized);
             Assert.AreSame(publishInstance, finalExport.Instance);
+        }
+
+        #endregion
+
+        #region Bridge Lifecycle Helpers
+
+        /// <summary>
+        /// Validates that <see cref="PluginConsumerExtensions.PluginIpcManager.OpenBridge"/>
+        /// defers the callback until the region is available, invokes it once, and provides
+        /// a monitor that can publish to another bridge.
+        /// </summary>
+        [TestMethod]
+        public async Task OpenBridge_RegionAvailable_InvokesCallbackAndPublishes()
+        {
+            int callbackCount = 0;
+
+            // The region owner initializes the export table that OpenBridge attaches to
+            using IpcExportBridge producer = ProducerBridge();
+            using TestPluginBase testPlugin = new();
+
+            {
+                testPlugin.Ipc()
+                          .OpenBridge(TestMockAccessor, exports =>
+                          {
+                              Interlocked.Increment(ref callbackCount);
+                              exports.Publish(nameof(TestExportType), new TestExportType());
+                          });
+            }
+
+            // Callback must not run until the region is mapped
+            Assert.AreEqual(0, callbackCount);
+
+            TestMockAccessor.SetRegion(TestMockRegion);
+
+            using (IpcExportBridge consumer = ConsumerBridge())
+            {
+                // Bounded wait so a missing publish fails the test instead of hanging the suite
+                IpcObjectExport export = await consumer.WaitForExport(
+                    nameof(TestExportType),
+                    TimeSpan.FromSeconds(30)
+                ).ConfigureAwait(false);
+
+                // Export published through the monitor should be visible on another bridge
+                Assert.IsTrue(export.Initialized);
+                Assert.IsNotNull(export.Instance);
+            }
+
+            // Publish is completed, ensure callback only invoked once
+            Assert.AreEqual(1, callbackCount);
+        }
+
+        /// <summary>
+        /// Validates that unloading the plugin while <see cref="PluginConsumerExtensions.PluginIpcManager.OpenBridge"/>
+        /// is still waiting for the region never invokes the callback.
+        /// </summary>
+        [TestMethod]
+        public async Task OpenBridge_PluginUnloadBeforeRegion_DoesNotInvokeCallback()
+        {
+            int callbackCount = 0;
+
+            using (TestPluginBase testPlugin = new())
+            {
+                testPlugin.Ipc().OpenBridge(TestMockAccessor, _ => callbackCount++);
+
+                // Wait until the deferred work is actually waiting on the region
+                await TestMockAccessor.WaitStartedAsync()
+                                      .WaitAsync(TestContext.CancellationToken)
+                                      .ConfigureAwait(false);
+
+                Assert.AreEqual(0, callbackCount);
+
+            } // Unload while the region wait is still outstanding
+
+            Assert.AreEqual(0, callbackCount);
+        }
+
+        /// <summary>
+        /// Validates that <see cref="PluginConsumerExtensions.PluginIpcManager.OpenBridge"/>
+        /// throws <see cref="ArgumentNullException"/> for null arguments.
+        /// </summary>
+        [TestMethod]
+        public void OpenBridge_NullArguments_ThrowsArgumentNullException()
+        {
+            using TestPluginBase testPlugin = new();
+
+            Assert.ThrowsExactly<ArgumentNullException>(
+                () => testPlugin.Ipc().OpenBridge(null!, _ => { })
+            );
+
+            Assert.ThrowsExactly<ArgumentNullException>(
+                () => testPlugin.Ipc().OpenBridge(TestMockAccessor, null!)
+            );
+        }
+
+        /// <summary>
+        /// Validates that <see cref="PluginConsumerExtensions.PluginIpcManager.CreateBridge"/>
+        /// invokes the callback synchronously and publishes the configured export.
+        /// </summary>
+        [TestMethod]
+        public async Task CreateBridge_PublishesExportSynchronously()
+        {
+            int callbackCount = 0;
+
+            using TestPluginBase testPlugin = new();
+
+            TestExportType instance = new();
+
+            {
+                testPlugin.Ipc().CreateBridge(TestMockRegion, exports =>
+                {
+                    callbackCount++;
+                    exports.Publish(nameof(TestExportType), instance);
+                });
+
+                // Callback must run before CreateBridge returns
+                Assert.AreEqual(1, callbackCount);
+            }
+
+            using (IpcExportBridge consumer = ConsumerBridge())
+            {
+                // Bounded wait so a missing publish fails the test instead of hanging the suite
+                IpcObjectExport export = await consumer.WaitForExport(
+                    nameof(TestExportType),
+                    TimeSpan.FromSeconds(30)
+                ).ConfigureAwait(false);
+
+                // Published instance should be visible on another bridge
+                Assert.IsTrue(export.Initialized);
+                Assert.AreSame(instance, export.Instance);
+            }
+
+            Assert.AreEqual(1, callbackCount);
+        }
+
+        /// <summary>
+        /// Validates that <see cref="PluginConsumerExtensions.PluginIpcManager.CreateBridge"/>
+        /// registers the producer bridge for cleanup, destroying the export table on unload.
+        /// </summary>
+        [TestMethod]
+        public void CreateBridge_PluginUnload_DestroysExportTable()
+        {
+            using IpcExportBridge consumer = ConsumerBridge();
+
+            using (TestPluginBase testPlugin = new())
+            {
+                testPlugin.Ipc()
+                          .CreateBridge(TestMockRegion, _ => { });
+
+                // The bridge owns the export table until the plugin unloads
+                Assert.IsTrue(consumer.TryGetExport(nameof(TestExportType)).Initialized);
+            }
+
+            // Disposing the producer bridge on unload destroys the export table
+            Assert.IsFalse(consumer.TryGetExport(nameof(TestExportType)).Initialized);
+        }
+
+        /// <summary>
+        /// Validates that <see cref="PluginConsumerExtensions.PluginIpcManager.CreateBridge"/>
+        /// disposes the bridge if the callback throws.
+        /// </summary>
+        [TestMethod]
+        public void CreateBridge_CallbackThrows_DisposesBridge()
+        {
+            using TestPluginBase testPlugin = new();
+            using IpcExportBridge consumer = ConsumerBridge();
+
+            Assert.ThrowsExactly<InvalidOperationException>(() =>
+                testPlugin.Ipc().CreateBridge(TestMockRegion, _ => throw new InvalidOperationException("Test failure"))
+            );
+
+            // The failed bridge must have destroyed the export table it initialized
+            Assert.IsFalse(consumer.TryGetExport(nameof(TestExportType)).Initialized);
+        }
+
+        /// <summary>
+        /// Validates that <see cref="PluginConsumerExtensions.PluginIpcManager.CreateBridge"/>
+        /// throws <see cref="ArgumentNullException"/> for null arguments.
+        /// </summary>
+        [TestMethod]
+        public void CreateBridge_NullArguments_ThrowsArgumentNullException()
+        {
+            using TestPluginBase testPlugin = new();
+
+            Assert.ThrowsExactly<ArgumentNullException>(
+                () => testPlugin.Ipc().CreateBridge(null!, _ => { })
+            );
+
+            Assert.ThrowsExactly<ArgumentNullException>(
+                () => testPlugin.Ipc().CreateBridge(TestMockRegion, null!)
+            );
         }
 
         #endregion
@@ -720,6 +937,45 @@ namespace VNLib.Plugins.Extensions.Ipc.Tests
 
             public Task WaitForChangeAsync(CancellationToken cancellation) 
                 => _tcs.Task.WaitAsync(cancellation);
+        }
+
+        private sealed class MockRegion(IMemoryHandle<byte> handle, object syncRoot) : IPluginMemoryRegion
+        {
+            public object SyncRoot { get; } = syncRoot;
+
+            public int Length => (int)handle.Length;
+
+            public Span<byte> AsSpan() => handle.Span;
+
+            public ref byte GetReference(int offset) => ref handle.GetOffsetRef((nuint)offset);
+
+            public MemoryHandle Pin(int elementIndex) => handle.Pin(elementIndex);
+
+            public void Unpin() => handle.Unpin();
+        }
+
+        private sealed class MockRegionAccessor : IPluginMemoryRegionAccessor
+        {
+            const TaskCreationOptions Options = TaskCreationOptions.RunContinuationsAsynchronously;
+
+            private readonly TaskCompletionSource<IPluginMemoryRegion> _regionTcs = new(Options);
+            private readonly TaskCompletionSource _waitStartedTcs = new(Options);
+
+            public string RegionName => "test-region";
+
+            public bool IsValid() => _regionTcs.Task.IsCompletedSuccessfully;
+
+            public IPluginMemoryRegion GetRegion() => _regionTcs.Task.Result;
+
+            public Task<IPluginMemoryRegion> WaitAsync()
+            {
+                _waitStartedTcs.TrySetResult();
+                return _regionTcs.Task;
+            }
+
+            public Task WaitStartedAsync() => _waitStartedTcs.Task;
+
+            public void SetRegion(IPluginMemoryRegion region) => _regionTcs.TrySetResult(region);
         }
 
         #endregion

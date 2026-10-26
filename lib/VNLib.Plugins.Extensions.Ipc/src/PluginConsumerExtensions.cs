@@ -26,6 +26,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
+using VNLib.Utils;
 using VNLib.Utils.Async;
 using VNLib.Utils.Extensions;
 using VNLib.Utils.Logging;
@@ -69,7 +70,7 @@ namespace VNLib.Plugins.Extensions.Ipc
         {
             ArgumentNullException.ThrowIfNull(plugin);
             return new(plugin);
-        }     
+        }
 
         /// <summary>
         /// A background worker that publishes a named export on an <see cref="IpcExportBridge"/>
@@ -263,7 +264,7 @@ namespace VNLib.Plugins.Extensions.Ipc
         /// A manager that provides access to the plugin's IPC export monitoring facilities.
         /// </summary>
         /// <param name="Plugin">The plugin associated with this manager.</param>
-        public readonly record struct PluginIpcManager(PluginBase Plugin) 
+        public readonly record struct PluginIpcManager(PluginBase Plugin)
         {
             /// <summary>
             /// Creates an <see cref="IpcExportConsumerMonitor"/> for the specified bridge task.
@@ -292,6 +293,121 @@ namespace VNLib.Plugins.Extensions.Ipc
             {
                 ArgumentNullException.ThrowIfNull(lazyBridge);
                 return Exports(lazyBridge.AsTask());
+            }
+
+            /// <summary>
+            /// Waits for the shared memory region backing the supplied accessor to become available, opens 
+            /// a consumer export bridge over it, and invokes the callback once with the configured export 
+            /// monitor. The callback is invoked on a scheduler thread once the region and bridge are 
+            /// available, or never invoked in the case the region never becomes available or the host exists 
+            /// before completing.
+            /// </summary>
+            /// <param name="accessor">The accessor that provides gated access to the shared memory region.</param>
+            /// <param name="callback">The callback that configures exports on the opened bridge. It is invoked once when the region becomes available.</param>
+            /// <exception cref="ArgumentNullException">
+            /// Thrown when <paramref name="accessor"/> or <paramref name="callback"/> is <see langword="null"/>.
+            /// </exception>
+            public readonly void OpenBridge(
+                IPluginMemoryRegionAccessor accessor,
+                Action<IpcExportConsumerMonitor> callback
+            )
+            {
+                ArgumentNullException.ThrowIfNull(accessor);
+                ArgumentNullException.ThrowIfNull(callback);
+
+                RegionOpenWaiter waiter = new(accessor, callback);
+
+                // Register a dispose for bridge cleanup, and configure async to
+                // wait for the bridge and setup exports
+                Plugin.Tasks()
+                    .RegisterForUnload(waiter)
+                    .ConfigureServiceAsync(waiter);
+            }
+
+            /// <summary>
+            /// Creates a producer export bridge over a shared memory region owned by the plugin and invokes 
+            /// the callback synchronously with the configured export monitor. The lifecycle of the bridge is 
+            /// managed by the plugin context, and is owned by the calling plugin. You may only create a
+            /// bridge once per region during a single load/unload lifecycle. 
+            /// </summary>
+            /// <param name="region">The shared memory region owned by the plugin that backs the export table.</param>
+            /// <param name="callback">The callback that configures exports on the created bridge. It is invoked before this method returns.</param>
+            /// <exception cref="ArgumentNullException">
+            /// Thrown when <paramref name="region"/> or <paramref name="callback"/> is <see langword="null"/>.
+            /// </exception>
+            /// <exception cref="InvalidOperationException">
+            /// The region's export table is already initialized or the region is too small to contain
+            /// the required table structures.
+            /// </exception>
+            public readonly void CreateBridge(
+                IPluginMemoryRegion region,
+                Action<IpcExportConsumerMonitor> callback
+            )
+            {
+                ArgumentNullException.ThrowIfNull(region);
+                ArgumentNullException.ThrowIfNull(callback);
+
+                // Create new bridge for producer plugin
+                IpcExportBridge bridge = IpcExportBridge.Create(region);
+
+                try
+                {
+                    callback(Exports(bridge));
+
+                    // Success, register bridge cleanup on unload
+                    Plugin.Tasks()
+                        .RegisterForUnload(bridge);
+                }
+                catch
+                {
+                    bridge.Dispose();
+                    throw;
+                }
+            }
+
+            private sealed class RegionOpenWaiter(
+                IPluginMemoryRegionAccessor accessor,
+                Action<IpcExportConsumerMonitor> callback
+            ) : VnDisposeable, IAsyncConfigurable
+            {
+                private IpcExportBridge? _bridge;
+
+                /// <inheritdoc/>
+                protected override void Free()
+                    => _bridge?.Dispose();
+
+                /// <inheritdoc/>
+                public async Task ConfigureServiceAsync(PluginBase plugin)
+                {
+                    // Wait for the region to become available
+                    IPluginMemoryRegion region;
+
+                    try
+                    {
+                        /*
+                         * Workaround notice:
+                         *    vnlib v0.2.0 IPC implementation does not cancel the wait task if the plugin
+                         * unloads before the region becomes available. It hangs until the server closes.
+                         * This can leak the current plugin instance if the region is never mapped and our 
+                         * plugin unloads. So WaitAsync(plugin.UnloadToken) is used instead to cancel the 
+                         * wait if our plugin unloads before the region is mapped
+                         */
+
+                        region = await accessor.WaitAsync()
+                                               .WaitAsync(plugin.UnloadToken)
+                                               .ConfigureAwait(false);
+                    }
+                    // Catch normal plugin exit
+                    catch (OperationCanceledException) when (plugin.UnloadToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    // Open existing bridge on region
+                    _bridge = IpcExportBridge.Open(region.SyncRoot, region.AsSpan);
+
+                    callback(plugin.Ipc().Exports(_bridge));
+                }
             }
         }
 
